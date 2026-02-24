@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-02-24T17:09:55.988Z",
+  "runs": 5,
+  "commands": [
+    "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+    "npm run perf:profile"
+  ],
+  "thresholds": {
+    "slowCommandMs": 4000
+  },
+  "totals": {
+    "passedRuns": 5,
+    "failedRuns": 0,
+    "totalDurationMs": 5175
+  },
+  "anomalies": [],
+  "runsDetail": [
+    {
+      "run": 1,
+      "commands": [
+        {
+          "command": "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+          "durationMs": 996,
+          "exitCode": 0
+        },
+        {
+          "command": "npm run perf:profile",
+          "durationMs": 150,
+          "exitCode": 0
+        }
+      ],
+      "totalDurationMs": 1146
+    },
+    {
+      "run": 2,
+      "commands": [
+        {
+          "command": "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+          "durationMs": 933,
+          "exitCode": 0
+        },
+        {
+          "command": "npm run perf:profile",
+          "durationMs": 146,
+          "exitCode": 0
+        }
+      ],
+      "totalDurationMs": 1079
+    },
+    {
+      "run": 3,
+      "commands": [
+        {
+          "command": "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+          "durationMs": 842,
+          "exitCode": 0
+        },
+        {
+          "command": "npm run perf:profile",
+          "durationMs": 139,
+          "exitCode": 0
+        }
+      ],
+      "totalDurationMs": 981
+    },
+    {
+      "run": 4,
+      "commands": [
+        {
+          "command": "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+          "durationMs": 869,
+          "exitCode": 0
+        },
+        {
+          "command": "npm run perf:profile",
+          "durationMs": 146,
+          "exitCode": 0
+        }
+      ],
+      "totalDurationMs": 1015
+    },
+    {
+      "run": 5,
+      "commands": [
+        {
+          "command": "npm test -- src/game/GameRuntime.test.ts src/game/GameManager.test.ts src/systems/CollisionSystem.test.ts src/systems/DistractionSystem.test.ts src/input/PathDrawingInput.test.ts",
+          "durationMs": 832,
+          "exitCode": 0
+        },
+        {
+          "command": "npm run perf:profile",
+          "durationMs": 122,
+          "exitCode": 0
+        }
+      ],
+      "totalDurationMs": 954
+    }
+  ]
+}

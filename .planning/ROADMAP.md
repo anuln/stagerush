@@ -14,7 +14,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 - [x] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression (completed 2026-02-24)
 - [x] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence (completed 2026-02-24)
 - [x] **Phase 8: Gov Ball Content and Production Assets** - Replace placeholders with festival assets, audio, animation, and bundle lifecycle (completed 2026-02-24)
-- [ ] **Phase 9: Performance, QA, and Release Hardening** - Validate 60 FPS targets, edge-case stability, and readiness for public release
+- [x] **Phase 9: Performance, QA, and Release Hardening** - Validate 60 FPS targets, edge-case stability, and readiness for public release (completed 2026-02-24)
 
 ## Phase Details
 
@@ -153,9 +153,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: Run mobile profiling and quality-scaler tuning pass
-- [ ] 09-02: Add/complete automated tests for critical systems and edge cases
-- [ ] 09-03: Execute release checklist, defect triage, and stability sign-off
+- [x] 09-01: Run mobile profiling and quality-scaler tuning pass
+- [x] 09-02: Add/complete automated tests for critical systems and edge cases
+- [x] 09-03: Execute release checklist, defect triage, and stability sign-off
 
 ## Progress
 
@@ -169,4 +169,4 @@ Plans:
 | 6. Combo Layer and High-Score Feedback | 2/2 | Complete | 2026-02-24 |
 | 7. Level Flow and Persistence | 4/4 | Complete | 2026-02-24 |
 | 8. Gov Ball Content and Production Assets | 3/3 | Complete | 2026-02-24 |
-| 9. Performance, QA, and Release Hardening | 0/3 | Not started | - |
+| 9. Performance, QA, and Release Hardening | 3/3 | Complete | 2026-02-24 |

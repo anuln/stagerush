@@ -8,7 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "perf:profile": "node scripts/profile-runtime.mjs"
+    "perf:profile": "node scripts/profile-runtime.mjs",
+    "qa:soak": "node scripts/soak-session.mjs --runs=5",
+    "qa:release": "npm run build && npm test && npm run perf:profile && npm run qa:soak"
   },
   "dependencies": {
     "pixi.js": "^8.14.0"
