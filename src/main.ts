@@ -7,10 +7,23 @@ import {
   createGovBallBundleManifest
 } from "./assets/manifest";
 import { AudioManager } from "./audio/AudioManager";
+import {
+  GAME_CONFIG,
+  getQualityPreset,
+  rollQualityTier,
+  type QualityTier
+} from "./config/GameConfig";
 import { createDebugToggles } from "./debug/DebugToggles";
+import {
+  PerformanceOverlay,
+  type RuntimeTelemetrySnapshot as OverlayTelemetrySnapshot
+} from "./debug/PerformanceOverlay";
 import { GameManager } from "./game/GameManager";
 import { resolveLevelRuntimeConfig } from "./game/LevelProgression";
-import { GameRuntime } from "./game/GameRuntime";
+import {
+  GameRuntime,
+  type RuntimeTelemetrySnapshot as GameRuntimeTelemetrySnapshot
+} from "./game/GameRuntime";
 import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
@@ -24,24 +37,66 @@ function isMobileUserAgent(): boolean {
   return /Mobi|Android/i.test(navigator.userAgent);
 }
 
+function parsePerformanceFlags(): {
+  showOverlay: boolean;
+  autoQuality: boolean;
+} {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    showOverlay: params.get("perf") === "1",
+    autoQuality: params.get("quality") === "auto"
+  };
+}
+
+function average(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  let total = 0;
+  for (const value of values) {
+    total += value;
+  }
+  return total / values.length;
+}
+
+function applyQualityResolution(
+  app: Application,
+  qualityTier: QualityTier,
+  baseResolution: number
+): void {
+  const targetResolution = Math.max(
+    0.5,
+    baseResolution * getQualityPreset(qualityTier).resolutionScale
+  );
+  app.renderer.resize(window.innerWidth, window.innerHeight, targetResolution);
+}
+
 async function bootstrap(): Promise<void> {
   const isMobile = isMobileUserAgent();
+  const perfFlags = parsePerformanceFlags();
   const dpr = window.devicePixelRatio || 1;
-  const resolution = isMobile ? Math.min(dpr, 1.5) : dpr;
+  const baseResolution = isMobile ? Math.min(dpr, 1.5) : dpr;
+  let qualityTier: QualityTier = "high";
+  let lowFpsWindows = 0;
+  let highFpsWindows = 0;
+  const fpsSamples: number[] = [];
+  let latestRuntimeTelemetry: GameRuntimeTelemetrySnapshot | null = null;
 
   const app = new Application();
   await app.init({
     resizeTo: window,
     autoDensity: true,
-    resolution,
+    resolution: baseResolution,
     powerPreference: isMobile ? "low-power" : "high-performance",
     backgroundAlpha: 1,
     backgroundColor: 0x1a1a2e
   });
+  applyQualityResolution(app, qualityTier, baseResolution);
 
   document.body.appendChild(app.canvas);
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
+  const performanceOverlay = new PerformanceOverlay(perfFlags.showOverlay);
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
   const runPersistence = new RunPersistence();
   const bundleManager = new BundleManager([BOOT_BUNDLE_MANIFEST]);
@@ -126,7 +181,11 @@ async function bootstrap(): Promise<void> {
           ),
           {
             artistSprites: currentLayout!.map.assets.artists,
-            audioManager
+            audioManager,
+            onTelemetry: (snapshot) => {
+              latestRuntimeTelemetry = snapshot;
+            },
+            getEffectsDensity: () => getQualityPreset(qualityTier).effectsDensity
           }
         )
     });
@@ -141,6 +200,7 @@ async function bootstrap(): Promise<void> {
   }
 
   window.addEventListener("resize", redraw);
+  window.addEventListener("beforeunload", () => performanceOverlay.dispose());
 
   function toCanvasPoint(event: PointerEvent): { x: number; y: number } {
     const rect = app.canvas.getBoundingClientRect();
@@ -197,10 +257,62 @@ async function bootstrap(): Promise<void> {
   app.canvas.addEventListener("pointercancel", (event) => finishPointer(event, true));
 
   app.ticker.add((ticker) => {
+    const frameFps = ticker.deltaMS > 0 ? 1000 / ticker.deltaMS : 0;
+    fpsSamples.push(frameFps);
+    if (fpsSamples.length > GAME_CONFIG.performance.scaler.windowSizeFrames) {
+      fpsSamples.shift();
+    }
+    const averageFps = average(fpsSamples);
+
+    if (perfFlags.autoQuality && fpsSamples.length >= GAME_CONFIG.performance.scaler.windowSizeFrames) {
+      if (averageFps < GAME_CONFIG.performance.scaler.degradeBelowFps) {
+        lowFpsWindows += 1;
+        highFpsWindows = 0;
+      } else if (averageFps > GAME_CONFIG.performance.scaler.recoverAboveFps) {
+        highFpsWindows += 1;
+        lowFpsWindows = 0;
+      } else {
+        lowFpsWindows = 0;
+        highFpsWindows = 0;
+      }
+
+      const nextTier = rollQualityTier({
+        currentTier: qualityTier,
+        averageFps,
+        lowWindowCount: lowFpsWindows,
+        highWindowCount: highFpsWindows
+      });
+      if (nextTier !== qualityTier) {
+        qualityTier = nextTier;
+        lowFpsWindows = 0;
+        highFpsWindows = 0;
+        applyQualityResolution(app, qualityTier, baseResolution);
+        redraw();
+      }
+    }
+
     gameManager?.update(ticker.deltaMS / 1000, {
       width: app.renderer.width,
       height: app.renderer.height
     }, performance.now());
+
+    const runtimeTelemetry = latestRuntimeTelemetry ?? {
+      frameDeltaMs: ticker.deltaMS,
+      updateDurationMs: 0,
+      activeArtists: 0,
+      spawnedArtists: 0,
+      resolvedArtists: 0,
+      activeDistractions: 0,
+      activePaths: 0,
+      runtimeOutcome: "ACTIVE" as const
+    };
+    const overlayTelemetry: OverlayTelemetrySnapshot = {
+      ...runtimeTelemetry,
+      qualityTier,
+      rendererResolution: app.renderer.resolution,
+      averageFps
+    };
+    performanceOverlay.update(overlayTelemetry);
 
     screenOverlay.render(
       gameManager ? buildScreenViewModel(gameManager.snapshot) : null,

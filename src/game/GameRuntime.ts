@@ -55,9 +55,22 @@ export interface RuntimeStatus {
   resolvedArtists: number;
 }
 
+export interface RuntimeTelemetrySnapshot {
+  frameDeltaMs: number;
+  updateDurationMs: number;
+  activeArtists: number;
+  spawnedArtists: number;
+  resolvedArtists: number;
+  activeDistractions: number;
+  activePaths: number;
+  runtimeOutcome: RuntimeOutcome;
+}
+
 export interface GameRuntimeOptions {
   artistSprites?: ArtistSpriteConfig[];
   audioManager?: AudioManager | null;
+  onTelemetry?: (snapshot: RuntimeTelemetrySnapshot) => void;
+  getEffectsDensity?: () => number;
 }
 
 export class GameRuntime {
@@ -89,6 +102,18 @@ export class GameRuntime {
   private levelOutcome: RuntimeOutcome = "ACTIVE";
   private nowMs: number = getNowMs();
   private readonly audioManager: AudioManager | null;
+  private readonly onTelemetry: ((snapshot: RuntimeTelemetrySnapshot) => void) | null;
+  private readonly getEffectsDensity: (() => number) | null;
+  private telemetrySnapshot: RuntimeTelemetrySnapshot = {
+    frameDeltaMs: 0,
+    updateDurationMs: 0,
+    activeArtists: 0,
+    spawnedArtists: 0,
+    resolvedArtists: 0,
+    activeDistractions: 0,
+    activePaths: 0,
+    runtimeOutcome: "ACTIVE"
+  };
 
   constructor(
     layout: ResolvedFestivalLayout,
@@ -156,6 +181,8 @@ export class GameRuntime {
       resampleSpacingPx: GAME_CONFIG.path.resampleSpacingPx
     });
     this.audioManager = options.audioManager ?? null;
+    this.onTelemetry = options.onTelemetry ?? null;
+    this.getEffectsDensity = options.getEffectsDensity ?? null;
     void this.audioManager?.playMusic(resolveMusicCue(this.levelNumber));
   }
 
@@ -208,7 +235,9 @@ export class GameRuntime {
   }
 
   update(deltaSeconds: number, viewport: RuntimeViewport, nowMs = getNowMs()): void {
+    const updateStartedAtMs = getNowMs();
     if (this.levelOutcome !== "ACTIVE") {
+      this.emitTelemetry(deltaSeconds, 0, 0);
       return;
     }
 
@@ -325,6 +354,7 @@ export class GameRuntime {
     const stageSnapshots = this.stageSystem.getSnapshots();
     const activeCombos = this.comboTracker.getActiveChains(this.nowMs);
     const strongestCombo = this.comboTracker.getHighestActiveChain(this.nowMs);
+    const effectsDensity = clampEffectsDensity(this.getEffectsDensity?.() ?? 1);
     const preview = this.buildPreview();
     const activeDistractions = this.distractionSystem.getActiveDistractions();
     this.distractionRenderer.render(activeDistractions);
@@ -334,13 +364,21 @@ export class GameRuntime {
     );
     this.comboFeedbackRenderer.render({
       nowMs: this.nowMs,
-      activeCombos,
+      activeCombos: effectsDensity < 0.55 ? [] : activeCombos,
       stageSnapshots
     });
+    const renderedScoreEvents =
+      effectsDensity < 0.55
+        ? scoreEvents.slice(-1)
+        : effectsDensity < 0.8
+          ? scoreEvents.slice(-2)
+          : scoreEvents;
+    const renderedMissEvents =
+      effectsDensity < 0.55 ? missEvents.slice(-1) : missEvents;
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
-      scoreEvents,
-      missEvents,
+      scoreEvents: renderedScoreEvents,
+      missEvents: renderedMissEvents,
       stageSnapshots,
       viewport
     });
@@ -364,6 +402,12 @@ export class GameRuntime {
         this.playSfx("level_complete");
       }
     }
+
+    this.emitTelemetry(
+      deltaSeconds,
+      Math.max(0, getNowMs() - updateStartedAtMs),
+      activeDistractions.length
+    );
   }
 
   getStatus(): RuntimeStatus {
@@ -409,6 +453,11 @@ export class GameRuntime {
       viewportWidth: this.layout.viewport.width
     });
     this.etaRenderer.render(null);
+    this.emitTelemetry(0, 0, 0);
+  }
+
+  getTelemetrySnapshot(): RuntimeTelemetrySnapshot {
+    return { ...this.telemetrySnapshot };
   }
 
   private buildPreview(): {
@@ -583,6 +632,27 @@ export class GameRuntime {
     }
     void this.audioManager.playSfx(cueId);
   }
+
+  private emitTelemetry(
+    deltaSeconds: number,
+    updateDurationMs: number,
+    activeDistractions: number
+  ): void {
+    const activeArtists = this.artists.filter((artist) => artist.isActive()).length;
+    const resolvedArtists = this.artists.length - activeArtists;
+    const activePaths = this.pathStates.filter((path) => path.state === "ACTIVE").length;
+    this.telemetrySnapshot = {
+      frameDeltaMs: Math.max(0, deltaSeconds * 1000),
+      updateDurationMs: Math.max(0, updateDurationMs),
+      activeArtists,
+      spawnedArtists: this.spawnSystem.spawnedArtists,
+      resolvedArtists,
+      activeDistractions,
+      activePaths,
+      runtimeOutcome: this.levelOutcome
+    };
+    this.onTelemetry?.(this.telemetrySnapshot);
+  }
 }
 
 function resolveMusicCue(levelNumber: number): string {
@@ -593,6 +663,13 @@ function resolveMusicCue(levelNumber: number): string {
     return "bg_energy";
   }
   return "bg_peak";
+}
+
+function clampEffectsDensity(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+  return Math.max(0, Math.min(1, value));
 }
 
 function getNowMs(): number {

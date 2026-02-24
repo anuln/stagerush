@@ -5,6 +5,20 @@ export interface ViewportSize {
   height: number;
 }
 
+export type QualityTier = "high" | "medium" | "low";
+
+interface QualityPreset {
+  resolutionScale: number;
+  effectsDensity: number;
+}
+
+export interface QualityRollInput {
+  currentTier: QualityTier;
+  averageFps: number;
+  lowWindowCount: number;
+  highWindowCount: number;
+}
+
 export const GAME_CONFIG = {
   stage: {
     sizeFactors: {
@@ -26,6 +40,19 @@ export const GAME_CONFIG = {
     collisionRadiusPx: 40,
     chatDurationMs: 3000
   },
+  performance: {
+    qualityPresets: {
+      high: { resolutionScale: 1, effectsDensity: 1 },
+      medium: { resolutionScale: 0.86, effectsDensity: 0.72 },
+      low: { resolutionScale: 0.72, effectsDensity: 0.5 }
+    } as Record<QualityTier, QualityPreset>,
+    scaler: {
+      degradeBelowFps: 48,
+      recoverAboveFps: 57,
+      sustainedWindows: 6,
+      windowSizeFrames: 20
+    }
+  },
   debug: {
     showSpawnPoints: true
   }
@@ -40,4 +67,31 @@ export function getStagePixelSize(
   const width = Math.round(base * factor);
   const height = Math.round(width / GAME_CONFIG.stage.aspectRatio);
   return { width, height };
+}
+
+export function getQualityPreset(tier: QualityTier): QualityPreset {
+  return GAME_CONFIG.performance.qualityPresets[tier];
+}
+
+const TIER_ORDER: QualityTier[] = ["low", "medium", "high"];
+
+export function rollQualityTier(input: QualityRollInput): QualityTier {
+  const scaler = GAME_CONFIG.performance.scaler;
+  const tierIndex = TIER_ORDER.indexOf(input.currentTier);
+
+  if (
+    input.averageFps < scaler.degradeBelowFps &&
+    input.lowWindowCount >= scaler.sustainedWindows
+  ) {
+    return TIER_ORDER[Math.max(0, tierIndex - 1)];
+  }
+
+  if (
+    input.averageFps > scaler.recoverAboveFps &&
+    input.highWindowCount >= scaler.sustainedWindows
+  ) {
+    return TIER_ORDER[Math.min(TIER_ORDER.length - 1, tierIndex + 1)];
+  }
+
+  return input.currentTier;
 }

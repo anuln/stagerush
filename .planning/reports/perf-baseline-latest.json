@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-02-24T16:50:55.905Z",
+  "mode": "static-artifact-baseline",
+  "metrics": {
+    "bundle": {
+      "totalBytes": 620722,
+      "jsBytes": 607673,
+      "cssBytes": 1485,
+      "htmlBytes": 418,
+      "largestJs": {
+        "path": "dist/assets/index-haXSFMsM.js",
+        "bytes": 356063
+      }
+    },
+    "loading": {
+      "estimatedFirstInteractiveMs": 1258
+    },
+    "content": {
+      "mapAssetReferences": 57
+    },
+    "runtimeTargets": {
+      "frameBudgetMs": 16.67,
+      "targetFps": 60
+    }
+  },
+  "budgets": {
+    "payloadBudgetBytes": 5242880,
+    "targetFirstInteractiveMs": 3000,
+    "withinPayloadBudget": true,
+    "withinStartupBudget": true
+  }
+}
