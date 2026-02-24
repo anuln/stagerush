@@ -77,4 +77,24 @@ describe("RunPersistence", () => {
     expect(snapshot.bestLevelScores["3"]).toBe(600);
     expect(snapshot.bestFestivalScore).toBe(1550);
   });
+
+  it("preserves profile data across runtime reload-style rehydration", () => {
+    const sharedStorage = new MemoryStorage();
+    const firstSession = new RunPersistence(sharedStorage);
+
+    firstSession.recordLevelCompletion({
+      levelNumber: 1,
+      totalLevels: 3,
+      levelScore: 510,
+      cumulativeScore: 510,
+      festivalCompleted: false
+    });
+
+    const reloadedSession = new RunPersistence(sharedStorage);
+    expect(reloadedSession.getSnapshot().bestLevelScores["1"]).toBe(510);
+
+    reloadedSession.setSettings({ musicVolume: 0.35 });
+    firstSession.reloadFromStorage();
+    expect(firstSession.getSnapshot().settings.musicVolume).toBe(0.35);
+  });
 });

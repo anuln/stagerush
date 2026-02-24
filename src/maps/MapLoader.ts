@@ -277,6 +277,36 @@ export function resolveAssetPath(path: string): string {
   return `/${path}`;
 }
 
+export function collectMapAssetPaths(map: FestivalMap): string[] {
+  const paths = new Set<string>();
+
+  paths.add(map.background);
+  for (const stage of map.stages) {
+    paths.add(stage.sprite);
+  }
+  for (const distraction of map.distractions) {
+    paths.add(distraction.sprite);
+  }
+  for (const artist of map.assets.artists) {
+    for (const walkFrame of artist.sprites.walk) {
+      paths.add(walkFrame);
+    }
+    paths.add(artist.sprites.idle);
+    paths.add(artist.sprites.performing);
+  }
+  for (const stageSprite of Object.values(map.assets.stageSprites)) {
+    paths.add(stageSprite);
+  }
+  for (const distractionSprite of Object.values(map.assets.distractionSprites)) {
+    paths.add(distractionSprite);
+  }
+  for (const audioPath of Object.values(map.assets.audio)) {
+    paths.add(audioPath);
+  }
+
+  return Array.from(paths);
+}
+
 export function driftAngleToUnitVector(angleDegrees: number): ScreenPoint {
   const radians = (angleDegrees * Math.PI) / 180;
   return {

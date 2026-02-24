@@ -29,6 +29,7 @@ interface GameManagerOptions {
     attemptNumber: number
   ) => RuntimeController;
   persistence?: RunPersistence;
+  onScreenChanged?: (next: ScreenState, previous: ScreenState) => void;
 }
 
 export interface ProfileSnapshot {
@@ -48,6 +49,7 @@ export class GameManager {
   private readonly createRuntime: GameManagerOptions["createRuntime"];
   private readonly levelManager: LevelManager;
   private readonly persistence: RunPersistence | null;
+  private readonly onScreenChanged: GameManagerOptions["onScreenChanged"];
   private runtime: RuntimeController | null = null;
   private screen: ScreenState = "MENU";
 
@@ -55,6 +57,7 @@ export class GameManager {
     this.layout = options.layout;
     this.createRuntime = options.createRuntime;
     this.persistence = options.persistence ?? null;
+    this.onScreenChanged = options.onScreenChanged;
     this.levelManager = new LevelManager({
       totalLevels: Math.max(1, options.layout.map.totalLevels || 1)
     });
@@ -78,7 +81,7 @@ export class GameManager {
   startFestival(): void {
     this.levelManager.startFestival();
     this.mountRuntimeForActiveLevel();
-    this.screen = "PLAYING";
+    this.setScreen("PLAYING");
   }
 
   handleScreenAction(actionId: ScreenActionId): void {
@@ -105,7 +108,7 @@ export class GameManager {
     }
 
     this.mountRuntimeForActiveLevel();
-    this.screen = "PLAYING";
+    this.setScreen("PLAYING");
     return true;
   }
 
@@ -116,14 +119,14 @@ export class GameManager {
     }
 
     this.mountRuntimeForActiveLevel();
-    this.screen = "PLAYING";
+    this.setScreen("PLAYING");
     return true;
   }
 
   returnToMenu(): void {
     this.disposeRuntime();
     this.levelManager.resetToMenu();
-    this.screen = "MENU";
+    this.setScreen("MENU");
   }
 
   onLayoutChanged(layout: ResolvedFestivalLayout): void {
@@ -168,7 +171,7 @@ export class GameManager {
     const status = this.runtime.getStatus();
     if (status.outcome === "FAILED") {
       this.levelManager.markLevelFailed(status.levelScore);
-      this.screen = "LEVEL_FAILED";
+      this.setScreen("LEVEL_FAILED");
       return;
     }
 
@@ -181,10 +184,11 @@ export class GameManager {
         cumulativeScore: this.levelManager.snapshot.cumulativeScore,
         festivalCompleted: this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
       });
-      this.screen =
+      this.setScreen(
         this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
           ? "FESTIVAL_COMPLETE"
-          : "LEVEL_COMPLETE";
+          : "LEVEL_COMPLETE"
+      );
     }
   }
 
@@ -202,6 +206,15 @@ export class GameManager {
     }
     this.runtime.dispose();
     this.runtime = null;
+  }
+
+  private setScreen(next: ScreenState): void {
+    if (this.screen === next) {
+      return;
+    }
+    const previous = this.screen;
+    this.screen = next;
+    this.onScreenChanged?.(next, previous);
   }
 
   private getPersistenceSnapshot(): PersistenceSnapshot {

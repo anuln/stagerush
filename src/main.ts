@@ -1,4 +1,11 @@
 import { Application } from "pixi.js";
+import { BundleManager } from "./assets/BundleManager";
+import {
+  BOOT_BUNDLE_MANIFEST,
+  GOVBALL_BUNDLE_ID,
+  GOVBALL_MAP_CONFIG_PATH,
+  createGovBallBundleManifest
+} from "./assets/manifest";
 import { AudioManager } from "./audio/AudioManager";
 import { createDebugToggles } from "./debug/DebugToggles";
 import { GameManager } from "./game/GameManager";
@@ -8,6 +15,7 @@ import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } f
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
 import { RunPersistence } from "./persistence/RunPersistence";
+import type { ScreenActionId } from "./ui/ScreenState";
 import { ScreenOverlayController } from "./ui/ScreenOverlayController";
 import { buildScreenViewModel } from "./ui/ScreenViewModels";
 import "./styles.css";
@@ -36,12 +44,44 @@ async function bootstrap(): Promise<void> {
   const debugToggles = createDebugToggles();
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
   const runPersistence = new RunPersistence();
+  const bundleManager = new BundleManager([BOOT_BUNDLE_MANIFEST]);
   const screenOverlay = new ScreenOverlayController();
   let gameManager: GameManager | null = null;
   let audioManager: AudioManager | null = null;
   let activePointerId: number | null = null;
+  let isScreenActionPending = false;
+  let hasFestivalManifest = false;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
+
+  const runScreenAction = async (actionId: ScreenActionId): Promise<void> => {
+    if (!gameManager || isScreenActionPending) {
+      return;
+    }
+
+    isScreenActionPending = true;
+    try {
+      if (
+        hasFestivalManifest &&
+        (actionId === "START_FESTIVAL" ||
+          actionId === "RETRY_LEVEL" ||
+          actionId === "NEXT_LEVEL")
+      ) {
+        await bundleManager.loadBundle(GOVBALL_BUNDLE_ID);
+      }
+
+      gameManager.handleScreenAction(actionId);
+
+      if (hasFestivalManifest && actionId === "RETURN_TO_MENU") {
+        await bundleManager.unloadBundle(GOVBALL_BUNDLE_ID);
+        audioManager?.stopMusic();
+      }
+    } catch (error) {
+      console.error("Failed to run screen action", error);
+    } finally {
+      isScreenActionPending = false;
+    }
+  };
 
   const redraw = (): void => {
     if (!currentLayout) {
@@ -57,7 +97,10 @@ async function bootstrap(): Promise<void> {
   };
 
   try {
-    const map = await loadFestivalMap("/assets/maps/govball/config.json");
+    await bundleManager.loadBundle(BOOT_BUNDLE_MANIFEST.id);
+    const map = await loadFestivalMap(GOVBALL_MAP_CONFIG_PATH);
+    bundleManager.registerManifest(createGovBallBundleManifest(map));
+    hasFestivalManifest = true;
     audioManager = new AudioManager(map.assets.audio);
     currentLayout = resolveFestivalLayout(map, {
       width: app.renderer.width,
@@ -67,6 +110,11 @@ async function bootstrap(): Promise<void> {
     gameManager = new GameManager({
       layout: currentLayout,
       persistence: runPersistence,
+      onScreenChanged: (next) => {
+        if (next === "MENU") {
+          audioManager?.stopMusic();
+        }
+      },
       createRuntime: (levelNumber, attemptNumber) =>
         new GameRuntime(
           currentLayout!,
@@ -84,7 +132,9 @@ async function bootstrap(): Promise<void> {
     });
     screenOverlay.render(
       buildScreenViewModel(gameManager.snapshot),
-      (actionId) => gameManager?.handleScreenAction(actionId)
+      (actionId) => {
+        void runScreenAction(actionId);
+      }
     );
   } catch (error) {
     console.error("Failed to load map configuration", error);
@@ -154,7 +204,9 @@ async function bootstrap(): Promise<void> {
 
     screenOverlay.render(
       gameManager ? buildScreenViewModel(gameManager.snapshot) : null,
-      (actionId) => gameManager?.handleScreenAction(actionId)
+      (actionId) => {
+        void runScreenAction(actionId);
+      }
     );
   });
 }

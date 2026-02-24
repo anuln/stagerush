@@ -89,6 +89,10 @@ export class RunPersistence {
     this.persist();
   }
 
+  reloadFromStorage(): void {
+    this.profile = this.loadProfile();
+  }
+
   private loadProfile(): PersistedProfile {
     const raw = this.storage.getItem(this.storageKey);
     if (!raw) {
