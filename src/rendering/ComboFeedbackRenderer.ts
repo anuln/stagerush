@@ -71,6 +71,17 @@ export class ComboFeedbackRenderer {
     for (const badge of badges) {
       const width = 58 * badge.scale;
       const height = 26 * badge.scale;
+      const shadow = new Graphics();
+      shadow.roundRect(
+        badge.position.x - width / 2,
+        badge.position.y - height / 2 + 3,
+        width,
+        height,
+        12
+      );
+      shadow.fill({ color: 0x050506, alpha: 0.25 * badge.alpha });
+      this.layer.addChild(shadow);
+
       const bg = new Graphics();
       bg.roundRect(
         badge.position.x - width / 2,
@@ -79,7 +90,7 @@ export class ComboFeedbackRenderer {
         height,
         12
       );
-      bg.fill({ color: badge.color, alpha: 0.22 * badge.alpha });
+      bg.fill({ color: badge.color, alpha: 0.3 * badge.alpha });
       bg.stroke({ color: 0xffffff, width: 2, alpha: badge.alpha });
       this.layer.addChild(bg);
 
@@ -91,7 +102,7 @@ export class ComboFeedbackRenderer {
           fill: 0xffffff,
           stroke: {
             color: 0x111111,
-            width: 3
+            width: 2
           }
         }
       });

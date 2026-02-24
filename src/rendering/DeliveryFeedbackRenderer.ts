@@ -67,9 +67,15 @@ export class DeliveryFeedbackRenderer {
     }
 
     for (const missEvent of frame.missEvents) {
+      const missLabel =
+        missEvent.reason === "timeout"
+          ? "TIME OUT"
+          : missEvent.reason === "bounds"
+            ? "OFF STAGE"
+            : "MISS";
       this.popups.push({
         id: `miss-${missEvent.artistId}-${frame.nowMs}`,
-        text: "MISS",
+        text: missLabel,
         color: 0xff5a5a,
         isCombo: false,
         position: { ...missEvent.position },
@@ -92,14 +98,21 @@ export class DeliveryFeedbackRenderer {
       if (!stage.isOccupied) {
         continue;
       }
+      const color = parseColor(stage.color, 0xffffff);
       const pulse = new Graphics();
       pulse.circle(stage.position.x, stage.position.y, 58);
       pulse.stroke({
-        color: parseColor(stage.color, 0xffffff),
+        color,
         width: 4,
         alpha: 0.7
       });
       this.layer.addChild(pulse);
+
+      const inner = new Graphics();
+      inner.circle(stage.position.x, stage.position.y, 38);
+      inner.fill({ color, alpha: 0.08 });
+      inner.stroke({ color: 0xffffff, width: 2, alpha: 0.32 });
+      this.layer.addChild(inner);
     }
   }
 
@@ -111,11 +124,15 @@ export class DeliveryFeedbackRenderer {
         text: popup.text,
         style: {
           fontFamily: "Avenir Next, Helvetica, Arial, sans-serif",
-          fontSize: popup.text === "MISS" ? 16 : popup.isCombo ? 22 : 20,
+          fontSize: popup.text.includes("MISS") || popup.text.includes("OUT")
+            ? 14
+            : popup.isCombo
+              ? 22
+              : 20,
           fill: popup.color,
           stroke: {
             color: 0x111111,
-            width: 3
+            width: 2
           }
         }
       });
@@ -125,6 +142,22 @@ export class DeliveryFeedbackRenderer {
         popup.position.y - 18 - progress * 32
       );
       label.alpha = 1 - progress;
+
+      const bg = new Graphics();
+      const paddingX = 12;
+      const paddingY = 6;
+      const width = label.width + paddingX * 2;
+      const height = label.height + paddingY * 2;
+      bg.roundRect(
+        label.position.x - width / 2,
+        label.position.y - height + 4,
+        width,
+        height,
+        10
+      );
+      bg.fill({ color: 0x101014, alpha: 0.42 * label.alpha });
+      bg.stroke({ color: 0xffffff, width: 1, alpha: 0.18 * label.alpha });
+      this.layer.addChild(bg);
       this.layer.addChild(label);
     }
   }

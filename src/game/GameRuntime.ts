@@ -1,4 +1,6 @@
 import { Container } from "pixi.js";
+import type { AudioManager } from "../audio/AudioManager";
+import type { ArtistSpriteConfig } from "../config/FestivalConfig";
 import { GAME_CONFIG } from "../config/GameConfig";
 import {
   toRuntimeLevelConfig,
@@ -53,6 +55,11 @@ export interface RuntimeStatus {
   resolvedArtists: number;
 }
 
+export interface GameRuntimeOptions {
+  artistSprites?: ArtistSpriteConfig[];
+  audioManager?: AudioManager | null;
+}
+
 export class GameRuntime {
   private layout: ResolvedFestivalLayout;
   private artists: Artist[] = [];
@@ -81,11 +88,13 @@ export class GameRuntime {
   private levelFailureReported = false;
   private levelOutcome: RuntimeOutcome = "ACTIVE";
   private nowMs: number = getNowMs();
+  private readonly audioManager: AudioManager | null;
 
   constructor(
     layout: ResolvedFestivalLayout,
     layerSet: LayerSet,
-    runtimeLevelOverride?: RuntimeLevelConfig
+    runtimeLevelOverride?: RuntimeLevelConfig,
+    options: GameRuntimeOptions = {}
   ) {
     this.layout = layout;
     const runtimeLevel =
@@ -105,7 +114,10 @@ export class GameRuntime {
       layout.distractions,
       runtimeLevel.activeDistractionIds
     );
-    this.artistRenderer = new ArtistRenderer(layerSet.artistLayer);
+    this.artistRenderer = new ArtistRenderer(
+      layerSet.artistLayer,
+      options.artistSprites ?? layout.map.assets.artists
+    );
     this.pathRenderer = new PathRenderer(layerSet.pathLayer);
     this.distractionRenderer = new DistractionRenderer(layerSet.distractionLayer);
 
@@ -143,6 +155,8 @@ export class GameRuntime {
       smoothingSteps: GAME_CONFIG.path.smoothingSteps,
       resampleSpacingPx: GAME_CONFIG.path.resampleSpacingPx
     });
+    this.audioManager = options.audioManager ?? null;
+    void this.audioManager?.playMusic(resolveMusicCue(this.levelNumber));
   }
 
   onLayoutChanged(nextLayout: ResolvedFestivalLayout): void {
@@ -158,7 +172,11 @@ export class GameRuntime {
       return false;
     }
     this.nowMs = nowMs;
-    return this.pathInput.pointerDown(x, y, nowMs);
+    const consumed = this.pathInput.pointerDown(x, y, nowMs);
+    if (consumed) {
+      this.playSfx("path_draw");
+    }
+    return consumed;
   }
 
   onPointerMove(x: number, y: number): void {
@@ -202,6 +220,9 @@ export class GameRuntime {
     const spawned = this.spawnSystem.update(deltaSeconds, activeArtists);
     if (spawned.length > 0) {
       this.artists.push(...spawned);
+      for (let index = 0; index < spawned.length; index += 1) {
+        this.playSfx("spawn");
+      }
     }
 
     const followUpdates = this.pathFollower.update(this.artists, deltaSeconds);
@@ -218,6 +239,7 @@ export class GameRuntime {
     for (const started of collisionUpdate.started) {
       this.pathFollower.blockArtist(started.artistAId, "chat");
       this.pathFollower.blockArtist(started.artistBId, "chat");
+      this.playSfx("chat");
     }
     for (const resolved of collisionUpdate.resolved) {
       const artistA = this.artists.find((entry) => entry.id === resolved.artistAId);
@@ -233,6 +255,7 @@ export class GameRuntime {
     const distractionUpdate = this.distractionSystem.update(this.artists, this.nowMs);
     for (const started of distractionUpdate.started) {
       this.pathFollower.blockArtist(started.artistId, "distraction");
+      this.playSfx("distraction");
     }
     for (const resolved of distractionUpdate.resolved) {
       const artist = this.artists.find((entry) => entry.id === resolved.artistId);
@@ -260,6 +283,7 @@ export class GameRuntime {
       if (boundsMissed) {
         this.livesState.recordMiss();
         missEvents.push(this.buildMissEvent(artist, "bounds"));
+        this.playSfx("miss");
       }
     }
 
@@ -269,6 +293,7 @@ export class GameRuntime {
       const artist = this.artists.find((entry) => entry.id === event.artistId);
       if (artist) {
         missEvents.push(this.buildMissEvent(artist, event.reason));
+        this.playSfx("miss");
       }
     }
 
@@ -278,12 +303,15 @@ export class GameRuntime {
         delivery.stageId,
         delivery.completedAtMs
       );
-      scoreEvents.push(this.scoreManager.registerDelivery(delivery, combo));
+      const scoreEvent = this.scoreManager.registerDelivery(delivery, combo);
+      scoreEvents.push(scoreEvent);
+      this.playSfx(scoreEvent.comboMultiplier > 1 ? "deliver_combo" : "deliver");
     }
 
     if (this.livesState.isLevelFailed && !this.levelFailureReported) {
       this.levelFailureReported = true;
       this.levelOutcome = "FAILED";
+      this.playSfx("level_failed");
       console.warn("Level failed: 3 misses reached.");
     }
 
@@ -324,7 +352,7 @@ export class GameRuntime {
       viewportWidth: viewport.width
     });
     this.etaRenderer.render(preview.eta);
-    this.artistRenderer.render(this.artists);
+    this.artistRenderer.render(this.artists, this.nowMs);
 
     if (this.levelOutcome === "ACTIVE") {
       const hasActiveArtists = this.artists.some((artist) => artist.isActive());
@@ -333,6 +361,7 @@ export class GameRuntime {
       );
       if (this.spawnSystem.isExhausted && !hasActiveArtists && !hasActiveStages) {
         this.levelOutcome = "COMPLETED";
+        this.playSfx("level_complete");
       }
     }
   }
@@ -352,7 +381,7 @@ export class GameRuntime {
 
   dispose(): void {
     this.pathInput.pointerCancel(this.nowMs);
-    this.artistRenderer.render([]);
+    this.artistRenderer.render([], this.nowMs);
     this.pathRenderer.render([], null);
     this.distractionRenderer.render([]);
     this.hazardOverlayRenderer.render({
@@ -547,6 +576,23 @@ export class GameRuntime {
       }))
     };
   }
+
+  private playSfx(cueId: string): void {
+    if (!this.audioManager) {
+      return;
+    }
+    void this.audioManager.playSfx(cueId);
+  }
+}
+
+function resolveMusicCue(levelNumber: number): string {
+  if (levelNumber <= 4) {
+    return "bg_chill";
+  }
+  if (levelNumber <= 8) {
+    return "bg_energy";
+  }
+  return "bg_peak";
 }
 
 function getNowMs(): number {

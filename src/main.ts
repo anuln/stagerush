@@ -1,4 +1,5 @@
 import { Application } from "pixi.js";
+import { AudioManager } from "./audio/AudioManager";
 import { createDebugToggles } from "./debug/DebugToggles";
 import { GameManager } from "./game/GameManager";
 import { resolveLevelRuntimeConfig } from "./game/LevelProgression";
@@ -37,6 +38,7 @@ async function bootstrap(): Promise<void> {
   const runPersistence = new RunPersistence();
   const screenOverlay = new ScreenOverlayController();
   let gameManager: GameManager | null = null;
+  let audioManager: AudioManager | null = null;
   let activePointerId: number | null = null;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
@@ -56,6 +58,7 @@ async function bootstrap(): Promise<void> {
 
   try {
     const map = await loadFestivalMap("/assets/maps/govball/config.json");
+    audioManager = new AudioManager(map.assets.audio);
     currentLayout = resolveFestivalLayout(map, {
       width: app.renderer.width,
       height: app.renderer.height
@@ -72,7 +75,11 @@ async function bootstrap(): Promise<void> {
             currentLayout!.map,
             levelNumber,
             attemptNumber
-          )
+          ),
+          {
+            artistSprites: currentLayout!.map.assets.artists,
+            audioManager
+          }
         )
     });
     screenOverlay.render(
