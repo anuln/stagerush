@@ -9,6 +9,7 @@ import { PathDrawingInput } from "../input/PathDrawingInput";
 import type { ResolvedFestivalLayout } from "../maps/MapLoader";
 import type { LayerSet } from "../maps/layers";
 import { ArtistRenderer } from "../rendering/ArtistRenderer";
+import { ComboFeedbackRenderer } from "../rendering/ComboFeedbackRenderer";
 import {
   DeliveryFeedbackRenderer,
   type MissEvent
@@ -55,6 +56,7 @@ export class GameRuntime {
   private readonly distractionRenderer: DistractionRenderer;
   private readonly etaRenderer: EtaRenderer;
   private readonly hazardOverlayRenderer: HazardOverlayRenderer;
+  private readonly comboFeedbackRenderer: ComboFeedbackRenderer;
   private readonly hudRenderer: HudRenderer;
   private readonly deliveryFeedbackRenderer: DeliveryFeedbackRenderer;
   private readonly pathFollower: PathFollower;
@@ -88,14 +90,23 @@ export class GameRuntime {
     feedbackLayer.label = "deliveryFeedbackLayer";
     const hazardLayer = new Container();
     hazardLayer.label = "hazardOverlayLayer";
+    const comboLayer = new Container();
+    comboLayer.label = "comboFeedbackLayer";
     const hudLayer = new Container();
     hudLayer.label = "hudLayer";
     const etaLayer = new Container();
     etaLayer.label = "etaLayer";
-    layerSet.uiLayer.addChild(feedbackLayer, hazardLayer, hudLayer, etaLayer);
+    layerSet.uiLayer.addChild(
+      feedbackLayer,
+      hazardLayer,
+      comboLayer,
+      hudLayer,
+      etaLayer
+    );
 
     this.etaRenderer = new EtaRenderer(etaLayer);
     this.hazardOverlayRenderer = new HazardOverlayRenderer(hazardLayer);
+    this.comboFeedbackRenderer = new ComboFeedbackRenderer(comboLayer);
     this.hudRenderer = new HudRenderer(hudLayer);
     this.deliveryFeedbackRenderer = new DeliveryFeedbackRenderer(feedbackLayer);
     this.pathFollower = new PathFollower(runtimeLevel.driftSpeedPxPerSecond);
@@ -243,6 +254,9 @@ export class GameRuntime {
     );
     this.cleanupPathStatesForResolvedArtists();
 
+    const stageSnapshots = this.stageSystem.getSnapshots();
+    const activeCombos = this.comboTracker.getActiveChains(this.nowMs);
+    const strongestCombo = this.comboTracker.getHighestActiveChain(this.nowMs);
     const preview = this.buildPreview();
     const activeDistractions = this.distractionSystem.getActiveDistractions();
     this.distractionRenderer.render(activeDistractions);
@@ -250,17 +264,23 @@ export class GameRuntime {
     this.hazardOverlayRenderer.render(
       this.buildHazardOverlayFrame(collisionUpdate.activeChats, activeDistractions)
     );
+    this.comboFeedbackRenderer.render({
+      nowMs: this.nowMs,
+      activeCombos,
+      stageSnapshots
+    });
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
       scoreEvents,
       missEvents,
-      stageSnapshots: this.stageSystem.getSnapshots(),
+      stageSnapshots,
       viewport
     });
     this.hudRenderer.render({
       score: this.scoreManager.totalScore,
       remainingLives: this.livesState.remainingLives,
       levelNumber: this.levelNumber,
+      comboMultiplier: strongestCombo?.multiplier ?? null,
       viewportWidth: viewport.width
     });
     this.etaRenderer.render(preview.eta);

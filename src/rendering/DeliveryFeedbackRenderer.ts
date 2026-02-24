@@ -14,6 +14,7 @@ interface FeedbackPopup {
   id: string;
   text: string;
   color: number;
+  isCombo: boolean;
   position: { x: number; y: number };
   createdAtMs: number;
   durationMs: number;
@@ -33,6 +34,16 @@ function parseColor(hex: string, fallback = 0xe6e6e6): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function buildScorePopupText(event: {
+  awardedPoints: number;
+  comboMultiplier: number;
+}): string {
+  if (event.comboMultiplier <= 1) {
+    return `+${event.awardedPoints}`;
+  }
+  return `+${event.awardedPoints} (${event.comboMultiplier.toFixed(1)}x)`;
+}
+
 export class DeliveryFeedbackRenderer {
   private readonly layer: Container;
   private popups: FeedbackPopup[] = [];
@@ -43,10 +54,12 @@ export class DeliveryFeedbackRenderer {
 
   render(frame: DeliveryFeedbackFrame): void {
     for (const scoreEvent of frame.scoreEvents) {
+      const isCombo = scoreEvent.comboMultiplier > 1;
       this.popups.push({
         id: `score-${scoreEvent.artistId}-${scoreEvent.completedAtMs}`,
-        text: `+${scoreEvent.awardedPoints}`,
-        color: parseColor(scoreEvent.stageColor, 0x9be26d),
+        text: buildScorePopupText(scoreEvent),
+        color: isCombo ? 0xffd166 : parseColor(scoreEvent.stageColor, 0x9be26d),
+        isCombo,
         position: { ...scoreEvent.stagePosition },
         createdAtMs: frame.nowMs,
         durationMs: 950
@@ -58,6 +71,7 @@ export class DeliveryFeedbackRenderer {
         id: `miss-${missEvent.artistId}-${frame.nowMs}`,
         text: "MISS",
         color: 0xff5a5a,
+        isCombo: false,
         position: { ...missEvent.position },
         createdAtMs: frame.nowMs,
         durationMs: 750
@@ -97,7 +111,7 @@ export class DeliveryFeedbackRenderer {
         text: popup.text,
         style: {
           fontFamily: "Avenir Next, Helvetica, Arial, sans-serif",
-          fontSize: popup.text === "MISS" ? 16 : 20,
+          fontSize: popup.text === "MISS" ? 16 : popup.isCombo ? 22 : 20,
           fill: popup.color,
           stroke: {
             color: 0x111111,
