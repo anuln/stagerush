@@ -12,7 +12,8 @@ export const GAME_CONFIG = {
       medium: 0.15,
       small: 0.11
     } as Record<StageSize, number>,
-    aspectRatio: 4 / 3
+    aspectRatio: 4 / 3,
+    performanceDurationMs: 2500
   },
   path: {
     grabRadiusPx: 40,
