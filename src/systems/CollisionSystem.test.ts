@@ -45,4 +45,18 @@ describe("CollisionSystem", () => {
     expect(first.started).toHaveLength(1);
     expect(second.started).toHaveLength(0);
   });
+
+  it("does not immediately retrigger on the same tick a chat session resolves", () => {
+    const a = makeArtist("a", 100, 100, "FOLLOWING");
+    const b = makeArtist("b", 120, 100, "DRIFTING");
+    const system = new CollisionSystem(40, 3000);
+
+    system.update([a, b], 0);
+    const resolved = system.update([a, b], 3001);
+
+    expect(resolved.resolved).toHaveLength(1);
+    expect(resolved.started).toHaveLength(0);
+    expect(a.state).toBe("FOLLOWING");
+    expect(b.state).toBe("DRIFTING");
+  });
 });

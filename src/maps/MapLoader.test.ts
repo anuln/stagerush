@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { FestivalMap } from "../config/FestivalConfig";
 import {
+  collectMapAssetPaths,
   driftAngleToUnitVector,
   normalizedToScreen,
   parseFestivalMapData,
@@ -140,5 +141,15 @@ describe("MapLoader", () => {
     expect(map.assets.artists.length).toBeGreaterThanOrEqual(9);
     expect(map.assets.audio["level_complete"]).toBeDefined();
     expect(map.levels[9].activeDistractions.length).toBeGreaterThan(0);
+  });
+
+  it("collects unique asset paths across map references", () => {
+    const paths = collectMapAssetPaths(baseMap);
+
+    expect(paths).toContain("maps/govball/bg.png");
+    expect(paths).toContain("maps/govball/stage_main.png");
+    expect(paths).toContain("artists/new_a_walk1.png");
+    expect(paths).toContain("audio/spawn.mp3");
+    expect(new Set(paths).size).toBe(paths.length);
   });
 });

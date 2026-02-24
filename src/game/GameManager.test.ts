@@ -149,4 +149,47 @@ describe("GameManager", () => {
     manager.handleScreenAction("RETURN_TO_MENU");
     expect(manager.snapshot.screen).toBe("MENU");
   });
+
+  it("supports repeated festival loops and persistence continuity across manager instances", () => {
+    const storage = new MemoryStorage();
+    const firstPersistence = new RunPersistence(storage);
+    const firstRuntimes: FakeRuntime[] = [];
+    const firstManager = new GameManager({
+      layout: makeLayout(1),
+      persistence: firstPersistence,
+      createRuntime: (levelNumber) => {
+        const runtime = new FakeRuntime(levelNumber);
+        firstRuntimes.push(runtime);
+        return runtime;
+      }
+    });
+
+    firstManager.startFestival();
+    firstRuntimes[0].status.levelScore = 700;
+    firstRuntimes[0].status.outcome = "COMPLETED";
+    firstManager.update(0.016, { width: 1000, height: 2000 }, 100);
+    expect(firstManager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
+
+    firstManager.returnToMenu();
+    expect(firstManager.snapshot.screen).toBe("MENU");
+    expect(firstRuntimes[0].disposed).toBe(true);
+
+    const secondPersistence = new RunPersistence(storage);
+    const secondRuntimes: FakeRuntime[] = [];
+    const secondManager = new GameManager({
+      layout: makeLayout(1),
+      persistence: secondPersistence,
+      createRuntime: (levelNumber) => {
+        const runtime = new FakeRuntime(levelNumber);
+        secondRuntimes.push(runtime);
+        return runtime;
+      }
+    });
+
+    expect(secondManager.snapshot.profile.bestFestivalScore).toBe(700);
+    secondManager.startFestival();
+    expect(secondManager.snapshot.screen).toBe("PLAYING");
+    expect(secondManager.snapshot.level.currentLevel).toBe(1);
+    expect(secondRuntimes).toHaveLength(1);
+  });
 });

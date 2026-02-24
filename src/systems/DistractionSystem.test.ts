@@ -55,4 +55,16 @@ describe("DistractionSystem", () => {
     expect(result.started).toHaveLength(0);
     expect(artist.state).toBe("FOLLOWING");
   });
+
+  it("does not immediately retrigger distraction on the same tick session resolves", () => {
+    const artist = makeArtist("a1", 110, 100, "DRIFTING");
+    const system = new DistractionSystem([makeDistraction("d1", 100)], ["d1"]);
+
+    system.update([artist], 0);
+    const resolved = system.update([artist], 2001);
+
+    expect(resolved.resolved).toHaveLength(1);
+    expect(resolved.started).toHaveLength(0);
+    expect(artist.state).toBe("DRIFTING");
+  });
 });

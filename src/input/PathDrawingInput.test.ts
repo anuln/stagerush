@@ -63,4 +63,30 @@ describe("PathDrawingInput", () => {
     expect(input.getActiveSession()).toBeNull();
     expect(input.pointerUp(110, 110, 3)).toBeNull();
   });
+
+  it("ignores a second pointerDown while a session is already active", () => {
+    const a = makeArtist("a1", 100, 100);
+    const b = makeArtist("a2", 140, 100);
+    const input = new PathDrawingInput(() => [a, b], 45);
+
+    const first = input.pointerDown(100, 100, 10);
+    const second = input.pointerDown(140, 100, 11);
+    const ended = input.pointerUp(120, 100, 12);
+
+    expect(first).toBe(true);
+    expect(second).toBe(false);
+    expect(ended?.artistId).toBe("a1");
+  });
+
+  it("uses injected clock value for cancel when timestamp is omitted", () => {
+    const artist = makeArtist("a1", 100, 100);
+    const input = new PathDrawingInput(() => [artist], 40, () => 1234);
+
+    input.pointerDown(105, 100, 1000);
+    const cancelled = input.pointerCancel();
+
+    expect(cancelled).not.toBeNull();
+    expect(cancelled?.startedAtMs).toBe(1000);
+    expect(cancelled?.endedAtMs).toBe(1234);
+  });
 });
