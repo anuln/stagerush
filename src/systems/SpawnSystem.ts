@@ -33,6 +33,18 @@ export class SpawnSystem {
     this.spawnPoints = points;
   }
 
+  get spawnedArtists(): number {
+    return this.spawnedCount;
+  }
+
+  get totalArtists(): number {
+    return this.level.totalArtists;
+  }
+
+  get isExhausted(): boolean {
+    return this.spawnedCount >= this.level.totalArtists;
+  }
+
   update(deltaSeconds: number, activeArtists: Artist[]): Artist[] {
     if (this.spawnPoints.length === 0) {
       return [];

@@ -1,5 +1,7 @@
 import { Application } from "pixi.js";
+import { toRuntimeLevelConfig } from "./config/LevelConfig";
 import { createDebugToggles } from "./debug/DebugToggles";
+import { GameManager } from "./game/GameManager";
 import { GameRuntime } from "./game/GameRuntime";
 import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
@@ -29,7 +31,7 @@ async function bootstrap(): Promise<void> {
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
-  let gameRuntime: GameRuntime | null = null;
+  let gameManager: GameManager | null = null;
   let activePointerId: number | null = null;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
@@ -44,7 +46,7 @@ async function bootstrap(): Promise<void> {
     });
     currentLayout = nextLayout;
     mapRenderer.render(nextLayout);
-    gameRuntime?.onLayoutChanged(nextLayout);
+    gameManager?.onLayoutChanged(nextLayout);
   };
 
   try {
@@ -54,7 +56,16 @@ async function bootstrap(): Promise<void> {
       height: app.renderer.height
     });
     mapRenderer.render(currentLayout);
-    gameRuntime = new GameRuntime(currentLayout, layerSet);
+    gameManager = new GameManager({
+      layout: currentLayout,
+      createRuntime: (levelNumber) =>
+        new GameRuntime(
+          currentLayout!,
+          layerSet,
+          toRuntimeLevelConfig(currentLayout!.map, levelNumber)
+        )
+    });
+    gameManager.startFestival();
   } catch (error) {
     console.error("Failed to load map configuration", error);
   }
@@ -77,7 +88,7 @@ async function bootstrap(): Promise<void> {
     }
     const point = toCanvasPoint(event);
     const consumed =
-      gameRuntime?.onPointerDown(point.x, point.y, performance.now()) ?? false;
+      gameManager?.onPointerDown(point.x, point.y, performance.now()) ?? false;
     if (!consumed) {
       return;
     }
@@ -91,7 +102,7 @@ async function bootstrap(): Promise<void> {
       return;
     }
     const point = toCanvasPoint(event);
-    gameRuntime?.onPointerMove(point.x, point.y);
+    gameManager?.onPointerMove(point.x, point.y);
     event.preventDefault();
   });
 
@@ -101,9 +112,9 @@ async function bootstrap(): Promise<void> {
     }
     const point = toCanvasPoint(event);
     if (cancelled) {
-      gameRuntime?.onPointerCancel(performance.now());
+      gameManager?.onPointerCancel(performance.now());
     } else {
-      gameRuntime?.onPointerUp(point.x, point.y, performance.now());
+      gameManager?.onPointerUp(point.x, point.y, performance.now());
     }
     if (app.canvas.hasPointerCapture(event.pointerId)) {
       app.canvas.releasePointerCapture(event.pointerId);
@@ -116,7 +127,7 @@ async function bootstrap(): Promise<void> {
   app.canvas.addEventListener("pointercancel", (event) => finishPointer(event, true));
 
   app.ticker.add((ticker) => {
-    gameRuntime?.update(ticker.deltaMS / 1000, {
+    gameManager?.update(ticker.deltaMS / 1000, {
       width: app.renderer.width,
       height: app.renderer.height
     }, performance.now());

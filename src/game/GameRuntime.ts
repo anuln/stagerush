@@ -1,6 +1,9 @@
 import { Container } from "pixi.js";
 import { GAME_CONFIG } from "../config/GameConfig";
-import { toRuntimeLevelConfig } from "../config/LevelConfig";
+import {
+  toRuntimeLevelConfig,
+  type RuntimeLevelConfig
+} from "../config/LevelConfig";
 import { Artist } from "../entities/Artist";
 import type { ArtistMissReason } from "../entities/ArtistState";
 import type { HazardBlockedArtistSnapshot } from "../entities/HazardState";
@@ -33,9 +36,21 @@ import { PathPlanner, type PlannedPath } from "./PathPlanner";
 import { LivesState } from "./LivesState";
 import { ScoreManager, type ScoreEvent } from "./ScoreManager";
 
-interface RuntimeViewport {
+export interface RuntimeViewport {
   width: number;
   height: number;
+}
+
+export type RuntimeOutcome = "ACTIVE" | "FAILED" | "COMPLETED";
+
+export interface RuntimeStatus {
+  levelNumber: number;
+  levelScore: number;
+  outcome: RuntimeOutcome;
+  remainingLives: number;
+  totalArtists: number;
+  spawnedArtists: number;
+  resolvedArtists: number;
 }
 
 export class GameRuntime {
@@ -62,12 +77,20 @@ export class GameRuntime {
   private readonly pathFollower: PathFollower;
   private readonly pathInput: PathDrawingInput;
   private readonly pathPlanner: PathPlanner;
+  private readonly runtimeLevel: RuntimeLevelConfig;
   private levelFailureReported = false;
+  private levelOutcome: RuntimeOutcome = "ACTIVE";
   private nowMs: number = getNowMs();
 
-  constructor(layout: ResolvedFestivalLayout, layerSet: LayerSet) {
+  constructor(
+    layout: ResolvedFestivalLayout,
+    layerSet: LayerSet,
+    runtimeLevelOverride?: RuntimeLevelConfig
+  ) {
     this.layout = layout;
-    const runtimeLevel = toRuntimeLevelConfig(layout.map, 1);
+    const runtimeLevel =
+      runtimeLevelOverride ?? toRuntimeLevelConfig(layout.map, 1);
+    this.runtimeLevel = runtimeLevel;
     this.levelNumber = runtimeLevel.levelNumber;
     this.spawnSystem = new SpawnSystem(runtimeLevel, layout.spawnPoints);
     this.stageSystem = new StageSystem(
@@ -131,15 +154,24 @@ export class GameRuntime {
   }
 
   onPointerDown(x: number, y: number, nowMs = getNowMs()): boolean {
+    if (this.levelOutcome !== "ACTIVE") {
+      return false;
+    }
     this.nowMs = nowMs;
     return this.pathInput.pointerDown(x, y, nowMs);
   }
 
   onPointerMove(x: number, y: number): void {
+    if (this.levelOutcome !== "ACTIVE") {
+      return;
+    }
     this.pathInput.pointerMove(x, y);
   }
 
   onPointerUp(x: number, y: number, nowMs = getNowMs()): void {
+    if (this.levelOutcome !== "ACTIVE") {
+      return;
+    }
     this.nowMs = nowMs;
     const session = this.pathInput.pointerUp(x, y, nowMs);
     if (!session) {
@@ -150,11 +182,18 @@ export class GameRuntime {
   }
 
   onPointerCancel(nowMs = getNowMs()): void {
+    if (this.levelOutcome !== "ACTIVE") {
+      return;
+    }
     this.nowMs = nowMs;
     this.pathInput.pointerCancel(nowMs);
   }
 
   update(deltaSeconds: number, viewport: RuntimeViewport, nowMs = getNowMs()): void {
+    if (this.levelOutcome !== "ACTIVE") {
+      return;
+    }
+
     this.nowMs = nowMs;
     const missEvents: MissEvent[] = [];
     const scoreEvents: ScoreEvent[] = [];
@@ -244,6 +283,7 @@ export class GameRuntime {
 
     if (this.livesState.isLevelFailed && !this.levelFailureReported) {
       this.levelFailureReported = true;
+      this.levelOutcome = "FAILED";
       console.warn("Level failed: 3 misses reached.");
     }
 
@@ -285,6 +325,61 @@ export class GameRuntime {
     });
     this.etaRenderer.render(preview.eta);
     this.artistRenderer.render(this.artists);
+
+    if (this.levelOutcome === "ACTIVE") {
+      const hasActiveArtists = this.artists.some((artist) => artist.isActive());
+      const hasActiveStages = stageSnapshots.some(
+        (snapshot) => snapshot.isOccupied || snapshot.queueLength > 0
+      );
+      if (this.spawnSystem.isExhausted && !hasActiveArtists && !hasActiveStages) {
+        this.levelOutcome = "COMPLETED";
+      }
+    }
+  }
+
+  getStatus(): RuntimeStatus {
+    const resolvedArtists = this.artists.filter((artist) => !artist.isActive()).length;
+    return {
+      levelNumber: this.levelNumber,
+      levelScore: this.scoreManager.totalScore,
+      outcome: this.levelOutcome,
+      remainingLives: this.livesState.remainingLives,
+      totalArtists: this.spawnSystem.totalArtists,
+      spawnedArtists: this.spawnSystem.spawnedArtists,
+      resolvedArtists
+    };
+  }
+
+  dispose(): void {
+    this.pathInput.pointerCancel(this.nowMs);
+    this.artistRenderer.render([]);
+    this.pathRenderer.render([], null);
+    this.distractionRenderer.render([]);
+    this.hazardOverlayRenderer.render({
+      chatPairs: [],
+      distractionZones: [],
+      blockedArtists: []
+    });
+    this.comboFeedbackRenderer.render({
+      nowMs: this.nowMs,
+      activeCombos: [],
+      stageSnapshots: []
+    });
+    this.deliveryFeedbackRenderer.render({
+      nowMs: this.nowMs,
+      scoreEvents: [],
+      missEvents: [],
+      stageSnapshots: [],
+      viewport: this.layout.viewport
+    });
+    this.hudRenderer.render({
+      score: 0,
+      remainingLives: 0,
+      levelNumber: this.runtimeLevel.levelNumber,
+      comboMultiplier: null,
+      viewportWidth: this.layout.viewport.width
+    });
+    this.etaRenderer.render(null);
   }
 
   private buildPreview(): {
