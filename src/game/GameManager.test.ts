@@ -104,7 +104,7 @@ describe("GameManager", () => {
     expect(manager.snapshot.screen).toBe("LEVEL_COMPLETE");
     expect(manager.snapshot.level.cumulativeScore).toBe(320);
 
-    manager.nextLevel();
+    manager.handleScreenAction("NEXT_LEVEL");
     expect(manager.snapshot.screen).toBe("PLAYING");
     expect(manager.snapshot.level.currentLevel).toBe(2);
 
@@ -113,5 +113,19 @@ describe("GameManager", () => {
     manager.update(0.016, { width: 1000, height: 2000 }, 200);
     expect(manager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
     expect(manager.snapshot.level.cumulativeScore).toBe(820);
+  });
+
+  it("uses screen actions for menu start and menu return", () => {
+    const manager = new GameManager({
+      layout: makeLayout(1),
+      createRuntime: (levelNumber) => new FakeRuntime(levelNumber)
+    });
+
+    expect(manager.snapshot.screen).toBe("MENU");
+    manager.handleScreenAction("START_FESTIVAL");
+    expect(manager.snapshot.screen).toBe("PLAYING");
+
+    manager.handleScreenAction("RETURN_TO_MENU");
+    expect(manager.snapshot.screen).toBe("MENU");
   });
 });

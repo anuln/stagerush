@@ -6,6 +6,8 @@ import { GameRuntime } from "./game/GameRuntime";
 import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
+import { ScreenOverlayController } from "./ui/ScreenOverlayController";
+import { buildScreenViewModel } from "./ui/ScreenViewModels";
 import "./styles.css";
 
 function isMobileUserAgent(): boolean {
@@ -31,6 +33,7 @@ async function bootstrap(): Promise<void> {
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
+  const screenOverlay = new ScreenOverlayController();
   let gameManager: GameManager | null = null;
   let activePointerId: number | null = null;
 
@@ -69,7 +72,10 @@ async function bootstrap(): Promise<void> {
           )
         )
     });
-    gameManager.startFestival();
+    screenOverlay.render(
+      buildScreenViewModel(gameManager.snapshot),
+      (actionId) => gameManager?.handleScreenAction(actionId)
+    );
   } catch (error) {
     console.error("Failed to load map configuration", error);
   }
@@ -135,6 +141,11 @@ async function bootstrap(): Promise<void> {
       width: app.renderer.width,
       height: app.renderer.height
     }, performance.now());
+
+    screenOverlay.render(
+      gameManager ? buildScreenViewModel(gameManager.snapshot) : null,
+      (actionId) => gameManager?.handleScreenAction(actionId)
+    );
   });
 }
 

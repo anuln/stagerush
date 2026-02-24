@@ -1,6 +1,7 @@
 import type { ResolvedFestivalLayout } from "../maps/MapLoader";
 import type { RuntimeStatus, RuntimeViewport } from "./GameRuntime";
 import { LevelManager, type LevelManagerSnapshot } from "./LevelManager";
+import type { ScreenActionId } from "../ui/ScreenState";
 
 export type ScreenState =
   | "MENU"
@@ -59,6 +60,23 @@ export class GameManager {
     this.levelManager.startFestival();
     this.mountRuntimeForActiveLevel();
     this.screen = "PLAYING";
+  }
+
+  handleScreenAction(actionId: ScreenActionId): void {
+    switch (actionId) {
+      case "START_FESTIVAL":
+        this.startFestival();
+        return;
+      case "RETRY_LEVEL":
+        this.retryLevel();
+        return;
+      case "NEXT_LEVEL":
+        this.nextLevel();
+        return;
+      case "RETURN_TO_MENU":
+        this.returnToMenu();
+        return;
+    }
   }
 
   retryLevel(): boolean {

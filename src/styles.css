@@ -14,3 +14,97 @@ body {
 canvas {
   display: block;
 }
+
+.screen-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+}
+
+.screen-overlay.is-hidden {
+  display: none;
+}
+
+.screen-panel {
+  width: min(92vw, 460px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(160deg, rgba(22, 28, 46, 0.96), rgba(13, 16, 30, 0.95));
+  color: #f6f7fb;
+  padding: 24px 20px;
+  box-shadow: 0 24px 42px rgba(0, 0, 0, 0.35);
+  font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+}
+
+.screen-panel h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.screen-subtitle {
+  margin: 0 0 14px;
+  color: rgba(246, 247, 251, 0.82);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.screen-summary {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 16px;
+  row-gap: 6px;
+}
+
+.screen-summary dt {
+  margin: 0;
+  color: rgba(246, 247, 251, 0.72);
+  font-size: 13px;
+}
+
+.screen-summary dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.screen-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.screen-action {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 12px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.screen-action:hover {
+  transform: translateY(-1px);
+}
+
+.screen-action.primary {
+  background: #5dd4a5;
+  color: #0e1a1a;
+}
+
+.screen-action.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f7ff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
