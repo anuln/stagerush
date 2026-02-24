@@ -1,5 +1,6 @@
-import { Container, Graphics } from "pixi.js";
+import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { DebugToggles } from "../debug/DebugToggles";
+import { resolveAssetPath } from "./MapLoader";
 import type { ResolvedFestivalLayout } from "./MapLoader";
 import type { LayerSet } from "./layers";
 
@@ -33,6 +34,15 @@ export class MapRenderer {
   }
 
   private renderBackground(layout: ResolvedFestivalLayout): void {
+    const texture = this.getTexture(layout.map.background);
+    if (texture) {
+      const bg = new Sprite(texture);
+      bg.width = layout.viewport.width;
+      bg.height = layout.viewport.height;
+      this.layerSet.mapLayer.addChild(bg);
+      return;
+    }
+
     const bg = new Graphics();
     bg.rect(0, 0, layout.viewport.width, layout.viewport.height);
     bg.fill(0x23312a);
@@ -41,6 +51,17 @@ export class MapRenderer {
 
   private renderStages(layout: ResolvedFestivalLayout): void {
     layout.stages.forEach((stage) => {
+      const texture = this.getTexture(stage.sprite);
+      if (texture) {
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5);
+        sprite.position.set(stage.screenPosition.x, stage.screenPosition.y);
+        sprite.width = stage.pixelWidth;
+        sprite.height = stage.pixelHeight;
+        this.layerSet.stageLayer.addChild(sprite);
+        return;
+      }
+
       const stageGraphic = new Graphics();
       stageGraphic.roundRect(
         stage.screenPosition.x - stage.pixelWidth / 2,
@@ -86,5 +107,20 @@ export class MapRenderer {
       marker.position.set(spawnPoint.screenPosition.x, spawnPoint.screenPosition.y);
       this.layerSet.debugLayer.addChild(marker);
     });
+  }
+
+  private getTexture(path: string): Texture | null {
+    const resolved = resolveAssetPath(path);
+    const texture = Assets.get(resolved) as Texture | undefined;
+    if (texture && texture !== Texture.EMPTY) {
+      return texture;
+    }
+
+    const direct = Assets.get(path) as Texture | undefined;
+    if (direct && direct !== Texture.EMPTY) {
+      return direct;
+    }
+
+    return null;
   }
 }

@@ -1,5 +1,6 @@
-import { Container, Graphics } from "pixi.js";
+import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { ResolvedDistraction } from "../maps/MapLoader";
+import { resolveAssetPath } from "../maps/MapLoader";
 
 function colorForType(type: ResolvedDistraction["type"]): number {
   switch (type) {
@@ -40,14 +41,40 @@ export class DistractionRenderer {
       this.layer.addChild(zone);
 
       const marker = new Graphics();
-      marker.circle(
-        distraction.screenPosition.x,
-        distraction.screenPosition.y,
-        8
-      );
-      marker.fill({ color, alpha: 0.9 });
-      marker.stroke({ color: 0x111111, width: 2, alpha: 0.8 });
-      this.layer.addChild(marker);
+      const texture = this.getTexture(distraction.sprite);
+      if (texture) {
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5);
+        sprite.position.set(
+          distraction.screenPosition.x,
+          distraction.screenPosition.y
+        );
+        sprite.width = Math.max(24, distraction.pixelRadius * 0.9);
+        sprite.height = Math.max(24, distraction.pixelRadius * 0.9);
+        this.layer.addChild(sprite);
+      } else {
+        marker.circle(
+          distraction.screenPosition.x,
+          distraction.screenPosition.y,
+          8
+        );
+        marker.fill({ color, alpha: 0.9 });
+        marker.stroke({ color: 0x111111, width: 2, alpha: 0.8 });
+        this.layer.addChild(marker);
+      }
     }
+  }
+
+  private getTexture(path: string): Texture | null {
+    const resolved = resolveAssetPath(path);
+    const texture = Assets.get(resolved) as Texture | undefined;
+    if (texture && texture !== Texture.EMPTY) {
+      return texture;
+    }
+    const direct = Assets.get(path) as Texture | undefined;
+    if (direct && direct !== Texture.EMPTY) {
+      return direct;
+    }
+    return null;
   }
 }

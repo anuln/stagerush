@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { FestivalMap } from "../config/FestivalConfig";
 import {
   driftAngleToUnitVector,
   normalizedToScreen,
   parseFestivalMapData,
+  resolveAssetPath,
   resolveFestivalLayout
 } from "./MapLoader";
 
@@ -35,13 +38,51 @@ const baseMap: FestivalMap = {
     { id: "north", position: { x: 0.5, y: 0 }, driftAngle: 180 },
     { id: "east", position: { x: 1, y: 0.4 }, driftAngle: 250 }
   ],
-  distractions: [],
-  levels: [],
+  distractions: [
+    {
+      id: "merch1",
+      type: "merch_stand",
+      position: { x: 0.45, y: 0.5 },
+      radius: 0.08,
+      delay: 2,
+      appearsAtLevel: 1,
+      sprite: "maps/govball/distraction_merch.png"
+    }
+  ],
+  levels: [
+    {
+      levelNumber: 1,
+      totalArtists: 12,
+      maxSimultaneous: 2,
+      timerRange: [12, 20],
+      tierWeights: { headliner: 0.2, midtier: 0.4, newcomer: 0.4 },
+      activeDistractions: ["merch1"],
+      spawnInterval: [1400, 2000]
+    }
+  ],
   assets: {
-    artists: [],
-    stageSprites: {},
-    distractionSprites: {},
-    audio: {}
+    artists: [
+      {
+        id: "new-a",
+        name: "New A",
+        tier: "newcomer",
+        sprites: {
+          walk: ["artists/new_a_walk1.png", "artists/new_a_walk2.png"],
+          idle: "artists/new_a_idle.png",
+          performing: "artists/new_a_perform.png"
+        }
+      }
+    ],
+    stageSprites: {
+      main: "maps/govball/stage_main.png",
+      side: "maps/govball/stage_side.png"
+    },
+    distractionSprites: {
+      merch_stand: "maps/govball/distraction_merch.png"
+    },
+    audio: {
+      spawn: "audio/spawn.mp3"
+    }
   }
 };
 
@@ -76,5 +117,28 @@ describe("MapLoader", () => {
     const vector = driftAngleToUnitVector(90);
     expect(vector.x).toBeCloseTo(0, 5);
     expect(vector.y).toBeCloseTo(1, 5);
+  });
+
+  it("normalizes asset paths to public-rooted URLs", () => {
+    expect(resolveAssetPath("assets/maps/govball/stage_main.png")).toBe(
+      "/assets/maps/govball/stage_main.png"
+    );
+    expect(resolveAssetPath("/assets/maps/govball/stage_main.png")).toBe(
+      "/assets/maps/govball/stage_main.png"
+    );
+  });
+
+  it("validates full Gov Ball config structure from disk", () => {
+    const file = resolve(process.cwd(), "public/assets/maps/govball/config.json");
+    const parsed = JSON.parse(readFileSync(file, "utf-8")) as unknown;
+    const map = parseFestivalMapData(parsed);
+
+    expect(map.id).toBe("govball2026");
+    expect(map.totalLevels).toBe(10);
+    expect(map.levels).toHaveLength(10);
+    expect(map.distractions.length).toBeGreaterThanOrEqual(6);
+    expect(map.assets.artists.length).toBeGreaterThanOrEqual(9);
+    expect(map.assets.audio["level_complete"]).toBeDefined();
+    expect(map.levels[9].activeDistractions.length).toBeGreaterThan(0);
   });
 });

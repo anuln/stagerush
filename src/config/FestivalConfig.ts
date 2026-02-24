@@ -1,5 +1,6 @@
 export type StageSize = "large" | "medium" | "small";
 export type ArtistTier = "headliner" | "midtier" | "newcomer";
+export type AssetPath = string;
 export type DistractionType =
   | "merch_stand"
   | "burger_shack"
@@ -16,7 +17,7 @@ export interface StageConfig {
   size: StageSize;
   position: NormalizedPoint;
   snapRadius: number;
-  sprite: string;
+  sprite: AssetPath;
   color: string;
 }
 
@@ -33,7 +34,7 @@ export interface DistractionConfig {
   radius: number;
   delay: number;
   appearsAtLevel: number;
-  sprite: string;
+  sprite: AssetPath;
 }
 
 export interface ArtistSpriteConfig {
@@ -41,9 +42,9 @@ export interface ArtistSpriteConfig {
   name: string;
   tier: ArtistTier;
   sprites: {
-    walk: string[];
-    idle: string;
-    performing: string;
+    walk: AssetPath[];
+    idle: AssetPath;
+    performing: AssetPath;
   };
 }
 
@@ -63,9 +64,9 @@ export interface LevelConfig {
 
 export interface FestivalAssets {
   artists: ArtistSpriteConfig[];
-  stageSprites: Record<string, string>;
-  distractionSprites: Record<string, string>;
-  audio: Record<string, string>;
+  stageSprites: Record<string, AssetPath>;
+  distractionSprites: Record<string, AssetPath>;
+  audio: Record<string, AssetPath>;
 }
 
 export interface FestivalMap {
@@ -73,7 +74,7 @@ export interface FestivalMap {
   name: string;
   description: string;
   totalLevels: number;
-  background: string;
+  background: AssetPath;
   stages: StageConfig[];
   spawnPoints: SpawnPointConfig[];
   distractions: DistractionConfig[];
