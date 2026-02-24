@@ -14,6 +14,13 @@ export const GAME_CONFIG = {
     } as Record<StageSize, number>,
     aspectRatio: 4 / 3
   },
+  path: {
+    grabRadiusPx: 40,
+    snapRadiusPx: 60,
+    smoothingSteps: 8,
+    resampleSpacingPx: 10,
+    invalidFadeDurationMs: 500
+  },
   debug: {
     showSpawnPoints: true
   }
