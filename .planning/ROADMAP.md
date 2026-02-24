@@ -10,7 +10,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 - [x] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting (completed 2026-02-24)
 - [x] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior (completed 2026-02-24)
 - [x] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix (completed 2026-02-24)
-- [ ] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure
+- [x] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure (completed 2026-02-24)
 - [ ] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression
 - [ ] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence
 - [ ] **Phase 8: Gov Ball Content and Production Assets** - Replace placeholders with festival assets, audio, animation, and bundle lifecycle
@@ -92,9 +92,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Implement CollisionSystem for artist proximity and chat state transitions
-- [ ] 05-02: Implement Distraction entities, activation rules, and delay behaviors
-- [ ] 05-03: Implement hazard readability pass and reroute/resume edge handling
+- [x] 05-01: Implement CollisionSystem for artist proximity and chat state transitions
+- [x] 05-02: Implement Distraction entities, activation rules, and delay behaviors
+- [x] 05-03: Implement hazard readability pass and reroute/resume edge handling
 
 ### Phase 6: Combo Layer and High-Score Feedback
 **Goal**: Add combo chaining that rewards intentional sequencing and raises score ceiling.
@@ -165,7 +165,7 @@ Plans:
 | 2. Artist Lifecycle and Spawn Pressure | 3/3 | Complete    | 2026-02-24 |
 | 3. Touch Path Drawing and Following | 4/4 | Complete | 2026-02-24 |
 | 4. Stage Delivery, HUD, and Base Scoring | 3/3 | Complete | 2026-02-24 |
-| 5. Collisions and Distractions | 0/3 | Not started | - |
+| 5. Collisions and Distractions | 3/3 | Complete | 2026-02-24 |
 | 6. Combo Layer and High-Score Feedback | 0/2 | Not started | - |
 | 7. Level Flow and Persistence | 0/4 | Not started | - |
 | 8. Gov Ball Content and Production Assets | 0/3 | Not started | - |
