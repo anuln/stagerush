@@ -30,6 +30,7 @@ async function bootstrap(): Promise<void> {
   const debugToggles = createDebugToggles();
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
   let gameRuntime: GameRuntime | null = null;
+  let activePointerId: number | null = null;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
 
@@ -60,11 +61,65 @@ async function bootstrap(): Promise<void> {
 
   window.addEventListener("resize", redraw);
 
+  function toCanvasPoint(event: PointerEvent): { x: number; y: number } {
+    const rect = app.canvas.getBoundingClientRect();
+    const scaleX = app.renderer.width / rect.width;
+    const scaleY = app.renderer.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
+  }
+
+  app.canvas.addEventListener("pointerdown", (event) => {
+    if (activePointerId !== null) {
+      return;
+    }
+    const point = toCanvasPoint(event);
+    const consumed =
+      gameRuntime?.onPointerDown(point.x, point.y, performance.now()) ?? false;
+    if (!consumed) {
+      return;
+    }
+    activePointerId = event.pointerId;
+    app.canvas.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  app.canvas.addEventListener("pointermove", (event) => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    const point = toCanvasPoint(event);
+    gameRuntime?.onPointerMove(point.x, point.y);
+    event.preventDefault();
+  });
+
+  const finishPointer = (event: PointerEvent, cancelled: boolean): void => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    const point = toCanvasPoint(event);
+    if (cancelled) {
+      gameRuntime?.onPointerCancel(performance.now());
+    } else {
+      gameRuntime?.onPointerUp(point.x, point.y, performance.now());
+    }
+    if (app.canvas.hasPointerCapture(event.pointerId)) {
+      app.canvas.releasePointerCapture(event.pointerId);
+    }
+    activePointerId = null;
+    event.preventDefault();
+  };
+
+  app.canvas.addEventListener("pointerup", (event) => finishPointer(event, false));
+  app.canvas.addEventListener("pointercancel", (event) => finishPointer(event, true));
+
   app.ticker.add((ticker) => {
     gameRuntime?.update(ticker.deltaMS / 1000, {
       width: app.renderer.width,
       height: app.renderer.height
-    });
+    }, performance.now());
   });
 }
 
