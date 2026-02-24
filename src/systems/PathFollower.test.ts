@@ -82,4 +82,31 @@ describe("PathFollower", () => {
     expect(artist.position.x).toBeCloseTo(0, 4);
     expect(artist.state).toBe("DRIFTING");
   });
+
+  it("queues reroute while blocked and applies on unblock", () => {
+    const artist = makeArtist();
+    const follower = new PathFollower(40);
+
+    follower.assignPath(artist, makePath("p1", [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 }
+    ]));
+    follower.update([artist], 1);
+    expect(artist.position.x).toBeCloseTo(40, 4);
+
+    follower.blockArtist(artist.id, "chat");
+    const queued = follower.assignPath(artist, makePath("p2", [
+      { x: 40, y: 0 },
+      { x: 40, y: 100 }
+    ]));
+    expect(queued).toBe("queued");
+
+    follower.update([artist], 1);
+    expect(artist.position.x).toBeCloseTo(40, 4);
+    expect(artist.position.y).toBeCloseTo(0, 4);
+
+    follower.unblockArtist(artist, "chat");
+    follower.update([artist], 0.5);
+    expect(artist.position.y).toBeGreaterThan(0);
+  });
 });

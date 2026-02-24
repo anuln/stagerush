@@ -13,6 +13,8 @@ interface PathAssignment {
   totalLength: number;
 }
 
+export type PathBlockReason = "chat" | "distraction";
+
 export interface PathFollowUpdate {
   artistId: string;
   pathId: string;
@@ -25,17 +27,72 @@ export interface PathFollowUpdate {
 export class PathFollower {
   readonly speedPxPerSecond: number;
   private readonly assignments = new Map<string, PathAssignment>();
+  private readonly pendingPaths = new Map<string, PlannedPath>();
+  private readonly blockReasons = new Map<string, Set<PathBlockReason>>();
 
   constructor(speedPxPerSecond: number) {
     this.speedPxPerSecond = speedPxPerSecond;
   }
 
-  assignPath(artist: Artist, plannedPath: PlannedPath): void {
+  assignPath(
+    artist: Artist,
+    plannedPath: PlannedPath
+  ): "assigned" | "queued" | "ignored" {
     if (
       !plannedPath.isValid ||
       !plannedPath.targetStageId ||
       plannedPath.smoothedPoints.length < 2
     ) {
+      return "ignored";
+    }
+
+    if (this.isArtistBlocked(artist.id)) {
+      this.pendingPaths.set(artist.id, plannedPath);
+      return "queued";
+    }
+
+    this.applyAssignment(artist, plannedPath);
+    return "assigned";
+  }
+
+  blockArtist(artistId: string, reason: PathBlockReason): void {
+    const reasons = this.blockReasons.get(artistId) ?? new Set<PathBlockReason>();
+    reasons.add(reason);
+    this.blockReasons.set(artistId, reasons);
+  }
+
+  unblockArtist(artist: Artist, reason: PathBlockReason): void {
+    const reasons = this.blockReasons.get(artist.id);
+    if (!reasons) {
+      return;
+    }
+    reasons.delete(reason);
+    if (reasons.size > 0) {
+      this.blockReasons.set(artist.id, reasons);
+      return;
+    }
+    this.blockReasons.delete(artist.id);
+
+    const pending = this.pendingPaths.get(artist.id);
+    if (!pending) {
+      return;
+    }
+    this.pendingPaths.delete(artist.id);
+    this.applyAssignment(artist, pending);
+  }
+
+  isArtistBlocked(artistId: string): boolean {
+    return (this.blockReasons.get(artistId)?.size ?? 0) > 0;
+  }
+
+  clearArtist(artistId: string): void {
+    this.assignments.delete(artistId);
+    this.pendingPaths.delete(artistId);
+    this.blockReasons.delete(artistId);
+  }
+
+  private applyAssignment(artist: Artist, plannedPath: PlannedPath): void {
+    if (!plannedPath.targetStageId) {
       return;
     }
 
@@ -66,7 +123,18 @@ export class PathFollower {
         continue;
       }
       if (!artist.isActive()) {
-        this.assignments.delete(artist.id);
+        this.clearArtist(artist.id);
+        continue;
+      }
+      if (this.isArtistBlocked(artist.id)) {
+        updates.push({
+          artistId: artist.id,
+          pathId: assignment.pathId,
+          consumedLength: Math.min(assignment.consumedLength, assignment.totalLength),
+          totalLength: assignment.totalLength,
+          completed: false,
+          targetStageId: assignment.targetStageId
+        });
         continue;
       }
 
@@ -119,6 +187,7 @@ export class PathFollower {
 
       if (completed) {
         this.assignments.delete(artist.id);
+        this.pendingPaths.delete(artist.id);
         artist.state = "ARRIVING";
       } else {
         artist.state = "FOLLOWING";
