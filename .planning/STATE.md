@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Path drawing must feel immediate and readable on mobile while creating meaningful routing decisions under pressure.
-**Current focus:** Release closure and milestone completion wrap-up
+**Current focus:** v1.0 archived; preparing next milestone definition
 
 ## Current Position
 
-Phase: 9 of 9 (Performance, QA, and Release Hardening)
-Plan: 3 of 3 in current phase
-Status: Complete
-Last activity: 2026-02-24 — Completed Phase 9 execution (3/3 plans), verification passed, release checklist and evidence generated
+Phase: Milestone Archive
+Plan: Complete
+Status: v1.0 shipped and archived
+Last activity: 2026-02-24 — Completed milestone archive (`v1.0`), generated audit + release evidence, and reset planning docs for next milestone
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% (v1.0)
 
 ## Performance Metrics
 
@@ -55,14 +55,14 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1. Start next milestone with `$gsd-new-milestone`.
 
 ### Blockers/Concerns
 
-- Residual: direct physical-device thermal testing is still recommended before public launch announcement.
+- Residual: direct physical-device thermal testing is still recommended before broad public launch announcement.
 
 ## Session Continuity
 
-Last session: 2026-02-24 13:10
-Stopped at: Completed Phase 9 execution and verification; project roadmap phases 1-9 complete
+Last session: 2026-02-24 13:20
+Stopped at: v1.0 milestone archived; waiting for next-milestone kickoff
 Resume file: None

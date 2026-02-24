@@ -2,62 +2,57 @@
 
 ## What This Is
 
-Stage Call is a mobile-first, browser-based path-drawing arcade game where the player acts as a festival stage manager. Artists continuously drift across the map, and the player must draw fast, readable routes to deliver them to stages before timers expire. The core experience is short, high-pressure sessions where one touch verb drives all strategy: timing, sequencing, and traffic control.
+Stage Call is a shipped mobile-first browser arcade game where players route drifting artists to stages using a single touch-drawing interaction under time pressure.
 
 ## Core Value
 
 Path drawing must feel immediate and readable on mobile while creating meaningful routing decisions under pressure.
 
-## Requirements
+## Current State (v1.0 Shipped)
 
-### Validated
+- Milestone: `v1.0 MVP` shipped on `2026-02-24`
+- Scope delivered: phases `01` through `09` (foundation -> content -> performance hardening)
+- Runtime quality controls: telemetry hooks, quality-tier scaler, profiling and soak command pipeline
+- Validation status: all v1 requirements closed in milestone audit (`.planning/milestones/v1.0-MILESTONE-AUDIT.md`)
+- Release evidence:
+  - `.planning/reports/perf-baseline-latest.json`
+  - `.planning/reports/soak-latest.json`
+  - `.planning/release/v1-readiness-checklist.md`
 
-(None yet — ship to validate)
+## Validated Requirements (v1.0)
 
-### Active
+All v1 requirements were completed and audited:
 
-- [ ] Build the full spawn-drift-draw-follow-arrive-score gameplay loop for a complete festival run
-- [ ] Preserve the one-verb touch interaction model with smooth pathing and high board readability
-- [ ] Deliver strategic depth via tier-to-stage scoring, combo chaining, collisions, and distractions
-- [ ] Ship progression, persistence, and leaderboard-ready session flow for replayability
-- [ ] Hit mobile performance and latency targets on mid-range 2022+ devices
-- [ ] Use a configuration-driven content pipeline for festival maps, entities, and assets
+- Core gameplay loop (`CORE-*`)
+- Scoring/combo systems (`SCORE-*`)
+- Hazards/routing pressure (`OBST-*`)
+- Progression/session flow (`PROG-*`)
+- UI/UX and readability (`UI-*`)
+- Data/content/bundling (`DATA-*`)
+- Performance and reliability gates (`PERF-*`, `TEST-*`)
 
-### Out of Scope
+See archive: `.planning/milestones/v1.0-REQUIREMENTS.md`.
 
-- Native app-store distribution (iOS/Android binaries) — V1 is web-first for rapid sharing and iteration
-- Real-time multiplayer/co-op gameplay — not required for the single-player routing loop
-- Server-backed live services (online leaderboard backend, accounts, cloud saves) — deferred until post-V1 validation
-- Admin map editor in this codebase — planned as a separate application after core gameplay stabilizes
+## Next Milestone Goals (Draft)
 
-## Context
+- Run real-device thermal/performance validation to complement current command-based evidence.
+- Capture browser-throttled network startup traces for non-estimated load timing evidence.
+- Define post-v1 feature scope (services/expansion) via `$gsd-new-milestone`.
 
-The project currently contains full design artifacts:
-- Product specification defining mechanics, scoring, progression, UX, and targets
-- Technical specification defining PixiJS v8 architecture, systems, schema, and performance constraints
-- Implementation plan with phase-by-phase sequencing and dependencies
-- Gov Ball 2026 asset list with placements, styles, and packaging guidance
+## Active Risks
 
-The intended stack is TypeScript + Vite + PixiJS v8 on mobile web, with local-storage persistence in V1 and festival-specific content bundles.
-
-## Constraints
-
-- **Tech Stack**: PixiJS v8 + TypeScript + Vite — required by technical specification and rendering model
-- **Platform**: Portrait mobile web only — interaction and layout are touch-first
-- **Performance**: 60 FPS target on iPhone SE 2022 / Galaxy A53 class devices — core interaction quality depends on it
-- **Interaction**: Single-touch path drawing as the only gameplay verb — preserves design clarity
-- **Asset Budget**: Target <5 MB per festival bundle (prefer ~2-3 MB) — supports fast first-play on 4G
-- **Data Model**: Normalized map coordinates and config-driven content — enables scaling and future festival reuse
+- Thermal behavior on long sessions still needs physical-device confirmation.
+- Startup timing currently uses artifact-based estimation; add real trace evidence in next milestone.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Mobile web delivery with PixiJS v8 | Fast iteration, shareable URL, strong 2D mobile rendering | — Pending |
-| One-verb interaction model (draw paths only) | Keeps controls approachable while allowing high skill ceiling | — Pending |
-| Config-driven festival schema with normalized coordinates | Supports responsive layouts and content authoring reuse | — Pending |
-| Placeholder-first gameplay implementation before final art pass | Prioritizes mechanics feel and balancing ahead of polish | — Pending |
-| Admin editor handled as separate project stream | Avoids blocking core game loop delivery | — Pending |
+| Mobile web delivery with PixiJS + TypeScript | Fast iteration and URL-native access | ✓ Good |
+| One-touch path drawing as the primary verb | Keeps control model simple but skillful | ✓ Good |
+| Config-driven festival schema and asset bundles | Supports scaling content packs without core rewrites | ✓ Good |
+| Verify-before-claim workflow with phase summaries/verification docs | Prevents unverifiable completion claims | ✓ Good |
+| Release gates as command pipeline (`build`, `test`, `perf`, `soak`) | Repeatable go/no-go evidence | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 after initialization*
+*Last updated: 2026-02-24 after v1.0 milestone completion*
