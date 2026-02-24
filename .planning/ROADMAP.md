@@ -6,7 +6,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 
 ## Phases
 
-- [ ] **Phase 1: Foundation and Map Schema** - Establish PixiJS app shell, responsive rendering, and normalized festival data model
+- [x] **Phase 1: Foundation and Map Schema** - Establish PixiJS app shell, responsive rendering, and normalized festival data model (completed 2026-02-24)
 - [ ] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting
 - [ ] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior
 - [ ] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix
@@ -29,9 +29,9 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Initialize Vite + TypeScript + PixiJS app shell and base render loop
-- [ ] 01-02: Implement FestivalMap types, loader, and normalization utilities
-- [ ] 01-03: Render map/stage/spawn debug layers with resize-safe layout
+- [x] 01-01: Initialize Vite + TypeScript + PixiJS app shell and base render loop
+- [x] 01-02: Implement FestivalMap types, loader, and normalization utilities
+- [x] 01-03: Render map/stage/spawn debug layers with resize-safe layout
 
 ### Phase 2: Artist Lifecycle and Spawn Pressure
 **Goal**: Introduce active artists with drift behavior, timers, misses, and spawn-system pacing.
@@ -161,7 +161,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Map Schema | 0/3 | Not started | - |
+| 1. Foundation and Map Schema | 3/3 | Complete    | 2026-02-24 |
 | 2. Artist Lifecycle and Spawn Pressure | 0/3 | Not started | - |
 | 3. Touch Path Drawing and Following | 0/4 | Not started | - |
 | 4. Stage Delivery, HUD, and Base Scoring | 0/3 | Not started | - |
