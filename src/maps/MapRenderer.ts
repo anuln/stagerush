@@ -28,6 +28,7 @@ export class MapRenderer {
   private clearLayers(): void {
     this.layerSet.mapLayer.removeChildren();
     this.layerSet.stageLayer.removeChildren();
+    this.layerSet.distractionLayer.removeChildren();
     this.layerSet.debugLayer.removeChildren();
   }
 

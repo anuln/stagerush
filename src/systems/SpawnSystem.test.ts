@@ -11,6 +11,7 @@ describe("SpawnSystem", () => {
         timerRangeSeconds: [10, 10],
         spawnIntervalMs: [1000, 1000],
         tierWeights: { headliner: 0, midtier: 0, newcomer: 1 },
+        activeDistractionIds: [],
         driftSpeedPxPerSecond: 50
       },
       [
@@ -44,6 +45,7 @@ describe("SpawnSystem", () => {
         timerRangeSeconds: [12, 12],
         spawnIntervalMs: [100, 100],
         tierWeights: { headliner: 1, midtier: 0, newcomer: 0 },
+        activeDistractionIds: [],
         driftSpeedPxPerSecond: 60
       },
       [

@@ -1,5 +1,6 @@
 import { getStagePixelSize, type ViewportSize } from "../config/GameConfig";
 import type {
+  DistractionConfig,
   FestivalMap,
   NormalizedPoint,
   SpawnPointConfig,
@@ -22,11 +23,17 @@ export interface ResolvedSpawnPoint extends SpawnPointConfig {
   directionVector: ScreenPoint;
 }
 
+export interface ResolvedDistraction extends DistractionConfig {
+  screenPosition: ScreenPoint;
+  pixelRadius: number;
+}
+
 export interface ResolvedFestivalLayout {
   map: FestivalMap;
   viewport: ViewportSize;
   stages: ResolvedStage[];
   spawnPoints: ResolvedSpawnPoint[];
+  distractions: ResolvedDistraction[];
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -68,12 +75,20 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
     throw new Error("spawnPoints must contain at least 2 spawn definitions");
   }
 
+  if (!Array.isArray(parsed.distractions)) {
+    throw new Error("distractions must be an array");
+  }
+
   parsed.stages.forEach((stage, index) => {
     assertNormalizedPoint(stage.position, `stages[${index}].position`);
   });
 
   parsed.spawnPoints.forEach((spawn, index) => {
     assertNormalizedPoint(spawn.position, `spawnPoints[${index}].position`);
+  });
+
+  parsed.distractions.forEach((distraction, index) => {
+    assertNormalizedPoint(distraction.position, `distractions[${index}].position`);
   });
 
   return parsed;
@@ -128,10 +143,21 @@ export function resolveFestivalLayout(
     directionVector: driftAngleToUnitVector(spawnPoint.driftAngle)
   }));
 
+  const base = Math.min(viewport.width, viewport.height);
+  const distractions = map.distractions.map((distraction) => ({
+    ...distraction,
+    screenPosition: normalizedToScreen(distraction.position, viewport),
+    pixelRadius:
+      distraction.radius <= 1
+        ? distraction.radius * base
+        : distraction.radius
+  }));
+
   return {
     map,
     viewport,
     stages,
-    spawnPoints
+    spawnPoints,
+    distractions
   };
 }

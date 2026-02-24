@@ -11,6 +11,7 @@ export interface RuntimeLevelConfig {
     newcomer: number;
   };
   spawnIntervalMs: [number, number];
+  activeDistractionIds: string[];
   driftSpeedPxPerSecond: number;
 }
 
@@ -25,6 +26,7 @@ export const DEFAULT_LEVEL_CONFIG: RuntimeLevelConfig = {
     newcomer: 0.4
   },
   spawnIntervalMs: [1400, 2200],
+  activeDistractionIds: [],
   driftSpeedPxPerSecond: 75
 };
 
@@ -44,6 +46,7 @@ export function toRuntimeLevelConfig(
     timerRangeSeconds: existing.timerRange,
     tierWeights: existing.tierWeights,
     spawnIntervalMs: existing.spawnInterval,
+    activeDistractionIds: existing.activeDistractions,
     driftSpeedPxPerSecond: DEFAULT_LEVEL_CONFIG.driftSpeedPxPerSecond
   };
 }
