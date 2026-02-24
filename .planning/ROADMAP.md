@@ -12,7 +12,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 - [x] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix (completed 2026-02-24)
 - [x] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure (completed 2026-02-24)
 - [x] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression (completed 2026-02-24)
-- [ ] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence
+- [x] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence (completed 2026-02-24)
 - [ ] **Phase 8: Gov Ball Content and Production Assets** - Replace placeholders with festival assets, audio, animation, and bundle lifecycle
 - [ ] **Phase 9: Performance, QA, and Release Hardening** - Validate 60 FPS targets, edge-case stability, and readiness for public release
 
@@ -122,10 +122,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 07-01: Implement GameManager and LevelManager state flow
-- [ ] 07-02: Implement level randomization and progression parameter wiring
-- [ ] 07-03: Build non-gameplay screens and result summaries
-- [ ] 07-04: Implement local persistence and leaderboard storage model
+- [x] 07-01: Implement GameManager and LevelManager state flow
+- [x] 07-02: Implement level randomization and progression parameter wiring
+- [x] 07-03: Build non-gameplay screens and result summaries
+- [x] 07-04: Implement local persistence and leaderboard storage model
 
 ### Phase 8: Gov Ball Content and Production Assets
 **Goal**: Integrate the full Gov Ball content pack with final visual/audio presentation and bundle controls.
@@ -167,6 +167,6 @@ Plans:
 | 4. Stage Delivery, HUD, and Base Scoring | 3/3 | Complete | 2026-02-24 |
 | 5. Collisions and Distractions | 3/3 | Complete | 2026-02-24 |
 | 6. Combo Layer and High-Score Feedback | 2/2 | Complete | 2026-02-24 |
-| 7. Level Flow and Persistence | 0/4 | Not started | - |
+| 7. Level Flow and Persistence | 4/4 | Complete | 2026-02-24 |
 | 8. Gov Ball Content and Production Assets | 0/3 | Not started | - |
 | 9. Performance, QA, and Release Hardening | 0/3 | Not started | - |
