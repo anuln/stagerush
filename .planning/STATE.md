@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Path drawing must feel immediate and readable on mobile while creating meaningful routing decisions under pressure.
-**Current focus:** Phase 4: Stage Delivery, HUD, and Base Scoring
+**Current focus:** Phase 5: Collisions and Distractions
 
 ## Current Position
 
-Phase: 4 of 9 (Stage Delivery, HUD, and Base Scoring)
+Phase: 5 of 9 (Collisions and Distractions)
 Plan: 0 of 3 in current phase
 Status: Ready to plan
-Last activity: 2026-02-24 — Completed Phase 3 execution (4/4 plans), verification passed, roadmap/requirements advanced
+Last activity: 2026-02-24 — Completed Phase 4 execution (3/3 plans), verification passed, roadmap/requirements advanced
 
-Progress: [███░░░░░░░] 32%
+Progress: [████░░░░░░] 44%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 22 min
-- Total execution time: 3.6 hours
+- Total plans completed: 13
+- Average duration: 21 min
+- Total execution time: 4.6 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [███░░░░░░░] 32%
 | 1. Foundation and Map Schema | 3 | 66 min | 22 min |
 | 2. Artist Lifecycle and Spawn Pressure | 3 | 72 min | 24 min |
 | 3. Touch Path Drawing and Following | 4 | 77 min | 19 min |
+| 4. Stage Delivery, HUD, and Base Scoring | 3 | 61 min | 20 min |
 
 **Recent Trend:**
-- Last 5 plans: 27m, 20m, 18m, 17m, 22m
-- Trend: Improving throughput after phase-3 system modularization
+- Last 5 plans: 17m, 22m, 21m, 16m, 24m
+- Trend: Stable with slightly higher runtime-integration effort on UI wiring
 
 ## Accumulated Context
 
@@ -42,8 +43,8 @@ Progress: [███░░░░░░░] 32%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Phase 3: Keep path smoothing/snap logic in `PathPlanner` to avoid duplicating route rules in runtime and systems
-- Phase 3: Re-anchor path replacement at current artist position to prevent visual jumps during reroute
+- Phase 4: Resolve deliveries via StageSystem events before applying score so scoring stays stage-lifecycle accurate.
+- Phase 4: Split UI rendering into ETA/HUD/feedback sublayers to avoid renderer layer clobbering.
 
 ### Pending Todos
 
@@ -51,10 +52,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Stage occupancy/queue behavior in Phase 4 must preserve trajectory/state contracts introduced by follower + path lifecycle systems.
+- Collision/chat delays in Phase 5 must preserve queued stage and path-following continuity without freezing timer pressure.
 
 ## Session Continuity
 
-Last session: 2026-02-24 11:10
-Stopped at: Phase 3 completed and verified; ready to plan/execute Phase 4
+Last session: 2026-02-24 11:25
+Stopped at: Phase 4 completed and verified; ready to plan/execute Phase 5
 Resume file: None

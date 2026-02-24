@@ -9,7 +9,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 - [x] **Phase 1: Foundation and Map Schema** - Establish PixiJS app shell, responsive rendering, and normalized festival data model (completed 2026-02-24)
 - [x] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting (completed 2026-02-24)
 - [x] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior (completed 2026-02-24)
-- [ ] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix
+- [x] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix (completed 2026-02-24)
 - [ ] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure
 - [ ] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression
 - [ ] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence
@@ -76,9 +76,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Implement Stage entity occupancy/queue flow and arrival transitions
-- [ ] 04-02: Implement ScoreManager with matrix-based scoring and score events
-- [ ] 04-03: Implement HUD and delivery/miss feedback hooks
+- [x] 04-01: Implement Stage entity occupancy/queue flow and arrival transitions
+- [x] 04-02: Implement ScoreManager with matrix-based scoring and score events
+- [x] 04-03: Implement HUD and delivery/miss feedback hooks
 
 ### Phase 5: Collisions and Distractions
 **Goal**: Add emergent and static hazards that consume time and force better routing choices.
@@ -164,7 +164,7 @@ Plans:
 | 1. Foundation and Map Schema | 3/3 | Complete    | 2026-02-24 |
 | 2. Artist Lifecycle and Spawn Pressure | 3/3 | Complete    | 2026-02-24 |
 | 3. Touch Path Drawing and Following | 4/4 | Complete | 2026-02-24 |
-| 4. Stage Delivery, HUD, and Base Scoring | 0/3 | Not started | - |
+| 4. Stage Delivery, HUD, and Base Scoring | 3/3 | Complete | 2026-02-24 |
 | 5. Collisions and Distractions | 0/3 | Not started | - |
 | 6. Combo Layer and High-Score Feedback | 0/2 | Not started | - |
 | 7. Level Flow and Persistence | 0/4 | Not started | - |
