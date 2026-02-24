@@ -2,6 +2,7 @@ import type { ResolvedFestivalLayout } from "../maps/MapLoader";
 import type { RuntimeStatus, RuntimeViewport } from "./GameRuntime";
 import { LevelManager, type LevelManagerSnapshot } from "./LevelManager";
 import type { ScreenActionId } from "../ui/ScreenState";
+import type { PersistenceSnapshot, RunPersistence } from "../persistence/RunPersistence";
 
 export type ScreenState =
   | "MENU"
@@ -27,32 +28,50 @@ interface GameManagerOptions {
     levelNumber: number,
     attemptNumber: number
   ) => RuntimeController;
+  persistence?: RunPersistence;
+}
+
+export interface ProfileSnapshot {
+  highestUnlockedLevel: number;
+  bestFestivalScore: number;
+  bestLevelScore: number | null;
 }
 
 export interface GameManagerSnapshot {
   screen: ScreenState;
   level: LevelManagerSnapshot;
+  profile: ProfileSnapshot;
 }
 
 export class GameManager {
   private layout: ResolvedFestivalLayout;
   private readonly createRuntime: GameManagerOptions["createRuntime"];
   private readonly levelManager: LevelManager;
+  private readonly persistence: RunPersistence | null;
   private runtime: RuntimeController | null = null;
   private screen: ScreenState = "MENU";
 
   constructor(options: GameManagerOptions) {
     this.layout = options.layout;
     this.createRuntime = options.createRuntime;
+    this.persistence = options.persistence ?? null;
     this.levelManager = new LevelManager({
       totalLevels: Math.max(1, options.layout.map.totalLevels || 1)
     });
   }
 
   get snapshot(): GameManagerSnapshot {
+    const level = this.levelManager.snapshot;
+    const persisted = this.getPersistenceSnapshot();
+    const levelKey = String(level.currentLevel);
     return {
       screen: this.screen,
-      level: this.levelManager.snapshot
+      level,
+      profile: {
+        highestUnlockedLevel: persisted.highestUnlockedLevel,
+        bestFestivalScore: persisted.bestFestivalScore,
+        bestLevelScore: persisted.bestLevelScores[levelKey] ?? null
+      }
     };
   }
 
@@ -155,6 +174,13 @@ export class GameManager {
 
     if (status.outcome === "COMPLETED") {
       this.levelManager.markLevelCompleted(status.levelScore);
+      this.persistence?.recordLevelCompletion({
+        levelNumber: this.levelManager.snapshot.currentLevel,
+        totalLevels: this.levelManager.snapshot.totalLevels,
+        levelScore: status.levelScore,
+        cumulativeScore: this.levelManager.snapshot.cumulativeScore,
+        festivalCompleted: this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
+      });
       this.screen =
         this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
           ? "FESTIVAL_COMPLETE"
@@ -176,5 +202,20 @@ export class GameManager {
     }
     this.runtime.dispose();
     this.runtime = null;
+  }
+
+  private getPersistenceSnapshot(): PersistenceSnapshot {
+    if (!this.persistence) {
+      return {
+        highestUnlockedLevel: 1,
+        bestFestivalScore: 0,
+        bestLevelScores: {},
+        settings: {
+          musicVolume: 0.8,
+          sfxVolume: 0.9
+        }
+      };
+    }
+    return this.persistence.getSnapshot();
   }
 }

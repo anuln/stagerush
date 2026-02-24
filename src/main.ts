@@ -6,6 +6,7 @@ import { GameRuntime } from "./game/GameRuntime";
 import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
+import { RunPersistence } from "./persistence/RunPersistence";
 import { ScreenOverlayController } from "./ui/ScreenOverlayController";
 import { buildScreenViewModel } from "./ui/ScreenViewModels";
 import "./styles.css";
@@ -33,6 +34,7 @@ async function bootstrap(): Promise<void> {
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
+  const runPersistence = new RunPersistence();
   const screenOverlay = new ScreenOverlayController();
   let gameManager: GameManager | null = null;
   let activePointerId: number | null = null;
@@ -61,6 +63,7 @@ async function bootstrap(): Promise<void> {
     mapRenderer.render(currentLayout);
     gameManager = new GameManager({
       layout: currentLayout,
+      persistence: runPersistence,
       createRuntime: (levelNumber, attemptNumber) =>
         new GameRuntime(
           currentLayout!,

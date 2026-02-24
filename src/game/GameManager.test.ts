@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ResolvedFestivalLayout } from "../maps/MapLoader";
 import { GameManager, type RuntimeController } from "./GameManager";
 import type { RuntimeStatus } from "./GameRuntime";
+import { RunPersistence, type StorageLike } from "../persistence/RunPersistence";
 
 class FakeRuntime implements RuntimeController {
   status: RuntimeStatus;
@@ -30,6 +31,22 @@ class FakeRuntime implements RuntimeController {
   }
   dispose(): void {
     this.disposed = true;
+  }
+}
+
+class MemoryStorage implements StorageLike {
+  private map = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.map.delete(key);
   }
 }
 
@@ -88,8 +105,10 @@ describe("GameManager", () => {
 
   it("transitions level complete and festival complete with next-level action", () => {
     const runtimes: FakeRuntime[] = [];
+    const persistence = new RunPersistence(new MemoryStorage());
     const manager = new GameManager({
       layout: makeLayout(2),
+      persistence,
       createRuntime: (levelNumber) => {
         const runtime = new FakeRuntime(levelNumber);
         runtimes.push(runtime);
@@ -113,6 +132,8 @@ describe("GameManager", () => {
     manager.update(0.016, { width: 1000, height: 2000 }, 200);
     expect(manager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
     expect(manager.snapshot.level.cumulativeScore).toBe(820);
+    expect(manager.snapshot.profile.bestFestivalScore).toBe(820);
+    expect(manager.snapshot.profile.bestLevelScore).toBe(500);
   });
 
   it("uses screen actions for menu start and menu return", () => {

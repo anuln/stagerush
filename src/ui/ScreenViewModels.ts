@@ -19,7 +19,8 @@ export function buildScreenViewModel(
       subtitle: "Route artists fast, keep combos alive, and complete the full festival run.",
       summaryRows: [
         { label: "Festival levels", value: `${level.totalLevels}` },
-        { label: "Target", value: "Survive with 3 lives per level" }
+        { label: "Unlocked", value: `Up to Level ${snapshot.profile.highestUnlockedLevel}` },
+        { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
         { id: "START_FESTIVAL", label: "Start Festival", emphasis: "primary" }
@@ -35,7 +36,11 @@ export function buildScreenViewModel(
       summaryRows: [
         { label: "Attempt", value: `${level.attemptNumber}` },
         { label: "Attempt score", value: formatScore(level.lastLevelScore) },
-        { label: "Run total", value: formatScore(level.cumulativeScore) }
+        { label: "Run total", value: formatScore(level.cumulativeScore) },
+        {
+          label: "Level best",
+          value: formatScore(snapshot.profile.bestLevelScore)
+        }
       ],
       actions: [
         { id: "RETRY_LEVEL", label: "Retry Level", emphasis: "primary" },
@@ -51,7 +56,11 @@ export function buildScreenViewModel(
       subtitle: "Clean run. Continue to the next level or return to menu.",
       summaryRows: [
         { label: "Level score", value: formatScore(level.lastLevelScore) },
-        { label: "Run total", value: formatScore(level.cumulativeScore) }
+        { label: "Run total", value: formatScore(level.cumulativeScore) },
+        {
+          label: "Level best",
+          value: formatScore(snapshot.profile.bestLevelScore)
+        }
       ],
       actions: [
         { id: "NEXT_LEVEL", label: "Next Level", emphasis: "primary" },
@@ -67,7 +76,8 @@ export function buildScreenViewModel(
       subtitle: "All levels cleared. Start a fresh run to chase a higher score.",
       summaryRows: [
         { label: "Levels cleared", value: `${level.totalLevels}` },
-        { label: "Final run score", value: formatScore(level.cumulativeScore) }
+        { label: "Final run score", value: formatScore(level.cumulativeScore) },
+        { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
         { id: "START_FESTIVAL", label: "Play Again", emphasis: "primary" },

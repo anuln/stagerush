@@ -13,6 +13,11 @@ describe("buildScreenViewModel", () => {
         attemptKey: "1:0",
         cumulativeScore: 0,
         lastLevelScore: null
+      },
+      profile: {
+        highestUnlockedLevel: 3,
+        bestFestivalScore: 2200,
+        bestLevelScore: null
       }
     });
 
@@ -31,6 +36,11 @@ describe("buildScreenViewModel", () => {
         attemptKey: "3:2",
         cumulativeScore: 950,
         lastLevelScore: 180
+      },
+      profile: {
+        highestUnlockedLevel: 4,
+        bestFestivalScore: 2600,
+        bestLevelScore: 220
       }
     });
 
@@ -55,6 +65,11 @@ describe("buildScreenViewModel", () => {
         attemptKey: "2:1",
         cumulativeScore: 1220,
         lastLevelScore: 520
+      },
+      profile: {
+        highestUnlockedLevel: 4,
+        bestFestivalScore: 3100,
+        bestLevelScore: 600
       }
     });
     const festivalComplete = buildScreenViewModel({
@@ -67,6 +82,11 @@ describe("buildScreenViewModel", () => {
         attemptKey: "4:1",
         cumulativeScore: 3140,
         lastLevelScore: 880
+      },
+      profile: {
+        highestUnlockedLevel: 4,
+        bestFestivalScore: 3200,
+        bestLevelScore: 920
       }
     });
 
