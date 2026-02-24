@@ -107,8 +107,8 @@
 | OBST-03 | Phase 5 | Complete |
 | OBST-04 | Phase 5 | Complete |
 | UI-03 | Phase 5 | Complete |
-| SCORE-03 | Phase 6 | Pending |
-| SCORE-04 | Phase 6 | Pending |
+| SCORE-03 | Phase 6 | Complete |
+| SCORE-04 | Phase 6 | Complete |
 | PROG-01 | Phase 7 | Pending |
 | PROG-02 | Phase 7 | Pending |
 | PROG-03 | Phase 7 | Pending |
@@ -132,4 +132,4 @@
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after Phase 5 completion*
+*Last updated: 2026-02-24 after Phase 6 completion*
