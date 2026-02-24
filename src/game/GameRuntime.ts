@@ -27,6 +27,7 @@ import { DistractionSystem } from "../systems/DistractionSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { StageSystem } from "../systems/StageSystem";
 import { TimerSystem } from "../systems/TimerSystem";
+import { ComboTracker } from "./ComboTracker";
 import { PathPlanner, type PlannedPath } from "./PathPlanner";
 import { LivesState } from "./LivesState";
 import { ScoreManager, type ScoreEvent } from "./ScoreManager";
@@ -46,6 +47,7 @@ export class GameRuntime {
   private readonly collisionSystem: CollisionSystem;
   private readonly distractionSystem: DistractionSystem;
   private readonly timerSystem = new TimerSystem();
+  private readonly comboTracker = new ComboTracker();
   private readonly scoreManager = new ScoreManager();
   private readonly livesState = new LivesState(3);
   private readonly artistRenderer: ArtistRenderer;
@@ -222,7 +224,11 @@ export class GameRuntime {
 
     const stageUpdate = this.stageSystem.update(this.nowMs);
     for (const delivery of stageUpdate.completedDeliveries) {
-      scoreEvents.push(this.scoreManager.registerDelivery(delivery));
+      const combo = this.comboTracker.registerDelivery(
+        delivery.stageId,
+        delivery.completedAtMs
+      );
+      scoreEvents.push(this.scoreManager.registerDelivery(delivery, combo));
     }
 
     if (this.livesState.isLevelFailed && !this.levelFailureReported) {

@@ -32,6 +32,9 @@ describe("ScoreManager", () => {
         completedAtMs: 100
       });
       expect(event.awardedPoints).toBe(expected);
+      expect(event.basePoints).toBe(expected);
+      expect(event.comboMultiplier).toBe(1);
+      expect(event.comboChainLength).toBe(1);
     }
   });
 
@@ -61,5 +64,33 @@ describe("ScoreManager", () => {
     expect(second.totalScore).toBe(600);
     expect(manager.totalScore).toBe(600);
     expect(manager.latestEvent).toEqual(second);
+  });
+
+  it("applies combo multiplier on top of base tier-stage points", () => {
+    const manager = new ScoreManager();
+
+    const comboEvent = manager.registerDelivery(
+      {
+        artistId: "a1",
+        artistTier: "headliner",
+        stageId: "main-stage",
+        stageSize: "large",
+        stageColor: "#FF6B35",
+        stagePosition: { x: 300, y: 120 },
+        completedAtMs: 100
+      },
+      {
+        stageId: "main-stage",
+        chainLength: 2,
+        multiplier: 1.5,
+        expiresAtMs: 5100
+      }
+    );
+
+    expect(comboEvent.basePoints).toBe(300);
+    expect(comboEvent.comboMultiplier).toBe(1.5);
+    expect(comboEvent.comboChainLength).toBe(2);
+    expect(comboEvent.awardedPoints).toBe(450);
+    expect(comboEvent.totalScore).toBe(450);
   });
 });
