@@ -7,7 +7,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 ## Phases
 
 - [x] **Phase 1: Foundation and Map Schema** - Establish PixiJS app shell, responsive rendering, and normalized festival data model (completed 2026-02-24)
-- [ ] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting
+- [x] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting (completed 2026-02-24)
 - [ ] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior
 - [ ] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix
 - [ ] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure
@@ -44,9 +44,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Implement Artist entity/state model and delta-time updates
-- [ ] 02-02: Build SpawnSystem and TimerSystem with level-config inputs
-- [ ] 02-03: Add placeholder artist visuals and miss event plumbing
+- [x] 02-01: Implement Artist entity/state model and delta-time updates
+- [x] 02-02: Build SpawnSystem and TimerSystem with level-config inputs
+- [x] 02-03: Add placeholder artist visuals and miss event plumbing
 
 ### Phase 3: Touch Path Drawing and Following
 **Goal**: Deliver the core touch interaction: draw, smooth, snap, and follow.
@@ -162,7 +162,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Map Schema | 3/3 | Complete    | 2026-02-24 |
-| 2. Artist Lifecycle and Spawn Pressure | 0/3 | Not started | - |
+| 2. Artist Lifecycle and Spawn Pressure | 3/3 | Complete    | 2026-02-24 |
 | 3. Touch Path Drawing and Following | 0/4 | Not started | - |
 | 4. Stage Delivery, HUD, and Base Scoring | 0/3 | Not started | - |
 | 5. Collisions and Distractions | 0/3 | Not started | - |

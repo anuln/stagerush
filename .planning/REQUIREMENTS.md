@@ -91,9 +91,9 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DATA-01 | Phase 1 | Complete |
-| CORE-01 | Phase 2 | Pending |
-| CORE-05 | Phase 2 | Pending |
-| CORE-06 | Phase 2 | Pending |
+| CORE-01 | Phase 2 | Complete |
+| CORE-05 | Phase 2 | Complete |
+| CORE-06 | Phase 2 | Complete |
 | CORE-02 | Phase 3 | Pending |
 | CORE-03 | Phase 3 | Pending |
 | CORE-04 | Phase 3 | Pending |
