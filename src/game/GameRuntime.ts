@@ -3,6 +3,7 @@ import { GAME_CONFIG } from "../config/GameConfig";
 import { toRuntimeLevelConfig } from "../config/LevelConfig";
 import { Artist } from "../entities/Artist";
 import type { ArtistMissReason } from "../entities/ArtistState";
+import type { HazardBlockedArtistSnapshot } from "../entities/HazardState";
 import type { InProgressPathPreview, PathState } from "../entities/PathState";
 import { PathDrawingInput } from "../input/PathDrawingInput";
 import type { ResolvedFestivalLayout } from "../maps/MapLoader";
@@ -12,10 +13,17 @@ import {
   DeliveryFeedbackRenderer,
   type MissEvent
 } from "../rendering/DeliveryFeedbackRenderer";
+import { DistractionRenderer } from "../rendering/DistractionRenderer";
 import { EtaRenderer, type EtaOverlay } from "../rendering/EtaRenderer";
+import {
+  HazardOverlayRenderer,
+  type HazardOverlayFrame
+} from "../rendering/HazardOverlayRenderer";
 import { HudRenderer } from "../rendering/HudRenderer";
 import { PathRenderer, advancePathLifecycles } from "../rendering/PathRenderer";
 import { PathFollower, type PathFollowUpdate } from "../systems/PathFollower";
+import { CollisionSystem } from "../systems/CollisionSystem";
+import { DistractionSystem } from "../systems/DistractionSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { StageSystem } from "../systems/StageSystem";
 import { TimerSystem } from "../systems/TimerSystem";
@@ -35,12 +43,16 @@ export class GameRuntime {
   private readonly levelNumber: number;
   private readonly spawnSystem: SpawnSystem;
   private readonly stageSystem: StageSystem;
+  private readonly collisionSystem: CollisionSystem;
+  private readonly distractionSystem: DistractionSystem;
   private readonly timerSystem = new TimerSystem();
   private readonly scoreManager = new ScoreManager();
   private readonly livesState = new LivesState(3);
   private readonly artistRenderer: ArtistRenderer;
   private readonly pathRenderer: PathRenderer;
+  private readonly distractionRenderer: DistractionRenderer;
   private readonly etaRenderer: EtaRenderer;
+  private readonly hazardOverlayRenderer: HazardOverlayRenderer;
   private readonly hudRenderer: HudRenderer;
   private readonly deliveryFeedbackRenderer: DeliveryFeedbackRenderer;
   private readonly pathFollower: PathFollower;
@@ -58,18 +70,30 @@ export class GameRuntime {
       layout.stages,
       GAME_CONFIG.stage.performanceDurationMs
     );
+    this.collisionSystem = new CollisionSystem(
+      GAME_CONFIG.hazards.collisionRadiusPx,
+      GAME_CONFIG.hazards.chatDurationMs
+    );
+    this.distractionSystem = new DistractionSystem(
+      layout.distractions,
+      runtimeLevel.activeDistractionIds
+    );
     this.artistRenderer = new ArtistRenderer(layerSet.artistLayer);
     this.pathRenderer = new PathRenderer(layerSet.pathLayer);
+    this.distractionRenderer = new DistractionRenderer(layerSet.distractionLayer);
 
     const feedbackLayer = new Container();
     feedbackLayer.label = "deliveryFeedbackLayer";
+    const hazardLayer = new Container();
+    hazardLayer.label = "hazardOverlayLayer";
     const hudLayer = new Container();
     hudLayer.label = "hudLayer";
     const etaLayer = new Container();
     etaLayer.label = "etaLayer";
-    layerSet.uiLayer.addChild(feedbackLayer, hudLayer, etaLayer);
+    layerSet.uiLayer.addChild(feedbackLayer, hazardLayer, hudLayer, etaLayer);
 
     this.etaRenderer = new EtaRenderer(etaLayer);
+    this.hazardOverlayRenderer = new HazardOverlayRenderer(hazardLayer);
     this.hudRenderer = new HudRenderer(hudLayer);
     this.deliveryFeedbackRenderer = new DeliveryFeedbackRenderer(feedbackLayer);
     this.pathFollower = new PathFollower(runtimeLevel.driftSpeedPxPerSecond);
@@ -89,6 +113,7 @@ export class GameRuntime {
     this.layout = nextLayout;
     this.spawnSystem.setSpawnPoints(nextLayout.spawnPoints);
     this.stageSystem.setStages(nextLayout.stages);
+    this.distractionSystem.setDistractions(nextLayout.distractions);
     this.pathPlanner.setStages(nextLayout.stages);
   }
 
@@ -137,11 +162,40 @@ export class GameRuntime {
       this.stageSystem.handleArrival(artist, arrival.stageId, this.nowMs);
     }
 
-    for (const artist of this.artists) {
-      if (!artist.isActive()) {
+    const collisionUpdate = this.collisionSystem.update(this.artists, this.nowMs);
+    for (const started of collisionUpdate.started) {
+      this.pathFollower.blockArtist(started.artistAId, "chat");
+      this.pathFollower.blockArtist(started.artistBId, "chat");
+    }
+    for (const resolved of collisionUpdate.resolved) {
+      const artistA = this.artists.find((entry) => entry.id === resolved.artistAId);
+      const artistB = this.artists.find((entry) => entry.id === resolved.artistBId);
+      if (artistA) {
+        this.pathFollower.unblockArtist(artistA, "chat");
+      }
+      if (artistB) {
+        this.pathFollower.unblockArtist(artistB, "chat");
+      }
+    }
+
+    const distractionUpdate = this.distractionSystem.update(this.artists, this.nowMs);
+    for (const started of distractionUpdate.started) {
+      this.pathFollower.blockArtist(started.artistId, "distraction");
+    }
+    for (const resolved of distractionUpdate.resolved) {
+      const artist = this.artists.find((entry) => entry.id === resolved.artistId);
+      if (!artist) {
         continue;
       }
-      if (artist.state !== "FOLLOWING" && artist.state !== "ARRIVING") {
+      this.pathFollower.unblockArtist(artist, "distraction");
+    }
+
+    for (const artist of this.artists) {
+      if (!artist.isActive()) {
+        this.pathFollower.clearArtist(artist.id);
+        continue;
+      }
+      if (artist.state === "DRIFTING") {
         artist.updateDrift(deltaSeconds);
       }
 
@@ -184,7 +238,12 @@ export class GameRuntime {
     this.cleanupPathStatesForResolvedArtists();
 
     const preview = this.buildPreview();
+    const activeDistractions = this.distractionSystem.getActiveDistractions();
+    this.distractionRenderer.render(activeDistractions);
     this.pathRenderer.render(this.pathStates, preview.path);
+    this.hazardOverlayRenderer.render(
+      this.buildHazardOverlayFrame(collisionUpdate.activeChats, activeDistractions)
+    );
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
       scoreEvents,
@@ -333,6 +392,39 @@ export class GameRuntime {
       }
       return activeArtistIds.has(path.artistId);
     });
+  }
+
+  private buildHazardOverlayFrame(
+    chatPairs: HazardOverlayFrame["chatPairs"],
+    activeDistractions: ReturnType<DistractionSystem["getActiveDistractions"]>
+  ): HazardOverlayFrame {
+    const blockedArtists: HazardBlockedArtistSnapshot[] = this.artists
+      .filter((artist) => artist.state === "CHATTING" || artist.state === "DISTRACTED")
+      .map((artist) => {
+        const reason: HazardBlockedArtistSnapshot["reason"] =
+          artist.state === "CHATTING" ? "CHATTING" : "DISTRACTED";
+        return {
+          artistId: artist.id,
+          position: { ...artist.position },
+          reason
+        };
+      });
+
+    return {
+      chatPairs: chatPairs.map((pair) => ({
+        artistA: pair.artistA,
+        artistB: pair.artistB
+      })),
+      distractionZones: activeDistractions.map((distraction) => ({
+        center: { ...distraction.screenPosition },
+        radius: distraction.pixelRadius,
+        active: true
+      })),
+      blockedArtists: blockedArtists.map((entry) => ({
+        position: entry.position,
+        reason: entry.reason
+      }))
+    };
   }
 }
 

@@ -22,6 +22,10 @@ export const GAME_CONFIG = {
     resampleSpacingPx: 10,
     invalidFadeDurationMs: 500
   },
+  hazards: {
+    collisionRadiusPx: 40,
+    chatDurationMs: 3000
+  },
   debug: {
     showSpawnPoints: true
   }
