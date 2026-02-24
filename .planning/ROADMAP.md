@@ -13,7 +13,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 - [x] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure (completed 2026-02-24)
 - [x] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression (completed 2026-02-24)
 - [x] **Phase 7: Level Flow and Persistence** - Build full run loop, level progression, fail/complete states, menu flows, and local persistence (completed 2026-02-24)
-- [ ] **Phase 8: Gov Ball Content and Production Assets** - Replace placeholders with festival assets, audio, animation, and bundle lifecycle
+- [x] **Phase 8: Gov Ball Content and Production Assets** - Replace placeholders with festival assets, audio, animation, and bundle lifecycle (completed 2026-02-24)
 - [ ] **Phase 9: Performance, QA, and Release Hardening** - Validate 60 FPS targets, edge-case stability, and readiness for public release
 
 ## Phase Details
@@ -138,9 +138,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: Integrate Gov Ball map/stage/artist/distraction assets
-- [ ] 08-02: Integrate animation states, particles, and audio event wiring
-- [ ] 08-03: Implement and verify bundle load/unload lifecycle behavior
+- [x] 08-01: Integrate Gov Ball map/stage/artist/distraction assets
+- [x] 08-02: Integrate animation states, particles, and audio event wiring
+- [x] 08-03: Implement and verify bundle load/unload lifecycle behavior
 
 ### Phase 9: Performance, QA, and Release Hardening
 **Goal**: Prove target performance and robustness through profiling, stress checks, and regression coverage.
@@ -168,5 +168,5 @@ Plans:
 | 5. Collisions and Distractions | 3/3 | Complete | 2026-02-24 |
 | 6. Combo Layer and High-Score Feedback | 2/2 | Complete | 2026-02-24 |
 | 7. Level Flow and Persistence | 4/4 | Complete | 2026-02-24 |
-| 8. Gov Ball Content and Production Assets | 0/3 | Not started | - |
+| 8. Gov Ball Content and Production Assets | 3/3 | Complete | 2026-02-24 |
 | 9. Performance, QA, and Release Hardening | 0/3 | Not started | - |
