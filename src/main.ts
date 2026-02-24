@@ -1,7 +1,7 @@
 import { Application } from "pixi.js";
-import { toRuntimeLevelConfig } from "./config/LevelConfig";
 import { createDebugToggles } from "./debug/DebugToggles";
 import { GameManager } from "./game/GameManager";
+import { resolveLevelRuntimeConfig } from "./game/LevelProgression";
 import { GameRuntime } from "./game/GameRuntime";
 import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
@@ -58,11 +58,15 @@ async function bootstrap(): Promise<void> {
     mapRenderer.render(currentLayout);
     gameManager = new GameManager({
       layout: currentLayout,
-      createRuntime: (levelNumber) =>
+      createRuntime: (levelNumber, attemptNumber) =>
         new GameRuntime(
           currentLayout!,
           layerSet,
-          toRuntimeLevelConfig(currentLayout!.map, levelNumber)
+          resolveLevelRuntimeConfig(
+            currentLayout!.map,
+            levelNumber,
+            attemptNumber
+          )
         )
     });
     gameManager.startFestival();

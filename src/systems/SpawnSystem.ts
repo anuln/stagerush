@@ -12,6 +12,18 @@ function getRandomInRange(
   return min + (max - min) * rng();
 }
 
+function rotateVector(
+  vector: { x: number; y: number },
+  radians: number
+): { x: number; y: number } {
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return {
+    x: vector.x * cos - vector.y * sin,
+    y: vector.x * sin + vector.y * cos
+  };
+}
+
 export class SpawnSystem {
   private readonly level: RuntimeLevelConfig;
   private readonly rng: () => number;
@@ -85,10 +97,14 @@ export class SpawnSystem {
       this.rng
     );
 
-    const velocity = scaleVector(
+    const driftVariance = Math.max(0, this.level.driftAngleVarianceDegrees ?? 0);
+    const driftOffsetDegrees =
+      driftVariance > 0 ? getRandomInRange(-driftVariance, driftVariance, this.rng) : 0;
+    const direction = rotateVector(
       spawnPoint.directionVector,
-      this.level.driftSpeedPxPerSecond
+      (driftOffsetDegrees * Math.PI) / 180
     );
+    const velocity = scaleVector(direction, this.level.driftSpeedPxPerSecond);
 
     return new Artist({
       id: `artist-${this.level.levelNumber}-${this.spawnedCount + 1}`,

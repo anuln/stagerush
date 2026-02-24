@@ -13,6 +13,7 @@ export interface RuntimeLevelConfig {
   spawnIntervalMs: [number, number];
   activeDistractionIds: string[];
   driftSpeedPxPerSecond: number;
+  driftAngleVarianceDegrees: number;
 }
 
 export const DEFAULT_LEVEL_CONFIG: RuntimeLevelConfig = {
@@ -27,7 +28,8 @@ export const DEFAULT_LEVEL_CONFIG: RuntimeLevelConfig = {
   },
   spawnIntervalMs: [1400, 2200],
   activeDistractionIds: [],
-  driftSpeedPxPerSecond: 75
+  driftSpeedPxPerSecond: 75,
+  driftAngleVarianceDegrees: 0
 };
 
 export function toRuntimeLevelConfig(
@@ -36,7 +38,10 @@ export function toRuntimeLevelConfig(
 ): RuntimeLevelConfig {
   const existing = map.levels.find((entry) => entry.levelNumber === levelNumber);
   if (!existing) {
-    return DEFAULT_LEVEL_CONFIG;
+    return {
+      ...DEFAULT_LEVEL_CONFIG,
+      levelNumber
+    };
   }
 
   return {
@@ -47,6 +52,7 @@ export function toRuntimeLevelConfig(
     tierWeights: existing.tierWeights,
     spawnIntervalMs: existing.spawnInterval,
     activeDistractionIds: existing.activeDistractions,
-    driftSpeedPxPerSecond: DEFAULT_LEVEL_CONFIG.driftSpeedPxPerSecond
+    driftSpeedPxPerSecond: DEFAULT_LEVEL_CONFIG.driftSpeedPxPerSecond,
+    driftAngleVarianceDegrees: DEFAULT_LEVEL_CONFIG.driftAngleVarianceDegrees
   };
 }

@@ -10,6 +10,7 @@ export interface LevelManagerSnapshot {
   currentLevel: number;
   totalLevels: number;
   attemptNumber: number;
+  attemptKey: string;
   cumulativeScore: number;
   lastLevelScore: number | null;
 }
@@ -36,6 +37,7 @@ export class LevelManager {
       currentLevel: this.currentLevel,
       totalLevels: this.totalLevels,
       attemptNumber: this.attemptNumber,
+      attemptKey: `${this.currentLevel}:${this.attemptNumber}`,
       cumulativeScore: this.cumulativeScore,
       lastLevelScore: this.lastLevelScore
     };
