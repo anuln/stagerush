@@ -1,0 +1,67 @@
+{
+  "id": "govball2026",
+  "name": "Gov Ball 2026",
+  "description": "Urban festival routing map for Stage Call",
+  "totalLevels": 10,
+  "background": "assets/maps/govball/govball_bg.png",
+  "stages": [
+    {
+      "id": "main-stage",
+      "size": "large",
+      "position": { "x": 0.2, "y": 0.25 },
+      "snapRadius": 0.06,
+      "sprite": "assets/maps/govball/stage_main.png",
+      "color": "#FF6B35"
+    },
+    {
+      "id": "side-stage",
+      "size": "medium",
+      "position": { "x": 0.75, "y": 0.5 },
+      "snapRadius": 0.055,
+      "sprite": "assets/maps/govball/stage_side.png",
+      "color": "#00D4FF"
+    },
+    {
+      "id": "acoustic-stage",
+      "size": "small",
+      "position": { "x": 0.35, "y": 0.78 },
+      "snapRadius": 0.05,
+      "sprite": "assets/maps/govball/stage_acoustic.png",
+      "color": "#7BFF00"
+    }
+  ],
+  "spawnPoints": [
+    {
+      "id": "north",
+      "position": { "x": 0.5, "y": 0.0 },
+      "driftAngle": 180
+    },
+    {
+      "id": "east",
+      "position": { "x": 1.0, "y": 0.4 },
+      "driftAngle": 250
+    },
+    {
+      "id": "south",
+      "position": { "x": 0.6, "y": 1.0 },
+      "driftAngle": 350
+    },
+    {
+      "id": "west",
+      "position": { "x": 0.0, "y": 0.65 },
+      "driftAngle": 80
+    }
+  ],
+  "distractions": [],
+  "levels": [],
+  "assets": {
+    "artists": [],
+    "stageSprites": {
+      "main-stage": "assets/maps/govball/stage_main.png",
+      "side-stage": "assets/maps/govball/stage_side.png",
+      "acoustic-stage": "assets/maps/govball/stage_acoustic.png"
+    },
+    "distractionSprites": {},
+    "audio": {}
+  }
+}
