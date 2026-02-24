@@ -1,18 +1,27 @@
+import { Container } from "pixi.js";
 import { GAME_CONFIG } from "../config/GameConfig";
 import { toRuntimeLevelConfig } from "../config/LevelConfig";
 import { Artist } from "../entities/Artist";
+import type { ArtistMissReason } from "../entities/ArtistState";
 import type { InProgressPathPreview, PathState } from "../entities/PathState";
 import { PathDrawingInput } from "../input/PathDrawingInput";
 import type { ResolvedFestivalLayout } from "../maps/MapLoader";
 import type { LayerSet } from "../maps/layers";
 import { ArtistRenderer } from "../rendering/ArtistRenderer";
+import {
+  DeliveryFeedbackRenderer,
+  type MissEvent
+} from "../rendering/DeliveryFeedbackRenderer";
 import { EtaRenderer, type EtaOverlay } from "../rendering/EtaRenderer";
+import { HudRenderer } from "../rendering/HudRenderer";
 import { PathRenderer, advancePathLifecycles } from "../rendering/PathRenderer";
-import { PathFollower } from "../systems/PathFollower";
+import { PathFollower, type PathFollowUpdate } from "../systems/PathFollower";
 import { SpawnSystem } from "../systems/SpawnSystem";
+import { StageSystem } from "../systems/StageSystem";
 import { TimerSystem } from "../systems/TimerSystem";
 import { PathPlanner, type PlannedPath } from "./PathPlanner";
 import { LivesState } from "./LivesState";
+import { ScoreManager, type ScoreEvent } from "./ScoreManager";
 
 interface RuntimeViewport {
   width: number;
@@ -23,12 +32,17 @@ export class GameRuntime {
   private layout: ResolvedFestivalLayout;
   private artists: Artist[] = [];
   private pathStates: PathState[] = [];
+  private readonly levelNumber: number;
   private readonly spawnSystem: SpawnSystem;
+  private readonly stageSystem: StageSystem;
   private readonly timerSystem = new TimerSystem();
+  private readonly scoreManager = new ScoreManager();
   private readonly livesState = new LivesState(3);
   private readonly artistRenderer: ArtistRenderer;
   private readonly pathRenderer: PathRenderer;
   private readonly etaRenderer: EtaRenderer;
+  private readonly hudRenderer: HudRenderer;
+  private readonly deliveryFeedbackRenderer: DeliveryFeedbackRenderer;
   private readonly pathFollower: PathFollower;
   private readonly pathInput: PathDrawingInput;
   private readonly pathPlanner: PathPlanner;
@@ -38,10 +52,26 @@ export class GameRuntime {
   constructor(layout: ResolvedFestivalLayout, layerSet: LayerSet) {
     this.layout = layout;
     const runtimeLevel = toRuntimeLevelConfig(layout.map, 1);
+    this.levelNumber = runtimeLevel.levelNumber;
     this.spawnSystem = new SpawnSystem(runtimeLevel, layout.spawnPoints);
+    this.stageSystem = new StageSystem(
+      layout.stages,
+      GAME_CONFIG.stage.performanceDurationMs
+    );
     this.artistRenderer = new ArtistRenderer(layerSet.artistLayer);
     this.pathRenderer = new PathRenderer(layerSet.pathLayer);
-    this.etaRenderer = new EtaRenderer(layerSet.uiLayer);
+
+    const feedbackLayer = new Container();
+    feedbackLayer.label = "deliveryFeedbackLayer";
+    const hudLayer = new Container();
+    hudLayer.label = "hudLayer";
+    const etaLayer = new Container();
+    etaLayer.label = "etaLayer";
+    layerSet.uiLayer.addChild(feedbackLayer, hudLayer, etaLayer);
+
+    this.etaRenderer = new EtaRenderer(etaLayer);
+    this.hudRenderer = new HudRenderer(hudLayer);
+    this.deliveryFeedbackRenderer = new DeliveryFeedbackRenderer(feedbackLayer);
     this.pathFollower = new PathFollower(runtimeLevel.driftSpeedPxPerSecond);
     this.pathInput = new PathDrawingInput(
       () => this.artists.filter((artist) => artist.isActive()),
@@ -58,6 +88,7 @@ export class GameRuntime {
   onLayoutChanged(nextLayout: ResolvedFestivalLayout): void {
     this.layout = nextLayout;
     this.spawnSystem.setSpawnPoints(nextLayout.spawnPoints);
+    this.stageSystem.setStages(nextLayout.stages);
     this.pathPlanner.setStages(nextLayout.stages);
   }
 
@@ -87,6 +118,9 @@ export class GameRuntime {
 
   update(deltaSeconds: number, viewport: RuntimeViewport, nowMs = getNowMs()): void {
     this.nowMs = nowMs;
+    const missEvents: MissEvent[] = [];
+    const scoreEvents: ScoreEvent[] = [];
+
     const activeArtists = this.artists.filter((artist) => artist.isActive());
     const spawned = this.spawnSystem.update(deltaSeconds, activeArtists);
     if (spawned.length > 0) {
@@ -94,7 +128,14 @@ export class GameRuntime {
     }
 
     const followUpdates = this.pathFollower.update(this.artists, deltaSeconds);
-    this.applyPathFollowUpdates(followUpdates);
+    const arrivals = this.applyPathFollowUpdates(followUpdates);
+    for (const arrival of arrivals) {
+      const artist = this.artists.find((entry) => entry.id === arrival.artistId);
+      if (!artist) {
+        continue;
+      }
+      this.stageSystem.handleArrival(artist, arrival.stageId, this.nowMs);
+    }
 
     for (const artist of this.artists) {
       if (!artist.isActive()) {
@@ -112,12 +153,22 @@ export class GameRuntime {
       });
       if (boundsMissed) {
         this.livesState.recordMiss();
+        missEvents.push(this.buildMissEvent(artist, "bounds"));
       }
     }
 
     const timeoutEvents = this.timerSystem.update(this.artists, deltaSeconds);
-    for (const _event of timeoutEvents) {
+    for (const event of timeoutEvents) {
       this.livesState.recordMiss();
+      const artist = this.artists.find((entry) => entry.id === event.artistId);
+      if (artist) {
+        missEvents.push(this.buildMissEvent(artist, event.reason));
+      }
+    }
+
+    const stageUpdate = this.stageSystem.update(this.nowMs);
+    for (const delivery of stageUpdate.completedDeliveries) {
+      scoreEvents.push(this.scoreManager.registerDelivery(delivery));
     }
 
     if (this.livesState.isLevelFailed && !this.levelFailureReported) {
@@ -130,8 +181,23 @@ export class GameRuntime {
       this.nowMs,
       GAME_CONFIG.path.invalidFadeDurationMs
     );
+    this.cleanupPathStatesForResolvedArtists();
+
     const preview = this.buildPreview();
     this.pathRenderer.render(this.pathStates, preview.path);
+    this.deliveryFeedbackRenderer.render({
+      nowMs: this.nowMs,
+      scoreEvents,
+      missEvents,
+      stageSnapshots: this.stageSystem.getSnapshots(),
+      viewport
+    });
+    this.hudRenderer.render({
+      score: this.scoreManager.totalScore,
+      remainingLives: this.livesState.remainingLives,
+      levelNumber: this.levelNumber,
+      viewportWidth: viewport.width
+    });
     this.etaRenderer.render(preview.eta);
     this.artistRenderer.render(this.artists);
   }
@@ -218,13 +284,14 @@ export class GameRuntime {
   }
 
   private applyPathFollowUpdates(
-    updates: Array<{ pathId: string; consumedLength: number; completed: boolean }>
-  ): void {
+    updates: PathFollowUpdate[]
+  ): Array<{ artistId: string; stageId: string }> {
     if (updates.length === 0) {
-      return;
+      return [];
     }
 
     const completedPathIds = new Set<string>();
+    const arrivals: Array<{ artistId: string; stageId: string }> = [];
     for (const update of updates) {
       const pathState = this.pathStates.find((path) => path.id === update.pathId);
       if (pathState) {
@@ -232,6 +299,10 @@ export class GameRuntime {
       }
       if (update.completed) {
         completedPathIds.add(update.pathId);
+        arrivals.push({
+          artistId: update.artistId,
+          stageId: update.targetStageId
+        });
       }
     }
 
@@ -240,6 +311,28 @@ export class GameRuntime {
         (path) => !completedPathIds.has(path.id)
       );
     }
+
+    return arrivals;
+  }
+
+  private buildMissEvent(artist: Artist, reason: ArtistMissReason): MissEvent {
+    return {
+      artistId: artist.id,
+      position: { ...artist.position },
+      reason
+    };
+  }
+
+  private cleanupPathStatesForResolvedArtists(): void {
+    const activeArtistIds = new Set(
+      this.artists.filter((artist) => artist.isActive()).map((artist) => artist.id)
+    );
+    this.pathStates = this.pathStates.filter((path) => {
+      if (path.state === "INVALID_FADING") {
+        return true;
+      }
+      return activeArtistIds.has(path.artistId);
+    });
   }
 }
 
