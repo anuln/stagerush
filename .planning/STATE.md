@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Path drawing must feel immediate and readable on mobile while creating meaningful routing decisions under pressure.
-**Current focus:** Phase 3: Touch Path Drawing and Following
+**Current focus:** Phase 4: Stage Delivery, HUD, and Base Scoring
 
 ## Current Position
 
-Phase: 3 of 9 (Touch Path Drawing and Following)
-Plan: 0 of 4 in current phase
+Phase: 4 of 9 (Stage Delivery, HUD, and Base Scoring)
+Plan: 0 of 3 in current phase
 Status: Ready to plan
-Last activity: 2026-02-24 — Completed Phase 2 execution (3/3 plans), verification passed, roadmap advanced
+Last activity: 2026-02-24 — Completed Phase 3 execution (4/4 plans), verification passed, roadmap/requirements advanced
 
-Progress: [██░░░░░░░░] 21%
+Progress: [███░░░░░░░] 32%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 23 min
-- Total execution time: 2.3 hours
+- Total plans completed: 10
+- Average duration: 22 min
+- Total execution time: 3.6 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██░░░░░░░░] 21%
 |-------|-------|-------|----------|
 | 1. Foundation and Map Schema | 3 | 66 min | 22 min |
 | 2. Artist Lifecycle and Spawn Pressure | 3 | 72 min | 24 min |
+| 3. Touch Path Drawing and Following | 4 | 77 min | 19 min |
 
 **Recent Trend:**
-- Last 5 plans: 26m, 18m, 24m, 21m, 27m
-- Trend: Stable
+- Last 5 plans: 27m, 20m, 18m, 17m, 22m
+- Trend: Improving throughput after phase-3 system modularization
 
 ## Accumulated Context
 
@@ -41,8 +42,8 @@ Progress: [██░░░░░░░░] 21%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Phase 2: Keep artist lifecycle logic entity-owned and emit miss events from systems instead of mutating lives directly
-- Phase 2: Delegate per-frame orchestration to `GameRuntime` to keep `main.ts` bootstrap-only
+- Phase 3: Keep path smoothing/snap logic in `PathPlanner` to avoid duplicating route rules in runtime and systems
+- Phase 3: Re-anchor path replacement at current artist position to prevent visual jumps during reroute
 
 ### Pending Todos
 
@@ -50,10 +51,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Path drawing feel and input latency are the highest delivery risk; validate early in Phase 3.
+- Stage occupancy/queue behavior in Phase 4 must preserve trajectory/state contracts introduced by follower + path lifecycle systems.
 
 ## Session Continuity
 
-Last session: 2026-02-24 10:50
-Stopped at: Phase 2 completed and verified; ready to plan/execute Phase 3
+Last session: 2026-02-24 11:10
+Stopped at: Phase 3 completed and verified; ready to plan/execute Phase 4
 Resume file: None

@@ -8,7 +8,7 @@ This roadmap takes Stage Call from an empty codebase to a production-ready mobil
 
 - [x] **Phase 1: Foundation and Map Schema** - Establish PixiJS app shell, responsive rendering, and normalized festival data model (completed 2026-02-24)
 - [x] **Phase 2: Artist Lifecycle and Spawn Pressure** - Implement artist entities, drift movement, timer pressure, and miss accounting (completed 2026-02-24)
-- [ ] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior
+- [x] **Phase 3: Touch Path Drawing and Following** - Deliver touch input, smoothing, snapping, and artist path-following behavior (completed 2026-02-24)
 - [ ] **Phase 4: Stage Delivery, HUD, and Base Scoring** - Add stage occupancy, delivery resolution, HUD, and tier-stage score matrix
 - [ ] **Phase 5: Collisions and Distractions** - Add chat collisions, distraction hazards, and delay interactions that maintain timer pressure
 - [ ] **Phase 6: Combo Layer and High-Score Feedback** - Introduce stage combo chains and multiplier-driven score expression
@@ -60,10 +60,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: Implement touch gesture capture and artist grab targeting
-- [ ] 03-02: Implement spline smoothing, resampling, and stage snapping
-- [ ] 03-03: Implement path rendering, lifecycle, and invalid-path fade logic
-- [ ] 03-04: Implement PathFollower movement and ETA warning display
+- [x] 03-01: Implement touch gesture capture and artist grab targeting
+- [x] 03-02: Implement spline smoothing, resampling, and stage snapping
+- [x] 03-03: Implement path rendering, lifecycle, and invalid-path fade logic
+- [x] 03-04: Implement PathFollower movement and ETA warning display
 
 ### Phase 4: Stage Delivery, HUD, and Base Scoring
 **Goal**: Turn arrivals into stage performances with visible scoring and run-state feedback.
@@ -163,7 +163,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation and Map Schema | 3/3 | Complete    | 2026-02-24 |
 | 2. Artist Lifecycle and Spawn Pressure | 3/3 | Complete    | 2026-02-24 |
-| 3. Touch Path Drawing and Following | 0/4 | Not started | - |
+| 3. Touch Path Drawing and Following | 4/4 | Complete | 2026-02-24 |
 | 4. Stage Delivery, HUD, and Base Scoring | 0/3 | Not started | - |
 | 5. Collisions and Distractions | 0/3 | Not started | - |
 | 6. Combo Layer and High-Score Feedback | 0/2 | Not started | - |
