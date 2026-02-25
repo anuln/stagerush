@@ -49,6 +49,8 @@ const GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-image";
 const ELEVENLABS_KEY_STORAGE_KEY = "stagecall:admin:elevenlabs-key";
 const GITHUB_TOKEN_STORAGE_KEY = "stagecall:admin:github-token";
 const GITHUB_SETTINGS_STORAGE_KEY = "stagecall:admin:github-settings:v1";
+const ELEVEN_SOUND_MODEL_ID = "eleven_text_to_sound_v2";
+const ELEVEN_MAX_DURATION_SEC = 30;
 
 function toDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -937,7 +939,10 @@ export class AdminPanel {
     const next = structuredClone(this.draftOverrides);
     const artistSprites = { ...(next.artistSprites ?? {}) };
     const artistEntry = { ...(artistSprites[artistId] ?? {}) };
-    artistEntry.performanceAudioLengthSec = Math.max(0.5, Math.min(12, parsed));
+    artistEntry.performanceAudioLengthSec = Math.max(
+      0.5,
+      Math.min(ELEVEN_MAX_DURATION_SEC, parsed)
+    );
     artistSprites[artistId] = artistEntry;
     next.artistSprites = artistSprites;
     this.draftOverrides = next;
@@ -960,11 +965,11 @@ export class AdminPanel {
     if (drafted) {
       const parsed = Number.parseFloat(drafted);
       if (Number.isFinite(parsed) && parsed > 0) {
-        return Math.max(0.5, Math.min(30, parsed));
+        return Math.max(0.5, Math.min(ELEVEN_MAX_DURATION_SEC, parsed));
       }
     }
     if (slot.meta.kind === "audio" && slot.meta.cueId.startsWith("bg_")) {
-      return 12;
+      return 30;
     }
     return 3;
   }
@@ -974,7 +979,7 @@ export class AdminPanel {
     if (!Number.isFinite(parsed) || parsed <= 0) {
       return;
     }
-    const normalized = Math.max(0.5, Math.min(30, parsed));
+    const normalized = Math.max(0.5, Math.min(ELEVEN_MAX_DURATION_SEC, parsed));
     if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
       this.setArtistAudioLengthSec(slot.meta.artistId, String(normalized));
       return;
@@ -1725,7 +1730,7 @@ export class AdminPanel {
     audioLengthInput.type = "number";
     audioLengthInput.step = "0.1";
     audioLengthInput.min = "0.5";
-    audioLengthInput.max = "12";
+    audioLengthInput.max = String(ELEVEN_MAX_DURATION_SEC);
     audioLengthInput.className = "admin-input";
     audioLengthInput.value =
       this.artistAudioLengthDraftByArtist.get(selectedArtistId) ??
@@ -1983,7 +1988,7 @@ export class AdminPanel {
       lengthInput.className = "admin-input";
       lengthInput.step = "0.1";
       lengthInput.min = "0.5";
-      lengthInput.max = "12";
+      lengthInput.max = String(ELEVEN_MAX_DURATION_SEC);
       lengthInput.value =
         this.artistAudioLengthDraftByArtist.get(artistId) ??
         String(this.getArtistAudioLengthSec(artistId));
@@ -2442,7 +2447,7 @@ export class AdminPanel {
       lengthInput.className = "admin-input";
       lengthInput.step = "0.1";
       lengthInput.min = "0.5";
-      lengthInput.max = "30";
+      lengthInput.max = String(ELEVEN_MAX_DURATION_SEC);
       lengthInput.value = String(this.getAudioLengthSecForSlot(selectedSlot));
       lengthInput.addEventListener("change", () => {
         this.setAudioLengthSecForSlot(selectedSlot, lengthInput.value);
@@ -3209,6 +3214,8 @@ export class AdminPanel {
     }
 
     const durationSec = this.getAudioLengthSecForSlot(slot);
+    const shouldLoop =
+      slot.meta.kind === "audio" && slot.meta.cueId.startsWith("bg_");
     this.isGenerating = true;
     this.generateStatus = "Generating audio clip...";
     this.render();
@@ -3222,7 +3229,9 @@ export class AdminPanel {
         },
         body: JSON.stringify({
           text: prompt,
-          duration_seconds: Math.max(0.5, Math.min(12, durationSec))
+          duration_seconds: Math.max(0.5, Math.min(ELEVEN_MAX_DURATION_SEC, durationSec)),
+          model_id: ELEVEN_SOUND_MODEL_ID,
+          loop: shouldLoop
         })
       });
       if (!response.ok) {
@@ -3237,7 +3246,9 @@ export class AdminPanel {
       const base64 = btoa(binary);
       const dataUrl = `data:audio/mpeg;base64,${base64}`;
       this.slotCandidates.set(slot.id, dataUrl);
-      this.generateStatus = "Audio generation complete. Review candidate and apply.";
+      this.generateStatus = shouldLoop
+        ? "Loop-ready audio generation complete. Review candidate and apply."
+        : "Audio generation complete. Review candidate and apply.";
     } catch (error) {
       this.generateStatus = String(error);
     } finally {
