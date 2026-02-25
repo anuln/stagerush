@@ -20,6 +20,8 @@ export class Artist {
   readonly id: string;
   readonly tier: ArtistTier;
   readonly spriteProfileId: string | null;
+  readonly assignedStageId: string | null;
+  readonly assignedStageColor: string | null;
   position: Vector2;
   velocity: Vector2;
   state: ArtistState;
@@ -31,6 +33,8 @@ export class Artist {
     this.id = config.id;
     this.tier = config.tier;
     this.spriteProfileId = config.spriteProfileId ?? null;
+    this.assignedStageId = config.assignedStageId ?? null;
+    this.assignedStageColor = config.assignedStageColor ?? null;
     this.position = { ...config.position };
     this.velocity = { ...config.velocity };
     this.state = config.state ?? "DRIFTING";

@@ -165,7 +165,13 @@ describe("SpawnSystem", () => {
       ],
       () => 0,
       {
-        stages: [{ screenPosition: { x: 160, y: 100 } }],
+        stages: [
+          {
+            id: "main-stage",
+            color: "#FF6B35",
+            screenPosition: { x: 160, y: 100 }
+          }
+        ],
         viewport: { width: 200, height: 200 }
       }
     );
@@ -207,7 +213,13 @@ describe("SpawnSystem", () => {
       ],
       () => 0,
       {
-        stages: [{ screenPosition: { x: 100, y: 200 } }],
+        stages: [
+          {
+            id: "main-stage",
+            color: "#FF6B35",
+            screenPosition: { x: 100, y: 200 }
+          }
+        ],
         viewport: { width: 200, height: 220 }
       }
     );

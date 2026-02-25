@@ -10,12 +10,19 @@ interface AdminOverridesStore {
 export interface ArtistAssetOverride {
   walk1?: string;
   walk2?: string;
+  walk3?: string;
   idle?: string;
+  distracted?: string;
   performing?: string;
+  performanceAudioClip?: string;
+  performanceAudioLengthSec?: number;
+  seed?: number;
+  seedDeterminismWarning?: string;
 }
 
 export interface AdminAssetOverrides {
   background?: string;
+  introScreen?: string;
   stageSprites?: Record<string, string>;
   stagePositions?: Record<string, NormalizedPoint>;
   distractionSprites?: Record<string, string>;
@@ -162,6 +169,9 @@ export function hasAdminAssetOverrides(overrides: AdminAssetOverrides): boolean 
   if (typeof overrides.background === "string" && overrides.background.length > 0) {
     return true;
   }
+  if (typeof overrides.introScreen === "string" && overrides.introScreen.length > 0) {
+    return true;
+  }
   if (overrides.stageSprites && Object.keys(overrides.stageSprites).length > 0) {
     return true;
   }
@@ -182,8 +192,14 @@ export function hasAdminAssetOverrides(overrides: AdminAssetOverrides): boolean 
       if (
         artistOverride.walk1 ||
         artistOverride.walk2 ||
+        artistOverride.walk3 ||
         artistOverride.idle ||
-        artistOverride.performing
+        artistOverride.distracted ||
+        artistOverride.performing ||
+        artistOverride.performanceAudioClip ||
+        Number.isFinite(artistOverride.performanceAudioLengthSec) ||
+        Number.isInteger(artistOverride.seed) ||
+        (artistOverride.seedDeterminismWarning ?? "").length > 0
       ) {
         return true;
       }
@@ -200,6 +216,9 @@ export function applyAdminAssetOverrides(
 
   if (overrides.background) {
     cloned.background = overrides.background;
+  }
+  if (overrides.introScreen) {
+    cloned.introScreen = overrides.introScreen;
   }
 
   if (overrides.stagePositions) {
@@ -260,11 +279,44 @@ export function applyAdminAssetOverrides(
       if (artistOverride.walk2 && artist.sprites.walk.length > 1) {
         artist.sprites.walk[1] = artistOverride.walk2;
       }
+      if (artistOverride.walk3) {
+        if (artist.sprites.walk.length > 2) {
+          artist.sprites.walk[2] = artistOverride.walk3;
+        } else {
+          artist.sprites.walk.push(artistOverride.walk3);
+        }
+      }
       if (artistOverride.idle) {
         artist.sprites.idle = artistOverride.idle;
       }
+      if (artistOverride.distracted) {
+        artist.sprites.distracted = artistOverride.distracted;
+      }
       if (artistOverride.performing) {
         artist.sprites.performing = artistOverride.performing;
+      }
+      if (
+        artistOverride.performanceAudioClip ||
+        Number.isFinite(artistOverride.performanceAudioLengthSec)
+      ) {
+        artist.performanceAudio = {
+          ...(artist.performanceAudio ?? {})
+        };
+        if (artistOverride.performanceAudioClip) {
+          artist.performanceAudio.clip = artistOverride.performanceAudioClip;
+        }
+        if (Number.isFinite(artistOverride.performanceAudioLengthSec)) {
+          artist.performanceAudio.lengthSec = artistOverride.performanceAudioLengthSec;
+        }
+      }
+      if (Number.isInteger(artistOverride.seed) && (artistOverride.seed ?? -1) >= 0) {
+        artist.seed = artistOverride.seed;
+      }
+      if (
+        typeof artistOverride.seedDeterminismWarning === "string" &&
+        artistOverride.seedDeterminismWarning.length > 0
+      ) {
+        artist.seedDeterminismWarning = artistOverride.seedDeterminismWarning;
       }
     }
   }

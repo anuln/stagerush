@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { rollQualityTier } from "./GameConfig";
+import { GAME_CONFIG, rollQualityTier } from "./GameConfig";
 
 describe("GameConfig quality scaling", () => {
+  it("applies 20% scale bump to stage and artist render sizing", () => {
+    expect(GAME_CONFIG.artist.renderScale).toBeCloseTo(1.42, 2);
+    expect(GAME_CONFIG.stage.sizeFactors.large).toBeCloseTo(0.288, 3);
+    expect(GAME_CONFIG.stage.sizeFactors.medium).toBeCloseTo(0.216, 3);
+    expect(GAME_CONFIG.stage.sizeFactors.small).toBeCloseTo(0.162, 3);
+  });
+
   it("degrades one tier when low-fps window threshold is met", () => {
     expect(
       rollQualityTier({

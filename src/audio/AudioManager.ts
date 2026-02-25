@@ -98,15 +98,34 @@ export class AudioManager {
     if (!cue) {
       return false;
     }
+    return this.playSfxPath(cue, cueId, options);
+  }
+
+  async playSfxFromPath(
+    path: string,
+    options: SfxPlayOptions = {}
+  ): Promise<boolean> {
+    const trimmed = path.trim();
+    if (!trimmed) {
+      return false;
+    }
+    return this.playSfxPath(trimmed, `direct:${trimmed}`, options);
+  }
+
+  private async playSfxPath(
+    path: string,
+    cueKey: string,
+    options: SfxPlayOptions = {}
+  ): Promise<boolean> {
     const now = this.nowMs();
     const cooldownMs = Math.max(
       0,
       Math.floor(
         options.cooldownMs ??
-          (options.category === "hero" ? 850 : cueId === "timer_warning" ? 300 : 0)
+          (options.category === "hero" ? 850 : cueKey === "timer_warning" ? 300 : 0)
       )
     );
-    const key = `${options.category ?? "tactical"}:${cueId}`;
+    const key = `${options.category ?? "tactical"}:${cueKey}`;
     if ((this.cueCooldownUntil.get(key) ?? 0) > now) {
       return false;
     }
@@ -119,10 +138,12 @@ export class AudioManager {
       return false;
     }
 
-    player.src = resolveAssetPath(cue);
+    player.src = resolveAssetPath(path);
     player.loop = false;
     player.currentTime = 0;
-    player.volume = this.muted ? 0 : this.resolveSfxVolume(cueId, options.category);
+    player.volume = this.muted
+      ? 0
+      : this.resolveSfxVolume(cueKey, options.category);
 
     try {
       await Promise.resolve(player.play());

@@ -17,6 +17,7 @@ const baseMap: FestivalMap = {
   description: "test fixture",
   totalLevels: 10,
   background: "maps/govball/bg.png",
+  introScreen: "ui/intro.png",
   stages: [
     {
       id: "main",
@@ -156,6 +157,7 @@ describe("MapLoader", () => {
     const paths = collectMapAssetPaths(baseMap);
 
     expect(paths).toContain("maps/govball/bg.png");
+    expect(paths).toContain("ui/intro.png");
     expect(paths).toContain("maps/govball/stage_main.png");
     expect(paths).toContain("artists/new_a_walk1.png");
     expect(paths).toContain("audio/spawn.mp3");

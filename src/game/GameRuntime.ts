@@ -119,6 +119,7 @@ export class GameRuntime {
   private readonly pathInput: PathDrawingInput;
   private readonly pathPlanner: PathPlanner;
   private readonly runtimeLevel: RuntimeLevelConfig;
+  private readonly artistSpriteProfiles: ArtistSpriteConfig[];
   private remainingLevelTimeSeconds = 0;
   private roundPerformanceTier: PerformanceTier | null = null;
   private deliveredArtists = 0;
@@ -129,6 +130,7 @@ export class GameRuntime {
   private readonly audioManager: AudioManager | null;
   private readonly onTelemetry: ((snapshot: RuntimeTelemetrySnapshot) => void) | null;
   private readonly getEffectsDensity: (() => number) | null;
+  private performingArtistIds = new Set<string>();
   private telemetrySnapshot: RuntimeTelemetrySnapshot = {
     frameDeltaMs: 0,
     updateDurationMs: 0,
@@ -157,12 +159,10 @@ export class GameRuntime {
     );
     this.livesState = new LivesState(runtimeLevel.maxEncounterStrikes);
     this.levelNumber = runtimeLevel.levelNumber;
-    const artistProfilePool = new ArtistProfilePool(
-      options.artistSprites ?? layout.map.assets.artists,
-      {
-        levelNumber: runtimeLevel.levelNumber
-      }
-    );
+    this.artistSpriteProfiles = options.artistSprites ?? layout.map.assets.artists;
+    const artistProfilePool = new ArtistProfilePool(this.artistSpriteProfiles, {
+      levelNumber: runtimeLevel.levelNumber
+    });
     this.spawnSystem = new SpawnSystem(runtimeLevel, layout.spawnPoints, Math.random, {
       stages: layout.stages,
       viewport: layout.viewport,
@@ -185,7 +185,7 @@ export class GameRuntime {
     );
     this.artistRenderer = new ArtistRenderer(
       layerSet.artistLayer,
-      options.artistSprites ?? layout.map.assets.artists
+      this.artistSpriteProfiles
     );
     this.pathRenderer = new PathRenderer(layerSet.pathLayer);
     this.distractionRenderer = new DistractionRenderer(layerSet.distractionLayer);
@@ -443,6 +443,7 @@ export class GameRuntime {
     this.cleanupPathStatesForResolvedArtists();
 
     const stageSnapshots = this.stageSystem.getSnapshots();
+    this.handlePerformanceStarts(stageSnapshots);
     const activeCombos = this.comboTracker.getActiveChains(this.nowMs);
     const strongestCombo = this.comboTracker.getHighestActiveChain(this.nowMs);
     const effectsDensity = clampEffectsDensity(this.getEffectsDensity?.() ?? 1);
@@ -590,6 +591,7 @@ export class GameRuntime {
     this.etaRenderer.render(null);
     this.runtimeUiLayer.removeFromParent();
     this.runtimeUiLayer.destroy({ children: true });
+    this.performingArtistIds.clear();
     this.emitTelemetry(0, 0, 0);
   }
 
@@ -776,6 +778,72 @@ export class GameRuntime {
           ? "hero"
           : "tactical";
     void this.audioManager.playSfx(cueId, { category });
+  }
+
+  private handlePerformanceStarts(
+    stageSnapshots: ReturnType<StageSystem["getSnapshots"]>
+  ): void {
+    const currentPerformerIds = new Set<string>();
+    for (const stage of stageSnapshots) {
+      if (stage.currentArtistId) {
+        currentPerformerIds.add(stage.currentArtistId);
+      }
+    }
+
+    for (const artistId of currentPerformerIds) {
+      if (this.performingArtistIds.has(artistId)) {
+        continue;
+      }
+      this.playArtistPerformanceSound(artistId);
+    }
+
+    this.performingArtistIds = currentPerformerIds;
+  }
+
+  private playArtistPerformanceSound(artistId: string): void {
+    if (!this.audioManager) {
+      return;
+    }
+    const artist = this.artists.find((entry) => entry.id === artistId);
+    if (!artist) {
+      return;
+    }
+
+    const profile = this.resolveArtistProfileForArtist(artist);
+    const clipPath = profile?.performanceAudio?.clip?.trim();
+    if (clipPath) {
+      const clipLengthSec = profile?.performanceAudio?.lengthSec;
+      const cooldownMs = Number.isFinite(clipLengthSec)
+        ? Math.max(300, Math.min(12_000, Math.floor((clipLengthSec as number) * 900)))
+        : 850;
+      void this.audioManager
+        .playSfxFromPath(clipPath, {
+          category: "hero",
+          cooldownMs
+        })
+        .then((played) => {
+          if (!played) {
+            this.playSfx("deliver");
+          }
+        });
+      return;
+    }
+
+    this.playSfx("deliver");
+  }
+
+  private resolveArtistProfileForArtist(artist: Artist): ArtistSpriteConfig | null {
+    if (artist.spriteProfileId) {
+      return (
+        this.artistSpriteProfiles.find(
+          (profile) => profile.id === artist.spriteProfileId
+        ) ?? null
+      );
+    }
+    return (
+      this.artistSpriteProfiles.find((profile) => profile.tier === artist.tier) ??
+      null
+    );
   }
 
   private syncStageSetCounts(stageIds: string[]): void {

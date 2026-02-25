@@ -52,14 +52,8 @@ function formatStageName(stageId: string): string {
     .toUpperCase();
 }
 
-function formatCompactScore(score: number): string {
+function formatScore(score: number): string {
   const whole = Math.max(0, Math.floor(score));
-  if (whole >= 1_000_000) {
-    return `${(whole / 1_000_000).toFixed(1)}M`;
-  }
-  if (whole >= 1_000) {
-    return `${(whole / 1_000).toFixed(1)}K`;
-  }
   return String(whole);
 }
 
@@ -102,8 +96,8 @@ export function buildHudLabels(
         : `PACE ${roundedPaceDelta} BEHIND`;
 
   return {
-    festivalHype: `HYPE ${formatCompactScore(state.score)}`,
-    safetyStrikes: `STRIKES ${strikesUsed}/${maxStrikes}`,
+    festivalHype: `🏆 ${formatScore(state.score)} 💥${strikesUsed}`,
+    safetyStrikes: `💥${strikesUsed}`,
     sessionTime: `TIME ${Math.max(0, Math.ceil(state.remainingTimeSeconds))}s`,
     daySession: `DAY ${Math.max(1, Math.floor(state.dayNumber))} · ${state.sessionName.toUpperCase()}`,
     setsProgress: `SETS ${Math.max(0, Math.floor(state.setsPlayed))}/${safeTargetSets}`,
@@ -135,13 +129,10 @@ export class HudRenderer {
     const timerCenterY = topY + timerRadius;
 
     this.layer.addChild(
-      this.createStatPanel({
+      this.createTopLeftScoreLabel({
         x: leftPadding,
         y: topY,
-        width: Math.max(138, Math.round(state.viewportWidth * 0.32)),
-        height: 72,
-        lineA: labels.festivalHype,
-        lineB: labels.safetyStrikes
+        text: labels.festivalHype
       })
     );
 
@@ -181,60 +172,30 @@ export class HudRenderer {
     }
   }
 
-  private createStatPanel(input: {
+  private createTopLeftScoreLabel(input: {
     x: number;
     y: number;
-    width: number;
-    height: number;
-    lineA: string;
-    lineB: string;
+    text: string;
   }): Container {
-    const panel = new Container();
-    const bg = new Graphics();
-    bg.roundRect(input.x, input.y, input.width, input.height, 10);
-    bg.fill({ color: 0x0a1322, alpha: 0.66 });
-    bg.stroke({ color: 0x8dc2ff, width: 1.25, alpha: 0.42 });
-    panel.addChild(bg);
-
-    const accent = new Graphics();
-    accent.roundRect(input.x + 8, input.y + 9, 3, input.height - 18, 3);
-    accent.fill({ color: 0x58e6ca, alpha: 0.9 });
-    panel.addChild(accent);
-
-    const top = new Text({
-      text: input.lineA,
+    const container = new Container();
+    const label = new Text({
+      text: input.text,
       style: {
         fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: "800",
         fill: 0xf4f8ff,
-        letterSpacing: 0.5,
+        letterSpacing: 0.2,
         stroke: {
           color: 0x05080f,
-          width: 1
+          width: 2
         }
       }
     });
-    top.position.set(input.x + 18, input.y + 14);
-
-    const bottom = new Text({
-      text: input.lineB,
-      style: {
-        fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-        fontSize: 12,
-        fontWeight: "700",
-        fill: 0xd8e5f5,
-        letterSpacing: 0.45,
-        stroke: {
-          color: 0x05080f,
-          width: 1
-        }
-      }
-    });
-    bottom.position.set(input.x + 18, input.y + 41);
-
-    panel.addChild(top, bottom);
-    return panel;
+    label.position.set(input.x, input.y + 2);
+    label.alpha = 0.97;
+    container.addChild(label);
+    return container;
   }
 
   private createTimerDial(input: {

@@ -1,8 +1,8 @@
 import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { GAME_CONFIG } from "../config/GameConfig";
 import type { ArtistSpriteConfig } from "../config/FestivalConfig";
 import { Artist } from "../entities/Artist";
 import { resolveAssetPath } from "../maps/MapLoader";
-import { TimerRingRenderer } from "./TimerRingRenderer";
 
 const WALK_FRAME_DURATION_MS = 240;
 
@@ -13,11 +13,43 @@ const TIER_STYLE = {
 } as const;
 
 function isWalkState(state: Artist["state"]): boolean {
-  return state === "DRIFTING" || state === "FOLLOWING";
+  return (
+    state === "SPAWNING" ||
+    state === "DRIFTING" ||
+    state === "FOLLOWING" ||
+    state === "ARRIVING"
+  );
 }
 
 function isPerformingState(state: Artist["state"]): boolean {
   return state === "PERFORMING";
+}
+
+function isDistractionState(state: Artist["state"]): boolean {
+  return state === "CHATTING" || state === "DISTRACTED";
+}
+
+function shouldRenderTimerBar(state: Artist["state"]): boolean {
+  return (
+    state === "SPAWNING" ||
+    state === "DRIFTING" ||
+    state === "FOLLOWING" ||
+    state === "CHATTING" ||
+    state === "DISTRACTED" ||
+    state === "ARRIVING"
+  );
+}
+
+function parseHexColor(color: string | null | undefined, fallback: number): number {
+  if (!color) {
+    return fallback;
+  }
+  const normalized = color.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(normalized, 16);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function pickVariantIndex(artistId: string, total: number): number {
@@ -61,19 +93,34 @@ export function resolveArtistSpritePath(
     return profile.sprites.performing;
   }
 
+  if (isDistractionState(artist.state)) {
+    return (
+      profile.sprites.distracted ??
+      profile.sprites.walk[0] ??
+      profile.sprites.idle ??
+      null
+    );
+  }
+
   if (isWalkState(artist.state)) {
+    if (!Array.isArray(profile.sprites.walk) || profile.sprites.walk.length === 0) {
+      return profile.sprites.idle ?? null;
+    }
     const frameIndex =
       Math.floor(nowMs / WALK_FRAME_DURATION_MS) % profile.sprites.walk.length;
     return profile.sprites.walk[frameIndex];
   }
 
-  return profile.sprites.idle;
+  return (
+    profile.sprites.walk[0] ??
+    profile.sprites.idle ??
+    null
+  );
 }
 
 export class ArtistRenderer {
   private readonly layer: Container;
   private readonly artistSprites: ArtistSpriteConfig[];
-  private readonly timerRingRenderer = new TimerRingRenderer();
 
   constructor(layer: Container, artistSprites: ArtistSpriteConfig[] = []) {
     this.layer = layer;
@@ -89,38 +136,90 @@ export class ArtistRenderer {
       }
 
       const style = TIER_STYLE[artist.tier];
+      const renderScale = GAME_CONFIG.artist.renderScale;
+      const spriteSize = Math.round(style.spriteSize * renderScale);
       const container = new Container();
       container.position.set(artist.position.x, artist.position.y);
 
-      const timerProgress = artist.initialTimerSeconds
-        ? artist.timerRemainingSeconds / artist.initialTimerSeconds
+      const bounceOffset = isPerformingState(artist.state)
+        ? Math.sin(
+            (nowMs / 1000) * Math.PI * 2 * GAME_CONFIG.artist.performBounceHz
+          ) * GAME_CONFIG.artist.performBouncePx
         : 0;
-      container.addChild(this.timerRingRenderer.createRing(style.radius, timerProgress));
 
-      const ring = new Graphics();
-      ring.circle(0, 0, style.radius + 4);
-      ring.fill({ color: style.ring, alpha: artist.state === "MISSED" ? 0.25 : 0.42 });
-      ring.stroke({ color: 0x121212, width: 1, alpha: 0.65 });
-      container.addChild(ring);
+      const shadow = new Graphics();
+      shadow.ellipse(
+        0,
+        GAME_CONFIG.artist.shadowOffsetY,
+        Math.max(10, spriteSize * 0.4),
+        Math.max(4, spriteSize * 0.18)
+      );
+      shadow.fill({
+        color: 0x07090f,
+        alpha: GAME_CONFIG.artist.shadowAlpha
+      });
+      container.addChild(shadow);
 
       const spritePath = resolveArtistSpritePath(artist, this.artistSprites, nowMs);
       const texture = spritePath ? this.getTexture(spritePath) : null;
       if (texture) {
+        const outlineSprite = new Sprite(texture);
+        outlineSprite.anchor.set(0.5);
+        outlineSprite.width = spriteSize * 1.08;
+        outlineSprite.height = spriteSize * 1.08;
+        outlineSprite.y = -bounceOffset + 1;
+        outlineSprite.tint = 0x090f1c;
+        outlineSprite.alpha = 0.36;
+        container.addChild(outlineSprite);
+
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5);
-        sprite.width = style.spriteSize;
-        sprite.height = style.spriteSize;
+        sprite.width = spriteSize;
+        sprite.height = spriteSize;
+        sprite.y = -bounceOffset;
         if (artist.state === "MISSED") {
           sprite.tint = 0x7a7a7a;
           sprite.alpha = 0.7;
         }
         container.addChild(sprite);
       } else {
+        const fallbackSize = style.radius * renderScale * 1.35;
         const fallback = new Graphics();
-        fallback.circle(0, 0, style.radius);
+        fallback.roundRect(
+          -fallbackSize / 2,
+          -bounceOffset - fallbackSize / 2,
+          fallbackSize,
+          fallbackSize,
+          Math.max(6, fallbackSize * 0.22)
+        );
         fallback.fill(artist.state === "MISSED" ? 0x4a4a4a : style.fill);
-        fallback.stroke({ color: 0x151515, width: 2 });
+        fallback.stroke({ color: 0x0a0f1c, width: 2.4, alpha: 0.88 });
         container.addChild(fallback);
+      }
+
+      if (shouldRenderTimerBar(artist.state)) {
+        const timerProgress = artist.initialTimerSeconds
+          ? artist.timerRemainingSeconds / artist.initialTimerSeconds
+          : 0;
+        const barWidth = Math.max(18, spriteSize * 0.68);
+        const barHeight = GAME_CONFIG.artist.timerBarHeightPx;
+        const barY = spriteSize * 0.5 + GAME_CONFIG.artist.timerBarPaddingY;
+        const safeProgress = Math.max(0, Math.min(1, timerProgress));
+        const fillWidth = barWidth * safeProgress;
+        const fillRight = barWidth / 2;
+        const fillLeft = fillRight - fillWidth;
+        const stageColor = parseHexColor(artist.assignedStageColor, style.ring);
+
+        const barTrack = new Graphics();
+        barTrack.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+        barTrack.fill({ color: 0x0d1220, alpha: 0.62 });
+        barTrack.stroke({ color: 0x101726, width: 1, alpha: 0.5 });
+        container.addChild(barTrack);
+
+        const barFill = new Graphics();
+        barFill.roundRect(fillLeft, barY, fillWidth, barHeight, 2);
+        barFill.fill({ color: stageColor, alpha: 0.82 });
+        container.addChild(barFill);
       }
 
       this.layer.addChild(container);

@@ -6,15 +6,23 @@
   "schedule": {
     "days": 4,
     "sessionsPerDay": 3,
-    "sessionNames": ["Morning", "Afternoon", "Evening"]
+    "sessionNames": [
+      "Morning",
+      "Afternoon",
+      "Evening"
+    ]
   },
   "totalLevels": 10,
   "background": "assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
+  "introScreen": "assets/ui/stage-rush-intro-mobile.png",
   "stages": [
     {
       "id": "main-stage",
       "size": "large",
-      "position": { "x": 0.5, "y": 0.14 },
+      "position": {
+        "x": 0.5,
+        "y": 0.14
+      },
       "snapRadius": 0.06,
       "sprite": "assets/maps/govball/generated/stages/stage_main_v1.png",
       "color": "#FF6B35"
@@ -22,7 +30,10 @@
     {
       "id": "side-stage",
       "size": "medium",
-      "position": { "x": 0.76, "y": 0.53 },
+      "position": {
+        "x": 0.76,
+        "y": 0.53
+      },
       "snapRadius": 0.055,
       "sprite": "assets/maps/govball/generated/stages/stage_side_v1.png",
       "color": "#00D4FF"
@@ -30,7 +41,10 @@
     {
       "id": "acoustic-stage",
       "size": "small",
-      "position": { "x": 0.52, "y": 0.86 },
+      "position": {
+        "x": 0.52,
+        "y": 0.86
+      },
       "snapRadius": 0.05,
       "sprite": "assets/maps/govball/generated/stages/stage_acoustic_v1.png",
       "color": "#7BFF00"
@@ -39,22 +53,34 @@
   "spawnPoints": [
     {
       "id": "north",
-      "position": { "x": 0.5, "y": 0.0 },
+      "position": {
+        "x": 0.5,
+        "y": 0
+      },
       "driftAngle": 180
     },
     {
       "id": "east",
-      "position": { "x": 1.0, "y": 0.4 },
+      "position": {
+        "x": 1,
+        "y": 0.4
+      },
       "driftAngle": 250
     },
     {
       "id": "south",
-      "position": { "x": 0.6, "y": 1.0 },
+      "position": {
+        "x": 0.6,
+        "y": 1
+      },
       "driftAngle": 350
     },
     {
       "id": "west",
-      "position": { "x": 0.0, "y": 0.65 },
+      "position": {
+        "x": 0,
+        "y": 0.65
+      },
       "driftAngle": 80
     }
   ],
@@ -62,7 +88,10 @@
     {
       "id": "merch1",
       "type": "merch_stand",
-      "position": { "x": 0.5, "y": 0.42 },
+      "position": {
+        "x": 0.5,
+        "y": 0.42
+      },
       "radius": 0.07,
       "delay": 2,
       "appearsAtLevel": 4,
@@ -71,7 +100,10 @@
     {
       "id": "burger1",
       "type": "burger_shack",
-      "position": { "x": 0.3, "y": 0.55 },
+      "position": {
+        "x": 0.3,
+        "y": 0.55
+      },
       "radius": 0.06,
       "delay": 2,
       "appearsAtLevel": 4,
@@ -80,7 +112,10 @@
     {
       "id": "paparazzi1",
       "type": "paparazzi",
-      "position": { "x": 0.65, "y": 0.35 },
+      "position": {
+        "x": 0.65,
+        "y": 0.35
+      },
       "radius": 0.06,
       "delay": 3,
       "appearsAtLevel": 6,
@@ -89,7 +124,10 @@
     {
       "id": "fans1",
       "type": "fan_crowd",
-      "position": { "x": 0.45, "y": 0.68 },
+      "position": {
+        "x": 0.45,
+        "y": 0.68
+      },
       "radius": 0.08,
       "delay": 3,
       "appearsAtLevel": 7,
@@ -98,7 +136,10 @@
     {
       "id": "burger2",
       "type": "burger_shack",
-      "position": { "x": 0.72, "y": 0.72 },
+      "position": {
+        "x": 0.72,
+        "y": 0.72
+      },
       "radius": 0.06,
       "delay": 2,
       "appearsAtLevel": 8,
@@ -107,7 +148,10 @@
     {
       "id": "merch2",
       "type": "merch_stand",
-      "position": { "x": 0.18, "y": 0.48 },
+      "position": {
+        "x": 0.18,
+        "y": 0.48
+      },
       "radius": 0.07,
       "delay": 2,
       "appearsAtLevel": 9,
@@ -120,100 +164,235 @@
       "totalArtists": 12,
       "targetSets": 7,
       "maxSimultaneous": 2,
-      "timerRange": [18, 24],
-      "tierWeights": { "headliner": 0.2, "midtier": 0.4, "newcomer": 0.4 },
+      "timerRange": [
+        18,
+        24
+      ],
+      "tierWeights": {
+        "headliner": 0.2,
+        "midtier": 0.4,
+        "newcomer": 0.4
+      },
       "activeDistractions": [],
-      "spawnInterval": [1400, 2200]
+      "spawnInterval": [
+        1400,
+        2200
+      ]
     },
     {
       "levelNumber": 2,
       "totalArtists": 14,
       "targetSets": 8,
       "maxSimultaneous": 2,
-      "timerRange": [17, 23],
-      "tierWeights": { "headliner": 0.22, "midtier": 0.4, "newcomer": 0.38 },
+      "timerRange": [
+        17,
+        23
+      ],
+      "tierWeights": {
+        "headliner": 0.22,
+        "midtier": 0.4,
+        "newcomer": 0.38
+      },
       "activeDistractions": [],
-      "spawnInterval": [1300, 2100]
+      "spawnInterval": [
+        1300,
+        2100
+      ]
     },
     {
       "levelNumber": 3,
       "totalArtists": 16,
       "targetSets": 9,
       "maxSimultaneous": 3,
-      "timerRange": [15, 21],
-      "tierWeights": { "headliner": 0.24, "midtier": 0.4, "newcomer": 0.36 },
+      "timerRange": [
+        15,
+        21
+      ],
+      "tierWeights": {
+        "headliner": 0.24,
+        "midtier": 0.4,
+        "newcomer": 0.36
+      },
       "activeDistractions": [],
-      "spawnInterval": [1200, 2000]
+      "spawnInterval": [
+        1200,
+        2000
+      ]
     },
     {
       "levelNumber": 4,
       "totalArtists": 18,
       "targetSets": 10,
       "maxSimultaneous": 3,
-      "timerRange": [14, 20],
-      "tierWeights": { "headliner": 0.25, "midtier": 0.4, "newcomer": 0.35 },
-      "activeDistractions": ["merch1", "burger1"],
-      "spawnInterval": [1100, 1900]
+      "timerRange": [
+        14,
+        20
+      ],
+      "tierWeights": {
+        "headliner": 0.25,
+        "midtier": 0.4,
+        "newcomer": 0.35
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1"
+      ],
+      "spawnInterval": [
+        1100,
+        1900
+      ]
     },
     {
       "levelNumber": 5,
       "totalArtists": 20,
       "targetSets": 11,
       "maxSimultaneous": 3,
-      "timerRange": [13, 19],
-      "tierWeights": { "headliner": 0.27, "midtier": 0.4, "newcomer": 0.33 },
-      "activeDistractions": ["merch1", "burger1"],
-      "spawnInterval": [1000, 1800]
+      "timerRange": [
+        13,
+        19
+      ],
+      "tierWeights": {
+        "headliner": 0.27,
+        "midtier": 0.4,
+        "newcomer": 0.33
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1"
+      ],
+      "spawnInterval": [
+        1000,
+        1800
+      ]
     },
     {
       "levelNumber": 6,
       "totalArtists": 22,
       "targetSets": 12,
       "maxSimultaneous": 4,
-      "timerRange": [12, 18],
-      "tierWeights": { "headliner": 0.29, "midtier": 0.4, "newcomer": 0.31 },
-      "activeDistractions": ["merch1", "burger1", "paparazzi1"],
-      "spawnInterval": [900, 1700]
+      "timerRange": [
+        12,
+        18
+      ],
+      "tierWeights": {
+        "headliner": 0.29,
+        "midtier": 0.4,
+        "newcomer": 0.31
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1",
+        "paparazzi1"
+      ],
+      "spawnInterval": [
+        900,
+        1700
+      ]
     },
     {
       "levelNumber": 7,
       "totalArtists": 24,
       "targetSets": 13,
       "maxSimultaneous": 4,
-      "timerRange": [11, 17],
-      "tierWeights": { "headliner": 0.31, "midtier": 0.39, "newcomer": 0.3 },
-      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1"],
-      "spawnInterval": [850, 1600]
+      "timerRange": [
+        11,
+        17
+      ],
+      "tierWeights": {
+        "headliner": 0.31,
+        "midtier": 0.39,
+        "newcomer": 0.3
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1",
+        "paparazzi1",
+        "fans1"
+      ],
+      "spawnInterval": [
+        850,
+        1600
+      ]
     },
     {
       "levelNumber": 8,
       "totalArtists": 26,
       "targetSets": 14,
       "maxSimultaneous": 4,
-      "timerRange": [10, 16],
-      "tierWeights": { "headliner": 0.33, "midtier": 0.38, "newcomer": 0.29 },
-      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2"],
-      "spawnInterval": [800, 1500]
+      "timerRange": [
+        10,
+        16
+      ],
+      "tierWeights": {
+        "headliner": 0.33,
+        "midtier": 0.38,
+        "newcomer": 0.29
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1",
+        "paparazzi1",
+        "fans1",
+        "burger2"
+      ],
+      "spawnInterval": [
+        800,
+        1500
+      ]
     },
     {
       "levelNumber": 9,
       "totalArtists": 28,
       "targetSets": 15,
       "maxSimultaneous": 5,
-      "timerRange": [9, 14],
-      "tierWeights": { "headliner": 0.35, "midtier": 0.37, "newcomer": 0.28 },
-      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2", "merch2"],
-      "spawnInterval": [750, 1400]
+      "timerRange": [
+        9,
+        14
+      ],
+      "tierWeights": {
+        "headliner": 0.35,
+        "midtier": 0.37,
+        "newcomer": 0.28
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1",
+        "paparazzi1",
+        "fans1",
+        "burger2",
+        "merch2"
+      ],
+      "spawnInterval": [
+        750,
+        1400
+      ]
     },
     {
       "levelNumber": 10,
       "totalArtists": 30,
       "targetSets": 16,
       "maxSimultaneous": 5,
-      "timerRange": [8, 13],
-      "tierWeights": { "headliner": 0.37, "midtier": 0.36, "newcomer": 0.27 },
-      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2", "merch2"],
-      "spawnInterval": [700, 1300]
+      "timerRange": [
+        8,
+        13
+      ],
+      "tierWeights": {
+        "headliner": 0.37,
+        "midtier": 0.36,
+        "newcomer": 0.27
+      },
+      "activeDistractions": [
+        "merch1",
+        "burger1",
+        "paparazzi1",
+        "fans1",
+        "burger2",
+        "merch2"
+      ],
+      "spawnInterval": [
+        700,
+        1300
+      ]
     }
   ],
   "assets": {
@@ -222,14 +401,30 @@
         "id": "headliner-a",
         "name": "Vanta",
         "tier": "headliner",
+        "genre": "Electro Pop",
         "debutLevel": 1,
-        "rotationWeight": 2,
+        "rotationWeight": 2.2,
+        "seed": 112301,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Vanta (Electro Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Electro Pop festival artist sprite for Vanta, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Electro Pop festival artist sprite for Vanta, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Electro Pop festival artist sprite for Vanta, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Electro Pop festival artist sprite for Vanta, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Electro Pop festival artist sprite for Vanta, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Vanta (Electro Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_headliner_a_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_a_walk2.png"
+            "assets/maps/govball/artists/artist_headliner_a_walk2.png",
+            "assets/maps/govball/artists/artist_headliner_a_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_a_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_headliner_a_distracted.png",
           "performing": "assets/maps/govball/artists/artist_headliner_a_perform.png"
         }
       },
@@ -237,14 +432,30 @@
         "id": "headliner-b",
         "name": "Neon Ritual",
         "tier": "headliner",
-        "debutLevel": 4,
-        "rotationWeight": 1.5,
+        "genre": "Synthwave",
+        "debutLevel": 2,
+        "rotationWeight": 1.9,
+        "seed": 225417,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Neon Ritual (Synthwave) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Neon Ritual (Synthwave) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_headliner_b_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_b_walk2.png"
+            "assets/maps/govball/artists/artist_headliner_b_walk2.png",
+            "assets/maps/govball/artists/artist_headliner_b_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_b_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_headliner_b_distracted.png",
           "performing": "assets/maps/govball/artists/artist_headliner_b_perform.png"
         }
       },
@@ -252,29 +463,123 @@
         "id": "headliner-c",
         "name": "Skyline Echo",
         "tier": "headliner",
-        "debutLevel": 7,
-        "rotationWeight": 1.2,
+        "genre": "Alt Rock",
+        "debutLevel": 4,
+        "rotationWeight": 1.7,
+        "seed": 338509,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Skyline Echo (Alt Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Skyline Echo (Alt Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_headliner_c_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_c_walk2.png"
+            "assets/maps/govball/artists/artist_headliner_c_walk2.png",
+            "assets/maps/govball/artists/artist_headliner_c_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_c_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_headliner_c_distracted.png",
           "performing": "assets/maps/govball/artists/artist_headliner_c_perform.png"
+        }
+      },
+      {
+        "id": "headliner-d",
+        "name": "Midnight Atlas",
+        "tier": "headliner",
+        "genre": "Future Bass",
+        "debutLevel": 6,
+        "rotationWeight": 1.45,
+        "seed": 447620,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Midnight Atlas (Future Bass) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Midnight Atlas (Future Bass) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_headliner_d_walk1.png",
+            "assets/maps/govball/artists/artist_headliner_d_walk2.png",
+            "assets/maps/govball/artists/artist_headliner_d_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_headliner_d_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_headliner_d_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_headliner_d_perform.png"
+        }
+      },
+      {
+        "id": "headliner-e",
+        "name": "Nova Tide",
+        "tier": "headliner",
+        "genre": "House",
+        "debutLevel": 8,
+        "rotationWeight": 1.2,
+        "seed": 556731,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Nova Tide (House) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized House festival artist sprite for Nova Tide, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized House festival artist sprite for Nova Tide, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized House festival artist sprite for Nova Tide, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized House festival artist sprite for Nova Tide, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized House festival artist sprite for Nova Tide, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Nova Tide (House) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_headliner_e_walk1.png",
+            "assets/maps/govball/artists/artist_headliner_e_walk2.png",
+            "assets/maps/govball/artists/artist_headliner_e_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_headliner_e_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_headliner_e_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_headliner_e_perform.png"
         }
       },
       {
         "id": "mid-a",
         "name": "Eastbound Lights",
         "tier": "midtier",
+        "genre": "Indie Dance",
         "debutLevel": 1,
-        "rotationWeight": 1.8,
+        "rotationWeight": 1.95,
+        "seed": 118823,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Eastbound Lights (Indie Dance) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Eastbound Lights (Indie Dance) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_mid_a_walk1.png",
-            "assets/maps/govball/artists/artist_mid_a_walk2.png"
+            "assets/maps/govball/artists/artist_mid_a_walk2.png",
+            "assets/maps/govball/artists/artist_mid_a_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_a_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_mid_a_distracted.png",
           "performing": "assets/maps/govball/artists/artist_mid_a_perform.png"
         }
       },
@@ -282,14 +587,30 @@
         "id": "mid-b",
         "name": "Concrete Pulse",
         "tier": "midtier",
-        "debutLevel": 3,
-        "rotationWeight": 1.5,
+        "genre": "Rap Rock",
+        "debutLevel": 2,
+        "rotationWeight": 1.7,
+        "seed": 229934,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Concrete Pulse (Rap Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Concrete Pulse (Rap Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_mid_b_walk1.png",
-            "assets/maps/govball/artists/artist_mid_b_walk2.png"
+            "assets/maps/govball/artists/artist_mid_b_walk2.png",
+            "assets/maps/govball/artists/artist_mid_b_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_b_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_mid_b_distracted.png",
           "performing": "assets/maps/govball/artists/artist_mid_b_perform.png"
         }
       },
@@ -297,29 +618,123 @@
         "id": "mid-c",
         "name": "Riverside Wire",
         "tier": "midtier",
-        "debutLevel": 6,
-        "rotationWeight": 1.2,
+        "genre": "Neo Soul",
+        "debutLevel": 4,
+        "rotationWeight": 1.5,
+        "seed": 341045,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Riverside Wire (Neo Soul) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Riverside Wire (Neo Soul) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_mid_c_walk1.png",
-            "assets/maps/govball/artists/artist_mid_c_walk2.png"
+            "assets/maps/govball/artists/artist_mid_c_walk2.png",
+            "assets/maps/govball/artists/artist_mid_c_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_c_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_mid_c_distracted.png",
           "performing": "assets/maps/govball/artists/artist_mid_c_perform.png"
+        }
+      },
+      {
+        "id": "mid-d",
+        "name": "Velvet Loop",
+        "tier": "midtier",
+        "genre": "Dream Pop",
+        "debutLevel": 6,
+        "rotationWeight": 1.35,
+        "seed": 452156,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Velvet Loop (Dream Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Velvet Loop (Dream Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_mid_d_walk1.png",
+            "assets/maps/govball/artists/artist_mid_d_walk2.png",
+            "assets/maps/govball/artists/artist_mid_d_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_mid_d_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_mid_d_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_mid_d_perform.png"
+        }
+      },
+      {
+        "id": "mid-e",
+        "name": "Signal Bloom",
+        "tier": "midtier",
+        "genre": "UK Garage",
+        "debutLevel": 8,
+        "rotationWeight": 1.15,
+        "seed": 563267,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Signal Bloom (UK Garage) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Signal Bloom (UK Garage) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_mid_e_walk1.png",
+            "assets/maps/govball/artists/artist_mid_e_walk2.png",
+            "assets/maps/govball/artists/artist_mid_e_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_mid_e_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_mid_e_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_mid_e_perform.png"
         }
       },
       {
         "id": "new-a",
         "name": "Pocket Amp",
         "tier": "newcomer",
+        "genre": "Bedroom Pop",
         "debutLevel": 1,
-        "rotationWeight": 2.2,
+        "rotationWeight": 2.3,
+        "seed": 174390,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Pocket Amp (Bedroom Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Pocket Amp (Bedroom Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_new_a_walk1.png",
-            "assets/maps/govball/artists/artist_new_a_walk2.png"
+            "assets/maps/govball/artists/artist_new_a_walk2.png",
+            "assets/maps/govball/artists/artist_new_a_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_a_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_new_a_distracted.png",
           "performing": "assets/maps/govball/artists/artist_new_a_perform.png"
         }
       },
@@ -327,14 +742,30 @@
         "id": "new-b",
         "name": "Parkline",
         "tier": "newcomer",
+        "genre": "Lo-fi Hip-Hop",
         "debutLevel": 2,
-        "rotationWeight": 1.8,
+        "rotationWeight": 2,
+        "seed": 285401,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Parkline (Lo-fi Hip-Hop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Parkline (Lo-fi Hip-Hop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_new_b_walk1.png",
-            "assets/maps/govball/artists/artist_new_b_walk2.png"
+            "assets/maps/govball/artists/artist_new_b_walk2.png",
+            "assets/maps/govball/artists/artist_new_b_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_b_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_new_b_distracted.png",
           "performing": "assets/maps/govball/artists/artist_new_b_perform.png"
         }
       },
@@ -342,15 +773,93 @@
         "id": "new-c",
         "name": "Greenroom Static",
         "tier": "newcomer",
-        "debutLevel": 4,
-        "rotationWeight": 1.4,
+        "genre": "Hyperpop",
+        "debutLevel": 3,
+        "rotationWeight": 1.8,
+        "seed": 396512,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Greenroom Static (Hyperpop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Greenroom Static (Hyperpop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
         "sprites": {
           "walk": [
             "assets/maps/govball/artists/artist_new_c_walk1.png",
-            "assets/maps/govball/artists/artist_new_c_walk2.png"
+            "assets/maps/govball/artists/artist_new_c_walk2.png",
+            "assets/maps/govball/artists/artist_new_c_walk3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_c_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_new_c_distracted.png",
           "performing": "assets/maps/govball/artists/artist_new_c_perform.png"
+        }
+      },
+      {
+        "id": "new-d",
+        "name": "Subway Flora",
+        "tier": "newcomer",
+        "genre": "Afrobeat",
+        "debutLevel": 5,
+        "rotationWeight": 1.5,
+        "seed": 507623,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Subway Flora (Afrobeat) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Subway Flora (Afrobeat) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_new_d_walk1.png",
+            "assets/maps/govball/artists/artist_new_d_walk2.png",
+            "assets/maps/govball/artists/artist_new_d_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_new_d_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_new_d_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_new_d_perform.png"
+        }
+      },
+      {
+        "id": "new-e",
+        "name": "Cloud Cartel",
+        "tier": "newcomer",
+        "genre": "R&B",
+        "debutLevel": 7,
+        "rotationWeight": 1.3,
+        "seed": 618734,
+        "performanceAudio": {
+          "lengthSec": 3,
+          "promptText": "Short performance sting for Cloud Cartel (R&B) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "promptByPose": {
+          "pose1": "Top-down stylized R&B festival artist sprite for Cloud Cartel, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
+          "pose2": "Top-down stylized R&B festival artist sprite for Cloud Cartel, pose 2: stride transition with opposite leg/arm, same outfit identity, transparent background, clean outline, no text.",
+          "pose3": "Top-down stylized R&B festival artist sprite for Cloud Cartel, pose 3: energetic in-route motion, same character identity and outfit, transparent background, clean outline, no text.",
+          "distracted": "Top-down stylized R&B festival artist sprite for Cloud Cartel, distracted pose: briefly stopped, looking sideways with curious reaction, transparent background, clean outline, no text.",
+          "performing": "Top-down stylized R&B festival artist sprite for Cloud Cartel, performance pose: stage-ready expressive stance, confident and iconic silhouette, transparent background, clean outline, no text.",
+          "performanceAudio": "Short performance sting for Cloud Cartel (R&B) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+        },
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_new_e_walk1.png",
+            "assets/maps/govball/artists/artist_new_e_walk2.png",
+            "assets/maps/govball/artists/artist_new_e_walk3.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_new_e_idle.png",
+          "distracted": "assets/maps/govball/artists/artist_new_e_distracted.png",
+          "performing": "assets/maps/govball/artists/artist_new_e_perform.png"
         }
       }
     ],

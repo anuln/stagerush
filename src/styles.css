@@ -16,6 +16,7 @@
   --theme-motion-micro-ms: 140;
   --theme-motion-transition-ms: 280;
   --theme-motion-hero-ms: 520;
+  --intro-screen-image: url("/assets/ui/stage-rush-intro-mobile.png");
   --bg-night: #050810;
   --bg-midnight: #131a33;
   --overlay-smoke: rgba(7, 10, 18, 0.72);
@@ -154,7 +155,7 @@ canvas {
       rgba(6, 12, 22, 0.78) 72%,
       rgba(6, 12, 22, 0.93) 100%
     ),
-    url("/assets/ui/stage-rush-intro-mobile.png") center / cover no-repeat;
+    var(--intro-screen-image) center / cover no-repeat;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

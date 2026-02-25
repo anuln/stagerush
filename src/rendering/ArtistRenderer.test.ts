@@ -9,8 +9,12 @@ const artistSprites: ArtistSpriteConfig[] = [
     name: "Headliner A",
     tier: "headliner",
     sprites: {
-      walk: ["artists/headliner-a-walk1.png", "artists/headliner-a-walk2.png"],
-      idle: "artists/headliner-a-idle.png",
+      walk: [
+        "artists/headliner-a-walk1.png",
+        "artists/headliner-a-walk2.png",
+        "artists/headliner-a-walk3.png"
+      ],
+      distracted: "artists/headliner-a-distracted.png",
       performing: "artists/headliner-a-performing.png"
     }
   },
@@ -20,7 +24,7 @@ const artistSprites: ArtistSpriteConfig[] = [
     tier: "newcomer",
     sprites: {
       walk: ["artists/new-a-walk1.png", "artists/new-a-walk2.png"],
-      idle: "artists/new-a-idle.png",
+      distracted: "artists/new-a-distracted.png",
       performing: "artists/new-a-performing.png"
     }
   }
@@ -57,7 +61,7 @@ describe("resolveArtistSpritePath", () => {
     const performing = makeArtist("new-1", "newcomer", "PERFORMING");
 
     expect(resolveArtistSpritePath(chatting, artistSprites, 0)).toBe(
-      "artists/new-a-idle.png"
+      "artists/new-a-distracted.png"
     );
     expect(resolveArtistSpritePath(performing, artistSprites, 0)).toBe(
       "artists/new-a-performing.png"
@@ -67,6 +71,27 @@ describe("resolveArtistSpritePath", () => {
   it("returns null when no sprite config exists for tier", () => {
     const artist = makeArtist("mid-1", "midtier", "DRIFTING");
     expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBeNull();
+  });
+
+  it("does not use performance pose while routing when walk/idle are missing", () => {
+    const sparseSprites: ArtistSpriteConfig[] = [
+      {
+        id: "new-solo",
+        name: "New Solo",
+        tier: "newcomer",
+        sprites: {
+          walk: [],
+          performing: "artists/new-solo-performing.png"
+        }
+      }
+    ];
+    const routingArtist = makeArtist("new-3", "newcomer", "FOLLOWING");
+    const performingArtist = makeArtist("new-3", "newcomer", "PERFORMING");
+
+    expect(resolveArtistSpritePath(routingArtist, sparseSprites, 0)).toBeNull();
+    expect(resolveArtistSpritePath(performingArtist, sparseSprites, 0)).toBe(
+      "artists/new-solo-performing.png"
+    );
   });
 
   it("prefers explicit sprite profile id over id-derived tier rotation", () => {

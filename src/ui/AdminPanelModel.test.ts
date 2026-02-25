@@ -19,6 +19,7 @@ function makeFixtureMap(): FestivalMap {
     description: "Fixture",
     totalLevels: 1,
     background: "assets/maps/fixture/background.png",
+    introScreen: "assets/ui/fixture-intro.png",
     stages: [
       {
         id: "main-stage",
@@ -156,8 +157,9 @@ describe("AdminPanelModel", () => {
       makeAudioCatalog()
     );
 
-    expect(slots).toHaveLength(11);
+    expect(slots).toHaveLength(14);
     expect(slots[0].id).toBe("background");
+    expect(slots[1].id).toBe("intro-screen");
     const bgSlot = slots.find((slot) => slot.id === "background");
     expect(bgSlot?.promptText).toBe("Background prompt");
 
@@ -177,6 +179,12 @@ describe("AdminPanelModel", () => {
 
     next = setOverrideForSlot(next, stageMeta, null);
     expect(next.stageSprites).toBeUndefined();
+
+    const introMeta: SlotMeta = { kind: "introScreen" };
+    next = setOverrideForSlot(next, introMeta, "assets/ui/new-intro.png");
+    expect(next.introScreen).toBe("assets/ui/new-intro.png");
+    next = setOverrideForSlot(next, introMeta, null);
+    expect(next.introScreen).toBeUndefined();
 
     const audioMeta: SlotMeta = {
       kind: "audio",
@@ -208,7 +216,7 @@ describe("AdminPanelModel", () => {
     expect(stageOnly).toHaveLength(2);
 
     const query = filterAssetSlots(slots, "headliner", "all");
-    expect(query).toHaveLength(4);
+    expect(query).toHaveLength(6);
   });
 
   it("includes only in-play artist slots for selected level", () => {

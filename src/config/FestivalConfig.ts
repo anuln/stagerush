@@ -41,11 +41,28 @@ export interface ArtistSpriteConfig {
   id: string;
   name: string;
   tier: ArtistTier;
+  genre?: string;
   debutLevel?: number;
   rotationWeight?: number;
+  seed?: number;
+  seedDeterminismWarning?: string;
+  performanceAudio?: {
+    clip?: AssetPath;
+    lengthSec?: number;
+    promptText?: string;
+  };
+  promptByPose?: {
+    pose1?: string;
+    pose2?: string;
+    pose3?: string;
+    distracted?: string;
+    performing?: string;
+    performanceAudio?: string;
+  };
   sprites: {
     walk: AssetPath[];
-    idle: AssetPath;
+    idle?: AssetPath;
+    distracted?: AssetPath;
     performing: AssetPath;
   };
 }
@@ -86,6 +103,7 @@ export interface FestivalMap {
   schedule?: FestivalScheduleConfig;
   totalLevels: number;
   background: AssetPath;
+  introScreen?: AssetPath;
   stages: StageConfig[];
   spawnPoints: SpawnPointConfig[];
   distractions: DistractionConfig[];

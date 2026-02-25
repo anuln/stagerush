@@ -39,6 +39,8 @@ function normalizeVector(
 }
 
 interface SpawnTarget {
+  id: string;
+  color: string;
   screenPosition: { x: number; y: number };
 }
 
@@ -162,6 +164,8 @@ export class SpawnSystem {
       id: `artist-${this.level.levelNumber}-${this.spawnedCount + 1}`,
       tier,
       spriteProfileId: this.pickArtistProfileId?.(tier) ?? undefined,
+      assignedStageId: targetStage?.id ?? null,
+      assignedStageColor: targetStage?.color ?? null,
       position: spawnPosition,
       velocity,
       timerSeconds,

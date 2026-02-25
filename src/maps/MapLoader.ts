@@ -88,6 +88,9 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
   if (parsed.themeId !== undefined) {
     requireString(parsed.themeId, "themeId");
   }
+  if (parsed.introScreen !== undefined) {
+    requireString(parsed.introScreen, "introScreen");
+  }
   if (parsed.schedule !== undefined) {
     if (!isObject(parsed.schedule)) {
       throw new Error("schedule must be an object");
@@ -245,6 +248,12 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
     requireString(artist.id, `assets.artists[${index}].id`);
     requireString(artist.name, `assets.artists[${index}].name`);
     if (
+      artist.genre !== undefined &&
+      (typeof artist.genre !== "string" || artist.genre.trim().length === 0)
+    ) {
+      throw new Error(`assets.artists[${index}].genre must be a non-empty string`);
+    }
+    if (
       artist.debutLevel !== undefined &&
       (!Number.isInteger(artist.debutLevel) || artist.debutLevel < 1)
     ) {
@@ -256,17 +265,54 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
     ) {
       throw new Error(`assets.artists[${index}].rotationWeight must be > 0`);
     }
-    if (!Array.isArray(artist.sprites.walk) || artist.sprites.walk.length < 2) {
-      throw new Error(`assets.artists[${index}].sprites.walk must contain at least 2 frames`);
+    if (
+      artist.seed !== undefined &&
+      (!Number.isInteger(artist.seed) || artist.seed < 0)
+    ) {
+      throw new Error(`assets.artists[${index}].seed must be a non-negative integer`);
+    }
+    if (!Array.isArray(artist.sprites.walk) || artist.sprites.walk.length < 1) {
+      throw new Error(`assets.artists[${index}].sprites.walk must contain at least 1 frame`);
     }
     artist.sprites.walk.forEach((path, frameIndex) => {
       requireString(path, `assets.artists[${index}].sprites.walk[${frameIndex}]`);
     });
-    requireString(artist.sprites.idle, `assets.artists[${index}].sprites.idle`);
+    if (artist.sprites.idle !== undefined) {
+      requireString(artist.sprites.idle, `assets.artists[${index}].sprites.idle`);
+    }
+    if (artist.sprites.distracted !== undefined) {
+      requireString(
+        artist.sprites.distracted,
+        `assets.artists[${index}].sprites.distracted`
+      );
+    }
     requireString(
       artist.sprites.performing,
       `assets.artists[${index}].sprites.performing`
     );
+    if (artist.performanceAudio) {
+      if (artist.performanceAudio.clip !== undefined) {
+        requireString(
+          artist.performanceAudio.clip,
+          `assets.artists[${index}].performanceAudio.clip`
+        );
+      }
+      if (
+        artist.performanceAudio.lengthSec !== undefined &&
+        (!Number.isFinite(artist.performanceAudio.lengthSec) ||
+          artist.performanceAudio.lengthSec <= 0)
+      ) {
+        throw new Error(
+          `assets.artists[${index}].performanceAudio.lengthSec must be > 0`
+        );
+      }
+      if (artist.performanceAudio.promptText !== undefined) {
+        requireString(
+          artist.performanceAudio.promptText,
+          `assets.artists[${index}].performanceAudio.promptText`
+        );
+      }
+    }
   });
 
   for (const stageId of stageIds) {
@@ -336,6 +382,9 @@ export function collectMapAssetPaths(map: FestivalMap): string[] {
   const paths = new Set<string>();
 
   paths.add(map.background);
+  if (map.introScreen) {
+    paths.add(map.introScreen);
+  }
   for (const stage of map.stages) {
     paths.add(stage.sprite);
   }
@@ -346,8 +395,16 @@ export function collectMapAssetPaths(map: FestivalMap): string[] {
     for (const walkFrame of artist.sprites.walk) {
       paths.add(walkFrame);
     }
-    paths.add(artist.sprites.idle);
+    if (artist.sprites.idle) {
+      paths.add(artist.sprites.idle);
+    }
+    if (artist.sprites.distracted) {
+      paths.add(artist.sprites.distracted);
+    }
     paths.add(artist.sprites.performing);
+    if (artist.performanceAudio?.clip) {
+      paths.add(artist.performanceAudio.clip);
+    }
   }
   for (const stageSprite of Object.values(map.assets.stageSprites)) {
     paths.add(stageSprite);

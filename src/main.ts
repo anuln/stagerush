@@ -37,7 +37,12 @@ import {
   GameRuntime,
   type RuntimeTelemetrySnapshot as GameRuntimeTelemetrySnapshot
 } from "./game/GameRuntime";
-import { loadFestivalMap, resolveFestivalLayout, type ResolvedFestivalLayout } from "./maps/MapLoader";
+import {
+  loadFestivalMap,
+  resolveAssetPath,
+  resolveFestivalLayout,
+  type ResolvedFestivalLayout
+} from "./maps/MapLoader";
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
 import { RunPersistence } from "./persistence/RunPersistence";
@@ -142,6 +147,15 @@ function parseCssPixels(value: string | null): number {
   }
   const parsed = Number.parseFloat(value.trim().replace("px", ""));
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function applyIntroScreenAsset(path?: string): void {
+  const resolved = resolveAssetPath(path?.trim() || "assets/ui/stage-rush-intro-mobile.png");
+  const escaped = resolved.replace(/"/g, '\\"');
+  document.documentElement.style.setProperty(
+    "--intro-screen-image",
+    `url("${escaped}")`
+  );
 }
 
 function readSafeAreaInsets(): { top: number; bottom: number } {
@@ -281,6 +295,7 @@ async function bootstrap(): Promise<void> {
     const previewMap = hasAdminAssetOverrides(nextOverrides)
       ? applyAdminAssetOverrides(sourceMap, nextOverrides)
       : sourceMap;
+    applyIntroScreenAsset(previewMap.introScreen);
     bundleManager.registerManifest(
       createFestivalBundleManifest(previewMap, activeBundleId)
     );
@@ -311,6 +326,7 @@ async function bootstrap(): Promise<void> {
     const map = hasAdminAssetOverrides(initialOverrides)
       ? applyAdminAssetOverrides(sourceMap, initialOverrides)
       : sourceMap;
+    applyIntroScreenAsset(map.introScreen);
     bundleManager.registerManifest(
       createFestivalBundleManifest(map, activeBundleId)
     );

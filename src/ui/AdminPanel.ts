@@ -20,6 +20,13 @@ import {
 } from "./AdminPanelModel";
 
 type AdminTab = "assets" | "generate" | "map" | "library" | "publish";
+type ArtistSlotField =
+  | "walk1"
+  | "walk2"
+  | "walk3"
+  | "distracted"
+  | "performing"
+  | "performanceAudioClip";
 
 interface AdminPanelOptions {
   map: FestivalMap;
@@ -35,6 +42,7 @@ interface AdminPanelOptions {
 
 const GEMINI_KEY_STORAGE_KEY = "stagecall:admin:gemini-key";
 const GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-image-preview";
+const ELEVENLABS_KEY_STORAGE_KEY = "stagecall:admin:elevenlabs-key";
 const GITHUB_TOKEN_STORAGE_KEY = "stagecall:admin:github-token";
 const GITHUB_SETTINGS_STORAGE_KEY = "stagecall:admin:github-settings:v1";
 
@@ -343,11 +351,18 @@ export class AdminPanel {
   private slotCandidates = new Map<string, string>();
   private promptDraftBySlot = new Map<string, string>();
   private pathDraftBySlot = new Map<string, string>();
+  private audioLengthDraftBySlot = new Map<string, string>();
   private generateStatus = "";
   private isGenerating = false;
   private geminiApiKey = "";
   private geminiModel = GEMINI_MODEL_DEFAULT;
   private rememberGeminiKey = false;
+  private elevenLabsApiKey = "";
+  private rememberElevenLabsKey = false;
+  private selectedArtistId: string | null = null;
+  private artistSeedDraftByArtist = new Map<string, string>();
+  private artistAudioLengthDraftByArtist = new Map<string, string>();
+  private artistSeedWarningByArtist = new Map<string, string>();
   private githubToken = "";
   private rememberGithubToken = false;
   private rememberGithubSettings = true;
@@ -360,6 +375,8 @@ export class AdminPanel {
   private publishStatus = "";
   private isPublishing = false;
   private isOpen = true;
+  private sidebarScrollTop = 0;
+  private workspaceScrollTop = 0;
 
   constructor(options: AdminPanelOptions) {
     this.map = options.map;
@@ -377,6 +394,11 @@ export class AdminPanel {
     if (rememberedGeminiKey && rememberedGeminiKey.trim().length > 0) {
       this.geminiApiKey = rememberedGeminiKey;
       this.rememberGeminiKey = true;
+    }
+    const rememberedElevenKey = window.localStorage.getItem(ELEVENLABS_KEY_STORAGE_KEY);
+    if (rememberedElevenKey && rememberedElevenKey.trim().length > 0) {
+      this.elevenLabsApiKey = rememberedElevenKey;
+      this.rememberElevenLabsKey = true;
     }
     this.githubTargetPath = toRepoPathFromPublicUrl(this.mapConfigPath);
     this.githubSnapshotPath = `public/assets/admin/snapshots/${this.activeFestivalId}.overrides.json`;
@@ -507,6 +529,309 @@ export class AdminPanel {
     return slot;
   }
 
+  private getArtistGroups(slots: AssetSlot[]): Array<{
+    artistId: string;
+    label: string;
+    state: "override" | "default";
+    slotIds: string[];
+  }> {
+    const groups = new Map<
+      string,
+      { label: string; hasOverride: boolean; slotIds: string[] }
+    >();
+    for (const slot of slots) {
+      if (slot.meta.kind !== "artist") {
+        continue;
+      }
+      const artistId = slot.meta.artistId;
+      const artistOverride = this.draftOverrides.artistSprites?.[artistId];
+      const artist = this.map.assets.artists.find(
+        (entry) => entry.id === artistId
+      );
+      const label = artist
+        ? `${artist.name} (${artist.tier})`
+        : artistId;
+      const current = groups.get(artistId) ?? {
+        label,
+        hasOverride: false,
+        slotIds: []
+      };
+      current.hasOverride =
+        current.hasOverride ||
+        Boolean(slot.overridePath) ||
+        Boolean(artistOverride?.seed) ||
+        Boolean(artistOverride?.seedDeterminismWarning) ||
+        Boolean(artistOverride?.performanceAudioLengthSec);
+      current.slotIds.push(slot.id);
+      groups.set(artistId, current);
+    }
+    return Array.from(groups.entries())
+      .map(([artistId, value]) => ({
+        artistId,
+        label: value.label,
+        state: (value.hasOverride ? "override" : "default") as "override" | "default",
+        slotIds: value.slotIds
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  private isArtistEditingMode(): boolean {
+    return (
+      (this.activeTab === "assets" || this.activeTab === "generate") &&
+      this.categoryFilter === "artist"
+    );
+  }
+
+  private getArtistSlots(slots: AssetSlot[], artistId: string): AssetSlot[] {
+    return slots.filter(
+      (slot): slot is AssetSlot =>
+        slot.meta.kind === "artist" && slot.meta.artistId === artistId
+    );
+  }
+
+  private getArtistSlotByField(
+    slots: AssetSlot[],
+    artistId: string,
+    field: ArtistSlotField
+  ): AssetSlot | null {
+    return (
+      slots.find(
+        (slot) =>
+          slot.meta.kind === "artist" &&
+          slot.meta.artistId === artistId &&
+          slot.meta.field === field
+      ) ?? null
+    );
+  }
+
+  private getArtistSeedWarning(artistId: string): string {
+    const draft = this.artistSeedWarningByArtist.get(artistId);
+    if (draft !== undefined) {
+      return draft;
+    }
+    const overrideWarning =
+      this.draftOverrides.artistSprites?.[artistId]?.seedDeterminismWarning;
+    if (overrideWarning && overrideWarning.trim().length > 0) {
+      return overrideWarning;
+    }
+    const mapWarning = this.map.assets.artists.find(
+      (artist) => artist.id === artistId
+    )?.seedDeterminismWarning;
+    return mapWarning?.trim() ?? "";
+  }
+
+  private setArtistSeedWarning(artistId: string, warning: string): void {
+    const normalized = warning.trim();
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const artistEntry = { ...(artistSprites[artistId] ?? {}) };
+    if (normalized.length > 0) {
+      artistEntry.seedDeterminismWarning = normalized;
+      this.artistSeedWarningByArtist.set(artistId, normalized);
+    } else {
+      delete artistEntry.seedDeterminismWarning;
+      this.artistSeedWarningByArtist.delete(artistId);
+    }
+    if (Object.keys(artistEntry).length > 0) {
+      artistSprites[artistId] = artistEntry;
+      next.artistSprites = artistSprites;
+    } else {
+      delete artistSprites[artistId];
+      if (Object.keys(artistSprites).length > 0) {
+        next.artistSprites = artistSprites;
+      } else {
+        delete next.artistSprites;
+      }
+    }
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+  }
+
+  private setArtistPerformanceAudioPath(artistId: string, path: string | null): void {
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const artistEntry = { ...(artistSprites[artistId] ?? {}) };
+    if (path && path.trim().length > 0) {
+      artistEntry.performanceAudioClip = path.trim();
+    } else {
+      delete artistEntry.performanceAudioClip;
+    }
+    if (Object.keys(artistEntry).length > 0) {
+      artistSprites[artistId] = artistEntry;
+      next.artistSprites = artistSprites;
+    } else {
+      delete artistSprites[artistId];
+      if (Object.keys(artistSprites).length > 0) {
+        next.artistSprites = artistSprites;
+      } else {
+        delete next.artistSprites;
+      }
+    }
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+  }
+
+  private getArtistSeed(artistId: string): number {
+    const overrideSeed = this.draftOverrides.artistSprites?.[artistId]?.seed;
+    if (Number.isInteger(overrideSeed) && (overrideSeed ?? -1) >= 0) {
+      return overrideSeed as number;
+    }
+    const mapSeed = this.map.assets.artists.find((artist) => artist.id === artistId)?.seed;
+    if (Number.isInteger(mapSeed) && (mapSeed ?? -1) >= 0) {
+      return mapSeed as number;
+    }
+    let hash = 0;
+    for (let index = 0; index < artistId.length; index += 1) {
+      hash = (hash * 31 + artistId.charCodeAt(index)) >>> 0;
+    }
+    return Math.max(1, hash % 9_999_999);
+  }
+
+  private rotateArtistSeed(artistId: string): number {
+    const seed = Math.floor(Math.random() * 9_999_999);
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const artistEntry = { ...(artistSprites[artistId] ?? {}) };
+    artistEntry.seed = seed;
+    artistEntry.seedDeterminismWarning = "";
+    artistSprites[artistId] = artistEntry;
+    next.artistSprites = artistSprites;
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.artistSeedDraftByArtist.set(artistId, String(seed));
+    this.artistSeedWarningByArtist.delete(artistId);
+    return seed;
+  }
+
+  private setArtistSeed(artistId: string, value: string): void {
+    const parsed = Number.parseInt(value.trim(), 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return;
+    }
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const artistEntry = { ...(artistSprites[artistId] ?? {}) };
+    artistEntry.seed = parsed;
+    artistEntry.seedDeterminismWarning = "";
+    artistSprites[artistId] = artistEntry;
+    next.artistSprites = artistSprites;
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.artistSeedDraftByArtist.set(artistId, String(parsed));
+    this.artistSeedWarningByArtist.delete(artistId);
+  }
+
+  private getArtistAudioLengthSec(artistId: string): number {
+    const overrideLength =
+      this.draftOverrides.artistSprites?.[artistId]?.performanceAudioLengthSec;
+    if (Number.isFinite(overrideLength) && (overrideLength ?? 0) > 0) {
+      return Number(overrideLength);
+    }
+    const mapLength =
+      this.map.assets.artists.find((artist) => artist.id === artistId)?.performanceAudio
+        ?.lengthSec ?? 3;
+    return Number.isFinite(mapLength) && mapLength > 0 ? mapLength : 3;
+  }
+
+  private setArtistAudioLengthSec(artistId: string, value: string): void {
+    const parsed = Number.parseFloat(value.trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return;
+    }
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const artistEntry = { ...(artistSprites[artistId] ?? {}) };
+    artistEntry.performanceAudioLengthSec = Math.max(0.5, Math.min(12, parsed));
+    artistSprites[artistId] = artistEntry;
+    next.artistSprites = artistSprites;
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.artistAudioLengthDraftByArtist.set(
+      artistId,
+      String(artistEntry.performanceAudioLengthSec)
+    );
+  }
+
+  private normalizeAssetPath(path: string): string {
+    return path.trim().replace(/^\/+/, "");
+  }
+
+  private getAudioLengthSecForSlot(slot: AssetSlot): number {
+    if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
+      return this.getArtistAudioLengthSec(slot.meta.artistId);
+    }
+    const drafted = this.audioLengthDraftBySlot.get(slot.id);
+    if (drafted) {
+      const parsed = Number.parseFloat(drafted);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.max(0.5, Math.min(30, parsed));
+      }
+    }
+    if (slot.meta.kind === "audio" && slot.meta.cueId.startsWith("bg_")) {
+      return 12;
+    }
+    return 3;
+  }
+
+  private setAudioLengthSecForSlot(slot: AssetSlot, value: string): void {
+    const parsed = Number.parseFloat(value.trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return;
+    }
+    const normalized = Math.max(0.5, Math.min(30, parsed));
+    if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
+      this.setArtistAudioLengthSec(slot.meta.artistId, String(normalized));
+      return;
+    }
+    this.audioLengthDraftBySlot.set(slot.id, String(normalized));
+  }
+
+  private describeUsageForSlot(slot: AssetSlot): string {
+    if (slot.meta.kind === "introScreen") {
+      return "Used on the full-screen Start Festival intro screen before gameplay begins.";
+    }
+    if (slot.meta.kind === "artist") {
+      if (slot.meta.field !== "performanceAudioClip") {
+        return "";
+      }
+      const artistId = slot.meta.artistId;
+      const artist = this.map.assets.artists.find((entry) => entry.id === artistId);
+      return `Used when ${artist?.name ?? artistId} reaches a stage and begins performing.`;
+    }
+    if (slot.meta.kind === "audio") {
+      const cue = slot.meta.cueId;
+      const usageMap: Record<string, string> = {
+        bg_chill: "Background music for early rounds.",
+        bg_energy: "Background music for mid rounds.",
+        bg_peak: "Background music for late rounds.",
+        spawn: "SFX when a new artist spawns into the map.",
+        path_draw: "SFX while drawing artist paths.",
+        deliver: "SFX when an artist reaches a stage.",
+        deliver_combo: "SFX for combo delivery moments.",
+        miss: "SFX when an artist is missed.",
+        chat: "SFX when artists meet/chat.",
+        distraction: "SFX when a distraction triggers.",
+        level_complete: "SFX when a session/round completes.",
+        level_failed: "SFX when a session/round fails.",
+        timer_warning: "SFX for low-time warning moments."
+      };
+      return usageMap[cue] ?? `Audio cue used by runtime event '${cue}'.`;
+    }
+    return "";
+  }
+
+  private findUsageLabelsForAssetPath(assetPath: string): string[] {
+    const target = this.normalizeAssetPath(assetPath);
+    if (!target) {
+      return [];
+    }
+    const slots = this.getAllSlots();
+    const labels = slots
+      .filter((slot) => this.normalizeAssetPath(slot.defaultPath) === target)
+      .map((slot) => slot.label);
+    return Array.from(new Set(labels));
+  }
+
   private render(): void {
     this.panel.classList.toggle("is-hidden", !this.isOpen);
     this.fab.classList.toggle("is-visible", !this.isOpen);
@@ -514,9 +839,36 @@ export class AdminPanel {
       return;
     }
 
+    const existingSlotList = this.panel.querySelector<HTMLElement>(".admin-slot-list");
+    if (existingSlotList) {
+      this.sidebarScrollTop = existingSlotList.scrollTop;
+    }
+    const existingWorkspace = this.panel.querySelector<HTMLElement>(".admin-workspace");
+    if (existingWorkspace) {
+      this.workspaceScrollTop = existingWorkspace.scrollTop;
+    }
+
     const slots = this.getAllSlots();
     const selectedSlot = this.getSelectedSlot(slots);
     const visibleSlots = filterAssetSlots(slots, this.assetSearch, this.categoryFilter);
+    const artistGroups =
+      this.categoryFilter === "artist" ? this.getArtistGroups(visibleSlots) : [];
+    if (artistGroups.length > 0) {
+      const isSelectedValid = artistGroups.some(
+        (group) => group.artistId === this.selectedArtistId
+      );
+      if (!isSelectedValid) {
+        this.selectedArtistId = artistGroups[0].artistId;
+      }
+      if (!selectedSlot && this.selectedArtistId) {
+        const artistSlots = this.getArtistSlots(visibleSlots, this.selectedArtistId);
+        if (artistSlots[0]) {
+          this.selectedSlotId = artistSlots[0].id;
+        }
+      }
+    } else if (this.categoryFilter === "artist") {
+      this.selectedArtistId = null;
+    }
 
     this.panel.replaceChildren();
     this.panel.appendChild(this.buildHeader());
@@ -524,10 +876,21 @@ export class AdminPanel {
     const shell = document.createElement("div");
     shell.className = "admin-shell";
     shell.append(
-      this.buildSidebar(visibleSlots),
-      this.buildWorkspace(selectedSlot)
+      this.buildSidebar(visibleSlots, artistGroups),
+      this.buildWorkspace(slots, selectedSlot)
     );
     this.panel.appendChild(shell);
+
+    requestAnimationFrame(() => {
+      const nextSlotList = this.panel.querySelector<HTMLElement>(".admin-slot-list");
+      if (nextSlotList) {
+        nextSlotList.scrollTop = this.sidebarScrollTop;
+      }
+      const nextWorkspace = this.panel.querySelector<HTMLElement>(".admin-workspace");
+      if (nextWorkspace) {
+        nextWorkspace.scrollTop = this.workspaceScrollTop;
+      }
+    });
   }
 
   private buildHeader(): HTMLElement {
@@ -604,7 +967,15 @@ export class AdminPanel {
     return header;
   }
 
-  private buildSidebar(visibleSlots: AssetSlot[]): HTMLElement {
+  private buildSidebar(
+    visibleSlots: AssetSlot[],
+    artistGroups: Array<{
+      artistId: string;
+      label: string;
+      state: "override" | "default";
+      slotIds: string[];
+    }>
+  ): HTMLElement {
     const sidebar = document.createElement("aside");
     sidebar.className = "admin-sidebar";
 
@@ -662,6 +1033,7 @@ export class AdminPanel {
       const categories: Array<["all" | SlotCategory, string]> = [
         ["all", "All categories"],
         ["background", "Background"],
+        ["ui", "UI"],
         ["stage", "Stage"],
         ["distraction", "Distraction"],
         ["artist", "Artist"],
@@ -701,7 +1073,31 @@ export class AdminPanel {
 
       const slotList = document.createElement("div");
       slotList.className = "admin-slot-list";
-      if (visibleSlots.length === 0) {
+      if (this.categoryFilter === "artist") {
+        if (artistGroups.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "admin-empty";
+          empty.textContent = "No artists match this filter.";
+          slotList.appendChild(empty);
+        } else {
+          for (const group of artistGroups) {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "admin-slot-item";
+            if (group.artistId === this.selectedArtistId) {
+              item.classList.add("is-active");
+            }
+            item.innerHTML = `<strong>${group.label}</strong><span>${group.state}</span>`;
+            item.addEventListener("click", () => {
+              this.selectedArtistId = group.artistId;
+              this.selectedSlotId = group.slotIds[0] ?? null;
+              this.generateStatus = "";
+              this.render();
+            });
+            slotList.appendChild(item);
+          }
+        }
+      } else if (visibleSlots.length === 0) {
         const empty = document.createElement("p");
         empty.className = "admin-empty";
         empty.textContent = "No assets match this filter.";
@@ -766,7 +1162,7 @@ export class AdminPanel {
     return sidebar;
   }
 
-  private buildWorkspace(selectedSlot: AssetSlot | null): HTMLElement {
+  private buildWorkspace(slots: AssetSlot[], selectedSlot: AssetSlot | null): HTMLElement {
     if (this.activeTab === "map") {
       return this.buildMapWorkspace();
     }
@@ -775,6 +1171,9 @@ export class AdminPanel {
     }
     if (this.activeTab === "publish") {
       return this.buildPublishWorkspace();
+    }
+    if (this.isArtistEditingMode()) {
+      return this.buildArtistWorkspace(slots);
     }
 
     const workspace = document.createElement("main");
@@ -786,6 +1185,500 @@ export class AdminPanel {
     }
     workspace.appendChild(this.buildPreviewCard(selectedSlot));
     return workspace;
+  }
+
+  private buildArtistWorkspace(slots: AssetSlot[]): HTMLElement {
+    const workspace = document.createElement("main");
+    workspace.className = "admin-workspace";
+
+    const section = document.createElement("section");
+    section.className = "admin-section-card";
+    const groups = this.getArtistGroups(slots);
+    if (groups.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "admin-empty";
+      empty.textContent = "No artist sets available at this level/filter.";
+      section.appendChild(empty);
+      workspace.appendChild(section);
+      return workspace;
+    }
+
+    const selectedArtistId =
+      groups.find((group) => group.artistId === this.selectedArtistId)?.artistId ??
+      groups[0].artistId;
+    this.selectedArtistId = selectedArtistId;
+    const artist = this.map.assets.artists.find((entry) => entry.id === selectedArtistId);
+    const artistSlots = this.getArtistSlots(slots, selectedArtistId);
+    const slotByField = new Map<ArtistSlotField, AssetSlot>();
+    for (const slot of artistSlots) {
+      if (slot.meta.kind === "artist") {
+        slotByField.set(slot.meta.field, slot);
+      }
+    }
+
+    const title = document.createElement("h3");
+    title.textContent = artist ? `Artist Set · ${artist.name}` : `Artist Set · ${selectedArtistId}`;
+    section.appendChild(title);
+
+    const copy = document.createElement("p");
+    copy.className = "admin-copy";
+    copy.textContent = artist
+      ? `${artist.tier.toUpperCase()} · ${artist.genre ?? "genre not set"} · Edit all poses and performance audio in one place.`
+      : "Edit all poses and performance audio in one place.";
+    section.appendChild(copy);
+
+    const controls = document.createElement("div");
+    controls.className = "admin-grid-3";
+
+    const seedField = document.createElement("label");
+    seedField.className = "admin-field";
+    seedField.innerHTML = "<span>Seed</span>";
+    const seedInput = document.createElement("input");
+    seedInput.type = "number";
+    seedInput.className = "admin-input";
+    seedInput.min = "0";
+    seedInput.step = "1";
+    seedInput.value =
+      this.artistSeedDraftByArtist.get(selectedArtistId) ??
+      String(this.getArtistSeed(selectedArtistId));
+    seedInput.addEventListener("change", () => {
+      this.setArtistSeed(selectedArtistId, seedInput.value);
+      this.render();
+    });
+    seedField.appendChild(seedInput);
+    controls.appendChild(seedField);
+
+    const rotateWrap = document.createElement("div");
+    rotateWrap.className = "admin-field";
+    rotateWrap.innerHTML = "<span>Seed Rotation</span>";
+    const rotateButton = document.createElement("button");
+    rotateButton.type = "button";
+    rotateButton.className = "admin-btn";
+    rotateButton.textContent = "Rotate Seed";
+    rotateButton.addEventListener("click", () => {
+      const nextSeed = this.rotateArtistSeed(selectedArtistId);
+      seedInput.value = String(nextSeed);
+      this.generateStatus = `Seed rotated for ${artist?.name ?? selectedArtistId}.`;
+      this.render();
+    });
+    rotateWrap.appendChild(rotateButton);
+    controls.appendChild(rotateWrap);
+
+    const audioLengthField = document.createElement("label");
+    audioLengthField.className = "admin-field";
+    audioLengthField.innerHTML = "<span>Perf Audio Length (sec)</span>";
+    const audioLengthInput = document.createElement("input");
+    audioLengthInput.type = "number";
+    audioLengthInput.step = "0.1";
+    audioLengthInput.min = "0.5";
+    audioLengthInput.max = "12";
+    audioLengthInput.className = "admin-input";
+    audioLengthInput.value =
+      this.artistAudioLengthDraftByArtist.get(selectedArtistId) ??
+      String(this.getArtistAudioLengthSec(selectedArtistId));
+    audioLengthInput.addEventListener("change", () => {
+      this.setArtistAudioLengthSec(selectedArtistId, audioLengthInput.value);
+      this.render();
+    });
+    audioLengthField.appendChild(audioLengthInput);
+    controls.appendChild(audioLengthField);
+    section.appendChild(controls);
+
+    const warning = this.getArtistSeedWarning(selectedArtistId);
+    if (warning.length > 0) {
+      const warningNote = document.createElement("p");
+      warningNote.className = "admin-status";
+      warningNote.textContent = warning;
+      section.appendChild(warningNote);
+    }
+
+    if (this.activeTab === "generate") {
+      section.appendChild(this.buildGenerationCredentialsCard());
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "admin-library-list";
+    const orderedFields: ArtistSlotField[] = [
+      "walk1",
+      "walk2",
+      "walk3",
+      "distracted",
+      "performing",
+      "performanceAudioClip"
+    ];
+    for (const field of orderedFields) {
+      const slot = slotByField.get(field);
+      if (!slot) {
+        continue;
+      }
+      grid.appendChild(this.buildArtistSlotCard(slot, selectedArtistId));
+    }
+    section.appendChild(grid);
+
+    if (this.generateStatus) {
+      const status = document.createElement("p");
+      status.className = "admin-status";
+      status.textContent = this.generateStatus;
+      section.appendChild(status);
+    }
+
+    workspace.appendChild(section);
+    return workspace;
+  }
+
+  private buildGenerationCredentialsCard(): HTMLElement {
+    const card = document.createElement("section");
+    card.className = "admin-library-item";
+
+    const title = document.createElement("h4");
+    title.textContent = "Generation Credentials";
+    card.appendChild(title);
+
+    const geminiField = document.createElement("label");
+    geminiField.className = "admin-field";
+    geminiField.innerHTML = "<span>Gemini API Key</span>";
+    const geminiInput = document.createElement("input");
+    geminiInput.type = "password";
+    geminiInput.className = "admin-input";
+    geminiInput.placeholder = "AIza...";
+    geminiInput.value = this.geminiApiKey;
+    geminiInput.addEventListener("input", () => {
+      this.geminiApiKey = geminiInput.value.trim();
+      if (this.rememberGeminiKey) {
+        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
+      }
+    });
+    geminiField.appendChild(geminiInput);
+    card.appendChild(geminiField);
+
+    const geminiModelField = document.createElement("label");
+    geminiModelField.className = "admin-field";
+    geminiModelField.innerHTML = "<span>Gemini Model</span>";
+    const geminiModelInput = document.createElement("input");
+    geminiModelInput.type = "text";
+    geminiModelInput.className = "admin-input";
+    geminiModelInput.value = this.geminiModel;
+    geminiModelInput.addEventListener("input", () => {
+      this.geminiModel = geminiModelInput.value.trim() || GEMINI_MODEL_DEFAULT;
+    });
+    geminiModelField.appendChild(geminiModelInput);
+    card.appendChild(geminiModelField);
+
+    const rememberGemini = document.createElement("label");
+    rememberGemini.className = "admin-check";
+    const rememberGeminiInput = document.createElement("input");
+    rememberGeminiInput.type = "checkbox";
+    rememberGeminiInput.checked = this.rememberGeminiKey;
+    rememberGeminiInput.addEventListener("change", () => {
+      this.rememberGeminiKey = rememberGeminiInput.checked;
+      if (this.rememberGeminiKey) {
+        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
+      } else {
+        window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+      }
+    });
+    const rememberGeminiLabel = document.createElement("span");
+    rememberGeminiLabel.textContent = "Remember Gemini key on this device";
+    rememberGemini.append(rememberGeminiInput, rememberGeminiLabel);
+    card.appendChild(rememberGemini);
+
+    const elevenField = document.createElement("label");
+    elevenField.className = "admin-field";
+    elevenField.innerHTML = "<span>ElevenLabs API Key</span>";
+    const elevenInput = document.createElement("input");
+    elevenInput.type = "password";
+    elevenInput.className = "admin-input";
+    elevenInput.placeholder = "sk_...";
+    elevenInput.value = this.elevenLabsApiKey;
+    elevenInput.addEventListener("input", () => {
+      this.elevenLabsApiKey = elevenInput.value.trim();
+      if (this.rememberElevenLabsKey) {
+        window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
+      }
+    });
+    elevenField.appendChild(elevenInput);
+    card.appendChild(elevenField);
+
+    const rememberEleven = document.createElement("label");
+    rememberEleven.className = "admin-check";
+    const rememberElevenInput = document.createElement("input");
+    rememberElevenInput.type = "checkbox";
+    rememberElevenInput.checked = this.rememberElevenLabsKey;
+    rememberElevenInput.addEventListener("change", () => {
+      this.rememberElevenLabsKey = rememberElevenInput.checked;
+      if (this.rememberElevenLabsKey) {
+        window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
+      } else {
+        window.localStorage.removeItem(ELEVENLABS_KEY_STORAGE_KEY);
+      }
+    });
+    const rememberElevenLabel = document.createElement("span");
+    rememberElevenLabel.textContent = "Remember ElevenLabs key on this device";
+    rememberEleven.append(rememberElevenInput, rememberElevenLabel);
+    card.appendChild(rememberEleven);
+
+    return card;
+  }
+
+  private buildArtistSlotCard(slot: AssetSlot, artistId: string): HTMLElement {
+    const card = document.createElement("article");
+    card.className = "admin-library-item";
+
+    const heading = document.createElement("h4");
+    heading.textContent = slot.label.replace(/^Artist\s·\s[^·]+\s·\s/i, "");
+    card.appendChild(heading);
+
+    const path = document.createElement("code");
+    path.className = "admin-preview-path";
+    path.textContent = summarizeAssetPath(slot.overridePath ?? slot.defaultPath);
+    card.appendChild(path);
+    const usage = this.describeUsageForSlot(slot);
+    if (usage) {
+      const usageText = document.createElement("p");
+      usageText.className = "admin-copy";
+      usageText.textContent = usage;
+      card.appendChild(usageText);
+    }
+
+    const activePath = slot.overridePath ?? slot.defaultPath;
+    if (slot.mediaType === "image") {
+      if (activePath.trim().length > 0) {
+        const image = document.createElement("img");
+        image.className = "admin-preview-image";
+        image.src = toResolvedPath(activePath);
+        image.alt = slot.label;
+        card.appendChild(image);
+      }
+    } else if (activePath.trim().length > 0) {
+      const audio = document.createElement("audio");
+      audio.className = "admin-preview-audio";
+      audio.controls = true;
+      audio.preload = "none";
+      audio.src = toResolvedPath(activePath);
+      card.appendChild(audio);
+    }
+
+    const pathField = document.createElement("label");
+    pathField.className = "admin-field";
+    pathField.innerHTML = "<span>Path / Data URL</span>";
+    const pathInput = document.createElement("input");
+    pathInput.type = "text";
+    pathInput.className = "admin-input";
+    pathInput.value =
+      this.pathDraftBySlot.get(slot.id) ?? slot.overridePath ?? slot.defaultPath;
+    pathInput.addEventListener("input", () => {
+      this.pathDraftBySlot.set(slot.id, pathInput.value);
+    });
+    pathField.appendChild(pathInput);
+    card.appendChild(pathField);
+
+    const pathActions = document.createElement("div");
+    pathActions.className = "admin-row-inline";
+    const applyPath = document.createElement("button");
+    applyPath.type = "button";
+    applyPath.className = "admin-btn primary";
+    applyPath.textContent = "Apply Path";
+    applyPath.addEventListener("click", () => {
+      const value = pathInput.value.trim();
+      this.draftOverrides = setOverrideForSlot(
+        this.draftOverrides,
+        slot.meta,
+        value.length > 0 ? value : null
+      );
+      this.notifyPreviewChange();
+      this.pathDraftBySlot.set(slot.id, value);
+      this.render();
+    });
+    pathActions.appendChild(applyPath);
+
+    const revert = document.createElement("button");
+    revert.type = "button";
+    revert.className = "admin-btn";
+    revert.textContent = "Revert";
+    revert.disabled = !slot.overridePath;
+    revert.addEventListener("click", () => {
+      this.draftOverrides = setOverrideForSlot(this.draftOverrides, slot.meta, null);
+      this.pathDraftBySlot.set(slot.id, slot.defaultPath);
+      this.notifyPreviewChange();
+      this.render();
+    });
+    pathActions.appendChild(revert);
+    card.appendChild(pathActions);
+
+    const uploadField = document.createElement("label");
+    uploadField.className = "admin-field";
+    uploadField.innerHTML = `<span>Upload ${slot.mediaType === "image" ? "Image" : "Audio"}</span>`;
+    const uploadInput = document.createElement("input");
+    uploadInput.type = "file";
+    uploadInput.className = "admin-file";
+    uploadInput.accept = slot.mediaType === "image" ? "image/*" : "audio/*";
+    uploadInput.addEventListener("change", async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) {
+        return;
+      }
+      this.slotCandidates.set(slot.id, await toDataUrl(file));
+      this.generateStatus = `${slot.label} candidate updated from upload.`;
+      this.render();
+    });
+    uploadField.appendChild(uploadInput);
+    card.appendChild(uploadField);
+
+    if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
+      const lengthField = document.createElement("label");
+      lengthField.className = "admin-field";
+      lengthField.innerHTML = "<span>Clip Length (seconds)</span>";
+      const lengthInput = document.createElement("input");
+      lengthInput.type = "number";
+      lengthInput.className = "admin-input";
+      lengthInput.step = "0.1";
+      lengthInput.min = "0.5";
+      lengthInput.max = "12";
+      lengthInput.value =
+        this.artistAudioLengthDraftByArtist.get(artistId) ??
+        String(this.getArtistAudioLengthSec(artistId));
+      lengthInput.addEventListener("change", () => {
+        this.setArtistAudioLengthSec(artistId, lengthInput.value);
+      });
+      lengthField.appendChild(lengthInput);
+      card.appendChild(lengthField);
+    }
+
+    if (this.activeTab === "generate") {
+      const promptField = document.createElement("label");
+      promptField.className = "admin-field";
+      promptField.innerHTML = "<span>Prompt</span>";
+      const promptArea = document.createElement("textarea");
+      promptArea.className = "admin-textarea";
+      promptArea.value = this.promptDraftBySlot.get(slot.id) ?? slot.promptText;
+      promptArea.addEventListener("input", () => {
+        this.promptDraftBySlot.set(slot.id, promptArea.value);
+      });
+      promptField.appendChild(promptArea);
+      card.appendChild(promptField);
+
+      const generateActions = document.createElement("div");
+      generateActions.className = "admin-row-inline";
+      const generateButton = document.createElement("button");
+      generateButton.type = "button";
+      generateButton.className = "admin-btn primary";
+      generateButton.disabled = this.isGenerating;
+      generateButton.textContent = this.isGenerating ? "Generating..." : "Generate";
+      generateButton.addEventListener("click", () => {
+        if (slot.mediaType === "image") {
+          void this.runGeminiGeneration(slot);
+          return;
+        }
+        void this.runElevenLabsGeneration(slot);
+      });
+      generateActions.appendChild(generateButton);
+
+      const resetPrompt = document.createElement("button");
+      resetPrompt.type = "button";
+      resetPrompt.className = "admin-btn";
+      resetPrompt.textContent = "Reset Prompt";
+      resetPrompt.addEventListener("click", () => {
+        this.promptDraftBySlot.set(slot.id, slot.promptText);
+        this.render();
+      });
+      generateActions.appendChild(resetPrompt);
+      card.appendChild(generateActions);
+    }
+
+    const candidateActions = document.createElement("div");
+    candidateActions.className = "admin-row-inline";
+    const applyCandidate = document.createElement("button");
+    applyCandidate.type = "button";
+    applyCandidate.className = "admin-btn primary";
+    applyCandidate.textContent = "Apply Candidate";
+    applyCandidate.disabled = !this.slotCandidates.has(slot.id);
+    applyCandidate.addEventListener("click", () => {
+      void this.applyCandidateToSlot(slot);
+    });
+    candidateActions.appendChild(applyCandidate);
+
+    if (slot.mediaType === "image") {
+      const removeBg = document.createElement("button");
+      removeBg.type = "button";
+      removeBg.className = "admin-btn";
+      removeBg.textContent = "Remove BG";
+      removeBg.disabled = !this.slotCandidates.has(slot.id);
+      removeBg.addEventListener("click", async () => {
+        const candidate = this.slotCandidates.get(slot.id);
+        if (!candidate) {
+          return;
+        }
+        try {
+          const transparent = await removeBackgroundFromDataUrl(candidate);
+          this.slotCandidates.set(slot.id, transparent);
+          this.generateStatus = `Background removed for ${slot.label}.`;
+        } catch (error) {
+          this.generateStatus = String(error);
+        }
+        this.render();
+      });
+      candidateActions.appendChild(removeBg);
+    }
+
+    const clearCandidate = document.createElement("button");
+    clearCandidate.type = "button";
+    clearCandidate.className = "admin-btn";
+    clearCandidate.textContent = "Clear Candidate";
+    clearCandidate.disabled = !this.slotCandidates.has(slot.id);
+    clearCandidate.addEventListener("click", () => {
+      this.slotCandidates.delete(slot.id);
+      this.generateStatus = "";
+      this.render();
+    });
+    candidateActions.appendChild(clearCandidate);
+    card.appendChild(candidateActions);
+
+    const candidate = this.slotCandidates.get(slot.id);
+    if (candidate) {
+      const candidateLabel = document.createElement("p");
+      candidateLabel.className = "admin-preview-meta";
+      candidateLabel.textContent = "Candidate Preview";
+      card.appendChild(candidateLabel);
+      if (slot.mediaType === "image") {
+        const candidateImage = document.createElement("img");
+        candidateImage.className = "admin-preview-image";
+        candidateImage.src = candidate;
+        candidateImage.alt = `${slot.label} candidate`;
+        card.appendChild(candidateImage);
+      } else {
+        const candidateAudio = document.createElement("audio");
+        candidateAudio.className = "admin-preview-audio";
+        candidateAudio.controls = true;
+        candidateAudio.preload = "none";
+        candidateAudio.src = candidate;
+        card.appendChild(candidateAudio);
+      }
+    }
+
+    return card;
+  }
+
+  private async applyCandidateToSlot(slot: AssetSlot): Promise<void> {
+    const candidate = this.slotCandidates.get(slot.id);
+    if (!candidate) {
+      return;
+    }
+    try {
+      const normalizedCandidate = await this.normalizeCandidateForApply(slot, candidate);
+      this.slotCandidates.set(slot.id, normalizedCandidate);
+      this.draftOverrides = setOverrideForSlot(
+        this.draftOverrides,
+        slot.meta,
+        normalizedCandidate
+      );
+      this.pathDraftBySlot.set(slot.id, normalizedCandidate);
+      this.notifyPreviewChange();
+      this.generateStatus = `${slot.label} applied to live preview.`;
+    } catch (error) {
+      this.generateStatus = String(error);
+    } finally {
+      this.render();
+    }
   }
 
   private buildAssetsWorkspace(selectedSlot: AssetSlot | null): HTMLElement {
@@ -958,7 +1851,6 @@ export class AdminPanel {
     openGenerate.type = "button";
     openGenerate.className = "admin-btn";
     openGenerate.textContent = "Open Generate Tab";
-    openGenerate.disabled = selectedSlot.mediaType !== "image";
     openGenerate.addEventListener("click", () => {
       this.activeTab = "generate";
       this.render();
@@ -978,73 +1870,128 @@ export class AdminPanel {
     const section = document.createElement("section");
     section.className = "admin-section-card";
     const heading = document.createElement("h3");
-    heading.textContent = "Inline Gemini Generation";
+    heading.textContent = "Inline Asset Generation";
     section.appendChild(heading);
 
     if (!selectedSlot) {
       const empty = document.createElement("p");
       empty.className = "admin-empty";
-      empty.textContent = "Select an image asset in the sidebar first.";
+      empty.textContent = "Select an asset in the sidebar first.";
       section.appendChild(empty);
       return section;
     }
-    if (selectedSlot.mediaType !== "image") {
-      const empty = document.createElement("p");
-      empty.className = "admin-empty";
-      empty.textContent = "Generation is available only for image assets.";
-      section.appendChild(empty);
-      return section;
+    const usage = this.describeUsageForSlot(selectedSlot);
+    if (usage) {
+      const usageText = document.createElement("p");
+      usageText.className = "admin-copy";
+      usageText.textContent = usage;
+      section.appendChild(usageText);
     }
 
-    const keyField = document.createElement("label");
-    keyField.className = "admin-field";
-    const keyLabel = document.createElement("span");
-    keyLabel.textContent = "Gemini API Key";
-    const keyInput = document.createElement("input");
-    keyInput.type = "password";
-    keyInput.className = "admin-input";
-    keyInput.placeholder = "AIza...";
-    keyInput.value = this.geminiApiKey;
-    keyInput.addEventListener("input", () => {
-      this.geminiApiKey = keyInput.value.trim();
-      if (this.rememberGeminiKey) {
-        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-      }
-    });
-    keyField.append(keyLabel, keyInput);
-    section.appendChild(keyField);
+    if (selectedSlot.mediaType === "image") {
+      const keyField = document.createElement("label");
+      keyField.className = "admin-field";
+      const keyLabel = document.createElement("span");
+      keyLabel.textContent = "Gemini API Key";
+      const keyInput = document.createElement("input");
+      keyInput.type = "password";
+      keyInput.className = "admin-input";
+      keyInput.placeholder = "AIza...";
+      keyInput.value = this.geminiApiKey;
+      keyInput.addEventListener("input", () => {
+        this.geminiApiKey = keyInput.value.trim();
+        if (this.rememberGeminiKey) {
+          window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
+        }
+      });
+      keyField.append(keyLabel, keyInput);
+      section.appendChild(keyField);
 
-    const remember = document.createElement("label");
-    remember.className = "admin-check";
-    const rememberInput = document.createElement("input");
-    rememberInput.type = "checkbox";
-    rememberInput.checked = this.rememberGeminiKey;
-    rememberInput.addEventListener("change", () => {
-      this.rememberGeminiKey = rememberInput.checked;
-      if (this.rememberGeminiKey) {
-        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-      } else {
-        window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
-      }
-    });
-    const rememberLabel = document.createElement("span");
-    rememberLabel.textContent = "Remember key on this device";
-    remember.append(rememberInput, rememberLabel);
-    section.appendChild(remember);
+      const remember = document.createElement("label");
+      remember.className = "admin-check";
+      const rememberInput = document.createElement("input");
+      rememberInput.type = "checkbox";
+      rememberInput.checked = this.rememberGeminiKey;
+      rememberInput.addEventListener("change", () => {
+        this.rememberGeminiKey = rememberInput.checked;
+        if (this.rememberGeminiKey) {
+          window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
+        } else {
+          window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+        }
+      });
+      const rememberLabel = document.createElement("span");
+      rememberLabel.textContent = "Remember Gemini key on this device";
+      remember.append(rememberInput, rememberLabel);
+      section.appendChild(remember);
 
-    const modelField = document.createElement("label");
-    modelField.className = "admin-field";
-    const modelLabel = document.createElement("span");
-    modelLabel.textContent = "Model";
-    const modelInput = document.createElement("input");
-    modelInput.type = "text";
-    modelInput.className = "admin-input";
-    modelInput.value = this.geminiModel;
-    modelInput.addEventListener("input", () => {
-      this.geminiModel = modelInput.value.trim() || GEMINI_MODEL_DEFAULT;
-    });
-    modelField.append(modelLabel, modelInput);
-    section.appendChild(modelField);
+      const modelField = document.createElement("label");
+      modelField.className = "admin-field";
+      const modelLabel = document.createElement("span");
+      modelLabel.textContent = "Model";
+      const modelInput = document.createElement("input");
+      modelInput.type = "text";
+      modelInput.className = "admin-input";
+      modelInput.value = this.geminiModel;
+      modelInput.addEventListener("input", () => {
+        this.geminiModel = modelInput.value.trim() || GEMINI_MODEL_DEFAULT;
+      });
+      modelField.append(modelLabel, modelInput);
+      section.appendChild(modelField);
+    } else {
+      const keyField = document.createElement("label");
+      keyField.className = "admin-field";
+      const keyLabel = document.createElement("span");
+      keyLabel.textContent = "ElevenLabs API Key";
+      const keyInput = document.createElement("input");
+      keyInput.type = "password";
+      keyInput.className = "admin-input";
+      keyInput.placeholder = "sk_...";
+      keyInput.value = this.elevenLabsApiKey;
+      keyInput.addEventListener("input", () => {
+        this.elevenLabsApiKey = keyInput.value.trim();
+        if (this.rememberElevenLabsKey) {
+          window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
+        }
+      });
+      keyField.append(keyLabel, keyInput);
+      section.appendChild(keyField);
+
+      const remember = document.createElement("label");
+      remember.className = "admin-check";
+      const rememberInput = document.createElement("input");
+      rememberInput.type = "checkbox";
+      rememberInput.checked = this.rememberElevenLabsKey;
+      rememberInput.addEventListener("change", () => {
+        this.rememberElevenLabsKey = rememberInput.checked;
+        if (this.rememberElevenLabsKey) {
+          window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
+        } else {
+          window.localStorage.removeItem(ELEVENLABS_KEY_STORAGE_KEY);
+        }
+      });
+      const rememberLabel = document.createElement("span");
+      rememberLabel.textContent = "Remember ElevenLabs key on this device";
+      remember.append(rememberInput, rememberLabel);
+      section.appendChild(remember);
+
+      const lengthField = document.createElement("label");
+      lengthField.className = "admin-field";
+      const lengthLabel = document.createElement("span");
+      lengthLabel.textContent = "Clip Length (seconds)";
+      const lengthInput = document.createElement("input");
+      lengthInput.type = "number";
+      lengthInput.className = "admin-input";
+      lengthInput.step = "0.1";
+      lengthInput.min = "0.5";
+      lengthInput.max = "30";
+      lengthInput.value = String(this.getAudioLengthSecForSlot(selectedSlot));
+      lengthInput.addEventListener("change", () => {
+        this.setAudioLengthSecForSlot(selectedSlot, lengthInput.value);
+      });
+      lengthField.append(lengthLabel, lengthInput);
+      section.appendChild(lengthField);
+    }
 
     const promptField = document.createElement("label");
     promptField.className = "admin-field";
@@ -1081,7 +2028,11 @@ export class AdminPanel {
     generate.textContent = this.isGenerating ? "Generating..." : "Generate";
     generate.disabled = this.isGenerating;
     generate.addEventListener("click", () => {
-      void this.runGeminiGeneration(selectedSlot);
+      if (selectedSlot.mediaType === "image") {
+        void this.runGeminiGeneration(selectedSlot);
+      } else {
+        void this.runElevenLabsGeneration(selectedSlot);
+      }
     });
     actions.appendChild(generate);
 
@@ -1116,26 +2067,28 @@ export class AdminPanel {
     });
     actions.appendChild(applyGenerated);
 
-    const clearBg = document.createElement("button");
-    clearBg.type = "button";
-    clearBg.className = "admin-btn";
-    clearBg.textContent = "Remove BG";
-    clearBg.disabled = !this.slotCandidates.has(selectedSlot.id);
-    clearBg.addEventListener("click", async () => {
-      const candidate = this.slotCandidates.get(selectedSlot.id);
-      if (!candidate) {
-        return;
-      }
-      try {
-        const transparent = await removeBackgroundFromDataUrl(candidate);
-        this.slotCandidates.set(selectedSlot.id, transparent);
-        this.generateStatus = "Background removed from generated candidate.";
-      } catch (error) {
-        this.generateStatus = String(error);
-      }
-      this.render();
-    });
-    actions.appendChild(clearBg);
+    if (selectedSlot.mediaType === "image") {
+      const clearBg = document.createElement("button");
+      clearBg.type = "button";
+      clearBg.className = "admin-btn";
+      clearBg.textContent = "Remove BG";
+      clearBg.disabled = !this.slotCandidates.has(selectedSlot.id);
+      clearBg.addEventListener("click", async () => {
+        const candidate = this.slotCandidates.get(selectedSlot.id);
+        if (!candidate) {
+          return;
+        }
+        try {
+          const transparent = await removeBackgroundFromDataUrl(candidate);
+          this.slotCandidates.set(selectedSlot.id, transparent);
+          this.generateStatus = "Background removed from generated candidate.";
+        } catch (error) {
+          this.generateStatus = String(error);
+        }
+        this.render();
+      });
+      actions.appendChild(clearBg);
+    }
     section.appendChild(actions);
 
     if (this.generateStatus) {
@@ -1292,14 +2245,16 @@ export class AdminPanel {
         type: entry.category,
         assetPath: entry.assetPath,
         promptText: entry.promptText,
-        mediaType: "image" as const
+        mediaType: "image" as const,
+        usageLabels: this.findUsageLabelsForAssetPath(entry.assetPath)
       })),
       ...this.audioCatalog.map((entry) => ({
         id: entry.id,
         type: entry.type,
         assetPath: entry.assetPath,
         promptText: entry.promptText,
-        mediaType: "audio" as const
+        mediaType: "audio" as const,
+        usageLabels: this.findUsageLabelsForAssetPath(entry.assetPath)
       }))
     ].filter((entry) =>
       allowedAssetPaths.has(entry.assetPath.replace(/^\/+/, ""))
@@ -1328,6 +2283,12 @@ export class AdminPanel {
       path.className = "admin-preview-path";
       path.textContent = entry.assetPath;
       item.appendChild(path);
+      if (entry.usageLabels.length > 0) {
+        const usage = document.createElement("p");
+        usage.className = "admin-copy";
+        usage.textContent = `Used by: ${entry.usageLabels.join(", ")}`;
+        item.appendChild(usage);
+      }
 
       if (entry.mediaType === "image") {
         const image = document.createElement("img");
@@ -1586,6 +2547,13 @@ export class AdminPanel {
       selectedSlot.overridePath ?? selectedSlot.defaultPath
     );
     card.appendChild(path);
+    const usage = this.describeUsageForSlot(selectedSlot);
+    if (usage) {
+      const usageText = document.createElement("p");
+      usageText.className = "admin-copy";
+      usageText.textContent = usage;
+      card.appendChild(usageText);
+    }
 
     const candidate = this.slotCandidates.get(selectedSlot.id);
     if (candidate) {
@@ -1656,6 +2624,12 @@ export class AdminPanel {
     this.generateStatus = "Generating image...";
     this.render();
     try {
+      const generationConfig: Record<string, unknown> = {
+        responseModalities: ["TEXT", "IMAGE"]
+      };
+      if (slot.meta.kind === "artist") {
+        generationConfig.seed = this.getArtistSeed(slot.meta.artistId);
+      }
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.geminiModel)}:generateContent?key=${encodeURIComponent(apiKey)}`,
         {
@@ -1663,9 +2637,7 @@ export class AdminPanel {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseModalities: ["TEXT", "IMAGE"]
-            }
+            generationConfig
           })
         }
       );
@@ -1686,7 +2658,68 @@ export class AdminPanel {
         dataUrl = await toPngDataUrl(dataUrl);
       }
       this.slotCandidates.set(slot.id, dataUrl);
+      if (slot.meta.kind === "artist") {
+        this.setArtistSeedWarning(
+          slot.meta.artistId,
+          "Seed was sent to Gemini, but deterministic outputs are best-effort only and may vary by model/runtime."
+        );
+      }
       this.generateStatus = "Generation complete. Review candidate and apply.";
+    } catch (error) {
+      this.generateStatus = String(error);
+    } finally {
+      this.isGenerating = false;
+      this.render();
+    }
+  }
+
+  private async runElevenLabsGeneration(slot: AssetSlot): Promise<void> {
+    if (slot.mediaType !== "audio") {
+      return;
+    }
+    const apiKey = this.elevenLabsApiKey.trim();
+    if (!apiKey) {
+      this.generateStatus = "Enter an ElevenLabs API key first.";
+      this.render();
+      return;
+    }
+    const prompt = (this.promptDraftBySlot.get(slot.id) ?? slot.promptText ?? "").trim();
+    if (!prompt) {
+      this.generateStatus = "Prompt is empty.";
+      this.render();
+      return;
+    }
+
+    const durationSec = this.getAudioLengthSecForSlot(slot);
+    this.isGenerating = true;
+    this.generateStatus = "Generating audio clip...";
+    this.render();
+    try {
+      const response = await fetch("https://api.elevenlabs.io/v1/sound-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+          "xi-api-key": apiKey
+        },
+        body: JSON.stringify({
+          text: prompt,
+          duration_seconds: Math.max(0.5, Math.min(12, durationSec))
+        })
+      });
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error(`ElevenLabs request failed (${response.status}): ${details}`);
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      let binary = "";
+      for (const value of bytes) {
+        binary += String.fromCharCode(value);
+      }
+      const base64 = btoa(binary);
+      const dataUrl = `data:audio/mpeg;base64,${base64}`;
+      this.slotCandidates.set(slot.id, dataUrl);
+      this.generateStatus = "Audio generation complete. Review candidate and apply.";
     } catch (error) {
       this.generateStatus = String(error);
     } finally {
@@ -1733,6 +2766,9 @@ export class AdminPanel {
     };
 
     pushIfInline(map.background, "background");
+    if (map.introScreen) {
+      pushIfInline(map.introScreen, "intro-screen");
+    }
     for (const stage of map.stages) {
       pushIfInline(stage.sprite, `stage:${stage.id}`);
     }
@@ -1740,11 +2776,19 @@ export class AdminPanel {
       pushIfInline(distraction.sprite, `distraction:${distraction.id}`);
     }
     for (const artist of map.assets.artists) {
-      pushIfInline(artist.sprites.idle, `artist:${artist.id}:idle`);
+      if (artist.sprites.idle) {
+        pushIfInline(artist.sprites.idle, `artist:${artist.id}:idle`);
+      }
+      if (artist.sprites.distracted) {
+        pushIfInline(artist.sprites.distracted, `artist:${artist.id}:distracted`);
+      }
       pushIfInline(artist.sprites.performing, `artist:${artist.id}:performing`);
       artist.sprites.walk.forEach((frame, index) => {
         pushIfInline(frame, `artist:${artist.id}:walk${index + 1}`);
       });
+      if (artist.performanceAudio?.clip) {
+        pushIfInline(artist.performanceAudio.clip, `artist:${artist.id}:performanceAudio`);
+      }
     }
     Object.entries(map.assets.audio).forEach(([cue, path]) => {
       pushIfInline(path, `audio:${cue}`);

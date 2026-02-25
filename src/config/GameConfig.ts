@@ -22,12 +22,21 @@ export interface QualityRollInput {
 export const GAME_CONFIG = {
   stage: {
     sizeFactors: {
-      large: 0.24,
-      medium: 0.18,
-      small: 0.135
+      large: 0.288,
+      medium: 0.216,
+      small: 0.162
     } as Record<StageSize, number>,
     aspectRatio: 4 / 3,
     performanceDurationMs: 2500
+  },
+  artist: {
+    renderScale: 1.42,
+    shadowAlpha: 0.34,
+    shadowOffsetY: 14,
+    timerBarHeightPx: 4,
+    timerBarPaddingY: 8,
+    performBouncePx: 2.8,
+    performBounceHz: 2.3
   },
   path: {
     grabRadiusPx: 40,

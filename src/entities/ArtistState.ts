@@ -25,6 +25,8 @@ export interface ArtistConfig {
   id: string;
   tier: ArtistTier;
   spriteProfileId?: string;
+  assignedStageId?: string | null;
+  assignedStageColor?: string | null;
   position: Vector2;
   velocity: Vector2;
   timerSeconds: number;

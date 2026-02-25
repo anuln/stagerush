@@ -7,7 +7,7 @@ import { toResolvedPath } from "../admin/AdminPreviewModel";
 
 export interface SpriteCatalogEntry {
   id: string;
-  category: "background" | "stage" | "distraction" | "artist";
+  category: "background" | "stage" | "distraction" | "artist" | "ui";
   assetPath: string;
   promptText: string;
 }
@@ -21,6 +21,7 @@ export interface AudioCatalogEntry {
 
 export type SlotCategory =
   | "background"
+  | "ui"
   | "stage"
   | "distraction"
   | "artist"
@@ -28,9 +29,20 @@ export type SlotCategory =
 
 export type SlotMeta =
   | { kind: "background" }
+  | { kind: "introScreen" }
   | { kind: "stage"; stageId: string }
   | { kind: "distraction"; distractionType: string }
-  | { kind: "artist"; artistId: string; field: keyof ArtistAssetOverride }
+  | {
+      kind: "artist";
+      artistId: string;
+      field:
+        | "walk1"
+        | "walk2"
+        | "walk3"
+        | "distracted"
+        | "performing"
+        | "performanceAudioClip";
+    }
   | { kind: "audio"; cueId: string };
 
 export interface AssetSlot {
@@ -77,6 +89,20 @@ export function buildAssetSlots(
     meta: { kind: "background" }
   });
 
+  const introDefaultPath = map.introScreen ?? "assets/ui/stage-rush-intro-mobile.png";
+  const introOverride = normalizeOverride(overrides.introScreen);
+  slots.push({
+    id: "intro-screen",
+    label: "UI · Intro Screen",
+    category: "ui",
+    mediaType: "image",
+    defaultPath: introDefaultPath,
+    overridePath: introOverride,
+    resolvedPath: toResolvedPath(introOverride ?? introDefaultPath),
+    promptText: resolvePromptText(introDefaultPath, spriteCatalog, audioCatalog),
+    meta: { kind: "introScreen" }
+  });
+
   for (const stage of map.stages) {
     const overridePath = normalizeOverride(overrides.stageSprites?.[stage.id]);
     slots.push({
@@ -116,42 +142,70 @@ export function buildAssetSlots(
       continue;
     }
     const artistOverrides = overrides.artistSprites?.[artist.id];
+    const walkFrames = artist.sprites.walk ?? [];
+    const pose1Path = walkFrames[0] ?? artist.sprites.idle ?? artist.sprites.performing;
+    const pose2Path = walkFrames[1] ?? pose1Path;
+    const pose3Path = walkFrames[2] ?? pose2Path;
+    const distractionPath =
+      artist.sprites.distracted ?? artist.sprites.idle ?? pose1Path;
+    const performanceAudioPath = artist.performanceAudio?.clip ?? "";
     slots.push({
-      id: `artist:${artist.id}:idle`,
-      label: `Artist · ${artist.id} · idle`,
+      id: `artist:${artist.id}:pose1`,
+      label: `Artist · ${artist.name} · pose 1`,
       category: "artist",
       mediaType: "image",
-      defaultPath: artist.sprites.idle,
-      overridePath: normalizeOverride(artistOverrides?.idle),
-      resolvedPath: toResolvedPath(artistOverrides?.idle ?? artist.sprites.idle),
-      promptText: resolvePromptText(artist.sprites.idle, spriteCatalog, audioCatalog),
-      meta: { kind: "artist", artistId: artist.id, field: "idle" }
-    });
-    slots.push({
-      id: `artist:${artist.id}:walk1`,
-      label: `Artist · ${artist.id} · walk 1`,
-      category: "artist",
-      mediaType: "image",
-      defaultPath: artist.sprites.walk[0],
+      defaultPath: pose1Path,
       overridePath: normalizeOverride(artistOverrides?.walk1),
-      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? artist.sprites.walk[0]),
-      promptText: resolvePromptText(artist.sprites.walk[0], spriteCatalog, audioCatalog),
+      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? pose1Path),
+      promptText:
+        artist.promptByPose?.pose1 ??
+        resolvePromptText(pose1Path, spriteCatalog, audioCatalog),
       meta: { kind: "artist", artistId: artist.id, field: "walk1" }
     });
     slots.push({
-      id: `artist:${artist.id}:walk2`,
-      label: `Artist · ${artist.id} · walk 2`,
+      id: `artist:${artist.id}:walk1`,
+      label: `Artist · ${artist.name} · pose 2`,
       category: "artist",
       mediaType: "image",
-      defaultPath: artist.sprites.walk[1],
+      defaultPath: pose2Path,
       overridePath: normalizeOverride(artistOverrides?.walk2),
-      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? artist.sprites.walk[1]),
-      promptText: resolvePromptText(artist.sprites.walk[1], spriteCatalog, audioCatalog),
+      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? pose2Path),
+      promptText:
+        artist.promptByPose?.pose2 ??
+        resolvePromptText(pose2Path, spriteCatalog, audioCatalog),
       meta: { kind: "artist", artistId: artist.id, field: "walk2" }
     });
     slots.push({
+      id: `artist:${artist.id}:walk2`,
+      label: `Artist · ${artist.name} · pose 3`,
+      category: "artist",
+      mediaType: "image",
+      defaultPath: pose3Path,
+      overridePath: normalizeOverride(artistOverrides?.walk3),
+      resolvedPath: toResolvedPath(artistOverrides?.walk3 ?? pose3Path),
+      promptText:
+        artist.promptByPose?.pose3 ??
+        resolvePromptText(pose3Path, spriteCatalog, audioCatalog),
+      meta: { kind: "artist", artistId: artist.id, field: "walk3" }
+    });
+    slots.push({
+      id: `artist:${artist.id}:distracted`,
+      label: `Artist · ${artist.name} · distraction pose`,
+      category: "artist",
+      mediaType: "image",
+      defaultPath: distractionPath,
+      overridePath: normalizeOverride(artistOverrides?.distracted),
+      resolvedPath: toResolvedPath(
+        artistOverrides?.distracted ?? distractionPath
+      ),
+      promptText:
+        artist.promptByPose?.distracted ??
+        resolvePromptText(distractionPath, spriteCatalog, audioCatalog),
+      meta: { kind: "artist", artistId: artist.id, field: "distracted" }
+    });
+    slots.push({
       id: `artist:${artist.id}:performing`,
-      label: `Artist · ${artist.id} · performing`,
+      label: `Artist · ${artist.name} · performance pose`,
       category: "artist",
       mediaType: "image",
       defaultPath: artist.sprites.performing,
@@ -159,12 +213,30 @@ export function buildAssetSlots(
       resolvedPath: toResolvedPath(
         artistOverrides?.performing ?? artist.sprites.performing
       ),
-      promptText: resolvePromptText(
-        artist.sprites.performing,
-        spriteCatalog,
-        audioCatalog
-      ),
+      promptText:
+        artist.promptByPose?.performing ??
+        resolvePromptText(artist.sprites.performing, spriteCatalog, audioCatalog),
       meta: { kind: "artist", artistId: artist.id, field: "performing" }
+    });
+    slots.push({
+      id: `artist:${artist.id}:performance_audio`,
+      label: `Artist · ${artist.name} · performance sound`,
+      category: "artist",
+      mediaType: "audio",
+      defaultPath: performanceAudioPath,
+      overridePath: normalizeOverride(artistOverrides?.performanceAudioClip),
+      resolvedPath: toResolvedPath(
+        artistOverrides?.performanceAudioClip ?? performanceAudioPath
+      ),
+      promptText:
+        artist.promptByPose?.performanceAudio ??
+        artist.performanceAudio?.promptText ??
+        resolvePromptText(performanceAudioPath, spriteCatalog, audioCatalog),
+      meta: {
+        kind: "artist",
+        artistId: artist.id,
+        field: "performanceAudioClip"
+      }
     });
   }
 
@@ -275,6 +347,15 @@ export function setOverrideForSlot(
       delete next.background;
     } else {
       next.background = normalized;
+    }
+    return next;
+  }
+
+  if (meta.kind === "introScreen") {
+    if (!normalized) {
+      delete next.introScreen;
+    } else {
+      next.introScreen = normalized;
     }
     return next;
   }
