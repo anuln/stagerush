@@ -14,7 +14,7 @@
   },
   "totalLevels": 10,
   "background": "assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
-  "introScreen": "assets/ui/stage-rush-intro-mobile.png",
+  "introScreen": "assets/maps/govball2026/committed/intro-screen-9c67d6b5.png",
   "stages": [
     {
       "id": "main-stage",
@@ -24,7 +24,7 @@
         "y": 0.14
       },
       "snapRadius": 0.06,
-      "sprite": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "sprite": "assets/maps/govball2026/committed/stage-main-stage-c98db538.png",
       "color": "#FF6B35"
     },
     {
@@ -562,7 +562,8 @@
         "seed": 118823,
         "performanceAudio": {
           "lengthSec": 3,
-          "promptText": "Short performance sting for Eastbound Lights (Indie Dance) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "promptText": "Short performance sting for Eastbound Lights (Indie Dance) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-mid-a-performanceaudio-6061ce1d.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Indie Dance festival artist sprite for Eastbound Lights, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -574,13 +575,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_mid_a_walk1.png",
-            "assets/maps/govball/artists/artist_mid_a_walk2.png",
-            "assets/maps/govball/artists/artist_mid_a_walk3.png"
+            "assets/maps/govball2026/committed/artist-mid-a-walk1-31abcd3f.png",
+            "assets/maps/govball2026/committed/artist-mid-a-walk2-54a30de4.png",
+            "assets/maps/govball2026/committed/artist-mid-a-walk3-4bd3904c.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_a_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_mid_a_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_mid_a_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-mid-a-distracted-8d780345.png",
+          "performing": "assets/maps/govball2026/committed/artist-mid-a-performing-750e1ac9.png"
         }
       },
       {
@@ -864,7 +865,7 @@
       }
     ],
     "stageSprites": {
-      "main-stage": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "main-stage": "assets/maps/govball2026/committed/stage-main-stage-c98db538.png",
       "side-stage": "assets/maps/govball/generated/stages/stage_side_v1.png",
       "acoustic-stage": "assets/maps/govball/generated/stages/stage_acoustic_v1.png"
     },
