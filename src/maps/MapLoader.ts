@@ -122,6 +122,12 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
     if (introPresentation.zoom !== undefined) {
       assertPositiveFinite(introPresentation.zoom as number, "introPresentation.zoom");
     }
+    if (introPresentation.overlayOpacity !== undefined) {
+      assertNormalizedNumber(
+        introPresentation.overlayOpacity as number,
+        "introPresentation.overlayOpacity"
+      );
+    }
   }
   if (parsed.schedule !== undefined) {
     if (!isObject(parsed.schedule)) {

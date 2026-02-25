@@ -93,6 +93,7 @@ export interface IntroPresentationConfig {
   focusX?: number;
   focusY?: number;
   zoom?: number;
+  overlayOpacity?: number;
 }
 
 export interface FestivalAssets {

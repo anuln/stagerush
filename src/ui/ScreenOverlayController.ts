@@ -7,6 +7,7 @@ export interface MenuMediaConfig {
   focusX: number;
   focusY: number;
   zoom: number;
+  overlayOpacity: number;
 }
 
 export class ScreenOverlayController {
@@ -18,7 +19,8 @@ export class ScreenOverlayController {
     fitMode: "cover",
     focusX: 50,
     focusY: 50,
-    zoom: 1
+    zoom: 1,
+    overlayOpacity: 0.82
   };
 
   constructor() {
@@ -33,7 +35,8 @@ export class ScreenOverlayController {
       fitMode: next.fitMode === "contain" ? "contain" : "cover",
       focusX: Math.max(0, Math.min(100, next.focusX)),
       focusY: Math.max(0, Math.min(100, next.focusY)),
-      zoom: Math.max(0.7, Math.min(2.5, next.zoom))
+      zoom: Math.max(0.7, Math.min(2.5, next.zoom)),
+      overlayOpacity: Math.max(0, Math.min(1, next.overlayOpacity))
     };
     this.lastKey = "";
   }
@@ -66,6 +69,10 @@ export class ScreenOverlayController {
       panel.style.setProperty("--intro-focus-x", `${this.menuMedia.focusX}%`);
       panel.style.setProperty("--intro-focus-y", `${this.menuMedia.focusY}%`);
       panel.style.setProperty("--intro-zoom", String(this.menuMedia.zoom));
+      panel.style.setProperty(
+        "--intro-overlay-opacity",
+        String(this.menuMedia.overlayOpacity)
+      );
       if (this.menuMedia.mediaType === "video") {
         const media = document.createElement("video");
         media.className = "screen-menu-media";

@@ -139,6 +139,12 @@ function sanitizeIntroPresentation(
   if (Number.isFinite(introPresentation.zoom)) {
     next.zoom = Math.max(0.5, Math.min(3, Number(introPresentation.zoom)));
   }
+  if (Number.isFinite(introPresentation.overlayOpacity)) {
+    next.overlayOpacity = Math.max(
+      0,
+      Math.min(1, Number(introPresentation.overlayOpacity))
+    );
+  }
   return Object.keys(next).length > 0 ? next : undefined;
 }
 

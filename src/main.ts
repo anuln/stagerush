@@ -173,7 +173,8 @@ function applyIntroScreenMedia(
     fitMode: map.introPresentation?.fitMode === "contain" ? "contain" : "cover",
     focusX: clamp(map.introPresentation?.focusX ?? 50, 0, 100),
     focusY: clamp(map.introPresentation?.focusY ?? 50, 0, 100),
-    zoom: clamp(map.introPresentation?.zoom ?? 1, 0.7, 2.5)
+    zoom: clamp(map.introPresentation?.zoom ?? 1, 0.7, 2.5),
+    overlayOpacity: clamp(map.introPresentation?.overlayOpacity ?? 0.82, 0, 1)
   });
 }
 

@@ -93,7 +93,9 @@ describe("AdminAssetOverrides", () => {
     expect(hasAdminAssetOverrides({ background: "assets/maps/bg.png" })).toBe(true);
     expect(hasAdminAssetOverrides({ introScreen: "assets/ui/intro_v2.png" })).toBe(true);
     expect(
-      hasAdminAssetOverrides({ introPresentation: { fitMode: "contain", focusX: 44 } })
+      hasAdminAssetOverrides({
+        introPresentation: { fitMode: "contain", focusX: 44, overlayOpacity: 0.7 }
+      })
     ).toBe(true);
     expect(hasAdminAssetOverrides({ stageSprites: { main: "assets/maps/stage.png" } })).toBe(
       true
@@ -118,7 +120,8 @@ describe("AdminAssetOverrides", () => {
         fitMode: "contain",
         focusX: 40,
         focusY: 70,
-        zoom: 1.25
+        zoom: 1.25,
+        overlayOpacity: 0.72
       },
       stagePositions: { main: { x: 0.34, y: 0.28 } },
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
@@ -144,7 +147,8 @@ describe("AdminAssetOverrides", () => {
       fitMode: "contain",
       focusX: 40,
       focusY: 70,
-      zoom: 1.25
+      zoom: 1.25,
+      overlayOpacity: 0.72
     });
     expect(updated.stages[0].position).toEqual({ x: 0.34, y: 0.28 });
     expect(updated.stages[0].sprite).toBe("assets/maps/generated/stage_main_v2.png");

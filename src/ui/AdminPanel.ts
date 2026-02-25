@@ -984,7 +984,7 @@ export class AdminPanel {
 
   private describeUsageForSlot(slot: AssetSlot): string {
     if (slot.meta.kind === "introScreen") {
-      return "Used on the full-screen Start Festival intro screen before gameplay begins.";
+      return "Used on the full-screen Start Festival intro screen before gameplay begins. Supports image or looping video with framing controls.";
     }
     if (slot.meta.kind === "artist") {
       if (slot.meta.field !== "performanceAudioClip") {
@@ -1035,7 +1035,8 @@ export class AdminPanel {
       fitMode: draft.fitMode ?? base.fitMode ?? "cover",
       focusX: clamp(draft.focusX ?? base.focusX ?? 50, 0, 100),
       focusY: clamp(draft.focusY ?? base.focusY ?? 50, 0, 100),
-      zoom: clamp(draft.zoom ?? base.zoom ?? 1, 0.7, 2.5)
+      zoom: clamp(draft.zoom ?? base.zoom ?? 1, 0.7, 2.5),
+      overlayOpacity: clamp(draft.overlayOpacity ?? base.overlayOpacity ?? 0.82, 0, 1)
     };
   }
 
@@ -1049,7 +1050,11 @@ export class AdminPanel {
       focusY:
         partial.focusY !== undefined ? clamp(partial.focusY, 0, 100) : current.focusY,
       zoom:
-        partial.zoom !== undefined ? clamp(partial.zoom, 0.7, 2.5) : current.zoom
+        partial.zoom !== undefined ? clamp(partial.zoom, 0.7, 2.5) : current.zoom,
+      overlayOpacity:
+        partial.overlayOpacity !== undefined
+          ? clamp(partial.overlayOpacity, 0, 1)
+          : current.overlayOpacity
     };
     this.draftOverrides = {
       ...this.draftOverrides,
@@ -1157,6 +1162,27 @@ export class AdminPanel {
     zoomField.append(zoomInput, zoomValue);
     wrapper.appendChild(zoomField);
 
+    const overlayField = document.createElement("label");
+    overlayField.className = "admin-field";
+    overlayField.innerHTML = "<span>Overlay Opacity</span>";
+    const overlayInput = document.createElement("input");
+    overlayInput.type = "range";
+    overlayInput.className = "admin-input";
+    overlayInput.min = "0";
+    overlayInput.max = "100";
+    overlayInput.step = "1";
+    overlayInput.value = String(Math.round(intro.overlayOpacity * 100));
+    const overlayValue = document.createElement("small");
+    overlayValue.className = "admin-preview-meta";
+    overlayValue.textContent = `${Math.round(intro.overlayOpacity * 100)}%`;
+    overlayInput.addEventListener("input", () => {
+      const value = Number.parseFloat(overlayInput.value) / 100;
+      overlayValue.textContent = `${Math.round(value * 100)}%`;
+      this.setIntroPresentation({ overlayOpacity: value });
+    });
+    overlayField.append(overlayInput, overlayValue);
+    wrapper.appendChild(overlayField);
+
     const reset = document.createElement("button");
     reset.type = "button";
     reset.className = "admin-btn";
@@ -1168,6 +1194,46 @@ export class AdminPanel {
     wrapper.appendChild(reset);
 
     return wrapper;
+  }
+
+  private appendIntroFramingPreview(
+    container: HTMLElement,
+    mediaPath: string,
+    caption: string
+  ): void {
+    const intro = this.getIntroPresentationDraft();
+    const wrapper = document.createElement("div");
+    wrapper.className = "admin-intro-sim";
+    wrapper.style.setProperty("--intro-fit-mode", intro.fitMode);
+    wrapper.style.setProperty("--intro-focus-x", `${intro.focusX}%`);
+    wrapper.style.setProperty("--intro-focus-y", `${intro.focusY}%`);
+    wrapper.style.setProperty("--intro-zoom", String(intro.zoom));
+    wrapper.style.setProperty(
+      "--intro-overlay-opacity",
+      String(intro.overlayOpacity)
+    );
+
+    if (isVideoAssetPath(mediaPath)) {
+      const video = document.createElement("video");
+      video.className = "admin-intro-sim-media";
+      video.src = toResolvedPath(mediaPath);
+      video.controls = true;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      wrapper.appendChild(video);
+    } else {
+      const image = document.createElement("img");
+      image.className = "admin-intro-sim-media";
+      image.src = toResolvedPath(mediaPath);
+      image.alt = "Intro framing preview";
+      wrapper.appendChild(image);
+    }
+
+    const label = document.createElement("p");
+    label.className = "admin-preview-meta";
+    label.textContent = caption;
+    container.append(label, wrapper);
   }
 
   private appendMediaPreview(container: HTMLElement, slot: AssetSlot, path: string): void {
@@ -2892,8 +2958,16 @@ export class AdminPanel {
     slotLabel.className = "admin-preview-meta";
     slotLabel.textContent = `${selectedSlot.label} · Active (in-game)`;
     card.appendChild(slotLabel);
-
-    this.appendMediaPreview(card, selectedSlot, selectedSlot.resolvedPath);
+    if (selectedSlot.meta.kind === "introScreen") {
+      this.appendIntroFramingPreview(
+        card,
+        selectedSlot.resolvedPath,
+        "Intro composition preview"
+      );
+      this.appendMediaPreview(card, selectedSlot, selectedSlot.resolvedPath);
+    } else {
+      this.appendMediaPreview(card, selectedSlot, selectedSlot.resolvedPath);
+    }
 
     const path = document.createElement("code");
     path.className = "admin-preview-path";
@@ -2915,6 +2989,13 @@ export class AdminPanel {
       candidateLabel.className = "admin-preview-meta";
       candidateLabel.textContent = "Candidate (not active until applied)";
       card.appendChild(candidateLabel);
+      if (selectedSlot.meta.kind === "introScreen") {
+        this.appendIntroFramingPreview(
+          card,
+          candidate,
+          "Candidate intro composition"
+        );
+      }
       this.appendMediaPreview(card, selectedSlot, candidate);
     }
 
