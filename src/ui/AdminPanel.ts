@@ -41,7 +41,7 @@ interface AdminPanelOptions {
 }
 
 const GEMINI_KEY_STORAGE_KEY = "stagecall:admin:gemini-key";
-const GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-image-preview";
+const GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-image";
 const ELEVENLABS_KEY_STORAGE_KEY = "stagecall:admin:elevenlabs-key";
 const GITHUB_TOKEN_STORAGE_KEY = "stagecall:admin:github-token";
 const GITHUB_SETTINGS_STORAGE_KEY = "stagecall:admin:github-settings:v1";
@@ -324,6 +324,97 @@ function toRepoPathFromPublicUrl(path: string): string {
 
 function hasInlineAssetPath(path: string): boolean {
   return path.startsWith("data:") || path.startsWith("blob:");
+}
+
+function isArtistImageSlot(
+  slot: AssetSlot,
+  artistId: string
+): slot is AssetSlot & {
+  meta: { kind: "artist"; artistId: string; field: ArtistSlotField };
+} {
+  return (
+    slot.mediaType === "image" &&
+    slot.meta.kind === "artist" &&
+    slot.meta.artistId === artistId
+  );
+}
+
+type GeminiInlineDataPart = {
+  inline_data: {
+    mime_type: string;
+    data: string;
+  };
+};
+
+export function buildArtistSeedPrompt(basePrompt: string, seed: number): string {
+  const prompt = basePrompt.trim();
+  return `${prompt}
+
+Character consistency requirements:
+- Consistency seed: ${seed}
+- Keep the exact same artist identity (face, hair, outfit silhouette, palette) as prior poses.
+- Only change body pose/action for this frame; keep style and camera angle coherent.`;
+}
+
+export function dataUrlToInlineDataPart(dataUrl: string): GeminiInlineDataPart | null {
+  const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl.trim());
+  if (!match) {
+    return null;
+  }
+  const mimeType = match[1];
+  const base64 = match[2];
+  if (!mimeType.startsWith("image/")) {
+    return null;
+  }
+  return {
+    inline_data: {
+      mime_type: mimeType,
+      data: base64
+    }
+  };
+}
+
+export function isGeminiSeedUnsupportedError(status: number, details: string): boolean {
+  if (status < 400) {
+    return false;
+  }
+  const normalized = details.toLowerCase();
+  if (!normalized.includes("seed")) {
+    return false;
+  }
+  return (
+    normalized.includes("unknown name") ||
+    normalized.includes("unknown field") ||
+    normalized.includes("unrecognized field") ||
+    normalized.includes("not supported") ||
+    normalized.includes("invalid argument")
+  );
+}
+
+async function resolveImagePathToDataUrl(path: string): Promise<string | null> {
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.startsWith("data:image/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("data:")) {
+    return null;
+  }
+  try {
+    const response = await fetch(trimmed, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      return null;
+    }
+    return toDataUrl(blob);
+  } catch {
+    return null;
+  }
 }
 
 export class AdminPanel {
@@ -2627,23 +2718,54 @@ export class AdminPanel {
       const generationConfig: Record<string, unknown> = {
         responseModalities: ["TEXT", "IMAGE"]
       };
+      const parts: Array<Record<string, unknown>> = [];
+      let seedFallbackUsed = false;
+      let referenceUsed = false;
       if (slot.meta.kind === "artist") {
-        generationConfig.seed = this.getArtistSeed(slot.meta.artistId);
+        const artistSeed = this.getArtistSeed(slot.meta.artistId);
+        generationConfig.seed = artistSeed;
+        const referencePart = await this.buildArtistReferenceInlinePart(slot.meta.artistId);
+        if (referencePart) {
+          parts.push(referencePart);
+          referenceUsed = true;
+        }
+        parts.push({
+          text: buildArtistSeedPrompt(prompt, artistSeed)
+        });
+      } else {
+        parts.push({ text: prompt });
       }
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.geminiModel)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.geminiModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const requestGemini = async (config: Record<string, unknown>) =>
+        fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig
+            contents: [{ parts }],
+            generationConfig: config
           })
-        }
-      );
+        });
+
+      let response = await requestGemini(generationConfig);
       if (!response.ok) {
         const details = await response.text();
-        throw new Error(`Gemini request failed (${response.status}): ${details}`);
+        if (
+          slot.meta.kind === "artist" &&
+          "seed" in generationConfig &&
+          isGeminiSeedUnsupportedError(response.status, details)
+        ) {
+          const retryConfig = { ...generationConfig };
+          delete retryConfig.seed;
+          response = await requestGemini(retryConfig);
+          seedFallbackUsed = true;
+          if (!response.ok) {
+            const retryDetails = await response.text();
+            throw new Error(`Gemini request failed (${response.status}): ${retryDetails}`);
+          }
+        } else {
+          throw new Error(`Gemini request failed (${response.status}): ${details}`);
+        }
       }
       const payload = (await response.json()) as unknown;
       const inline = readInlineGeminiImage(payload);
@@ -2659,18 +2781,52 @@ export class AdminPanel {
       }
       this.slotCandidates.set(slot.id, dataUrl);
       if (slot.meta.kind === "artist") {
-        this.setArtistSeedWarning(
-          slot.meta.artistId,
-          "Seed was sent to Gemini, but deterministic outputs are best-effort only and may vary by model/runtime."
-        );
+        if (seedFallbackUsed) {
+          this.setArtistSeedWarning(
+            slot.meta.artistId,
+            "This model/runtime rejected generationConfig.seed. Identity consistency is now best-effort via prompt + reference image."
+          );
+        } else {
+          this.setArtistSeedWarning(slot.meta.artistId, "");
+        }
       }
-      this.generateStatus = "Generation complete. Review candidate and apply.";
+      const notes: string[] = [];
+      if (referenceUsed) {
+        notes.push("reference image used");
+      }
+      if (seedFallbackUsed) {
+        notes.push("seed fallback");
+      }
+      this.generateStatus =
+        notes.length > 0
+          ? `Generation complete (${notes.join(", ")}). Review candidate and apply.`
+          : "Generation complete. Review candidate and apply.";
     } catch (error) {
       this.generateStatus = String(error);
     } finally {
       this.isGenerating = false;
       this.render();
     }
+  }
+
+  private async buildArtistReferenceInlinePart(
+    artistId: string
+  ): Promise<GeminiInlineDataPart | null> {
+    const artistSlots = this.getAllSlots().filter((entry) =>
+      isArtistImageSlot(entry, artistId)
+    );
+    if (artistSlots.length === 0) {
+      return null;
+    }
+    const preferredSlot =
+      artistSlots.find((entry) => entry.meta.field === "walk1") ?? artistSlots[0];
+    const preferredPath =
+      this.slotCandidates.get(preferredSlot.id) ?? preferredSlot.resolvedPath;
+    const dataUrl = await resolveImagePathToDataUrl(preferredPath);
+    if (!dataUrl) {
+      return null;
+    }
+    return dataUrlToInlineDataPart(dataUrl);
   }
 
   private async runElevenLabsGeneration(slot: AssetSlot): Promise<void> {
