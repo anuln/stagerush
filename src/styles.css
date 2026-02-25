@@ -364,6 +364,265 @@ canvas {
   outline-offset: 3px;
 }
 
+.screen-panel.is-session-wrap {
+  width: min(94vw, 560px);
+  border-radius: 26px;
+  border-color: rgba(173, 219, 248, 0.34);
+  padding: clamp(18px, 2.8vw, 28px);
+  background:
+    radial-gradient(360px 220px at 12% 8%, rgba(83, 231, 199, 0.18), transparent 70%),
+    radial-gradient(320px 190px at 88% 0%, rgba(255, 164, 92, 0.19), transparent 72%),
+    linear-gradient(170deg, rgba(8, 13, 24, 0.93), rgba(4, 9, 18, 0.95));
+  box-shadow:
+    0 24px 58px rgba(2, 7, 16, 0.64),
+    inset 0 1px 0 rgba(236, 250, 255, 0.09);
+}
+
+.screen-panel.is-session-wrap .screen-session-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.screen-panel.is-session-wrap .screen-session-spark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 242, 209, 0.95), rgba(255, 162, 98, 0.3));
+  left: calc(8% + (var(--spark-index, 0) * 8.5%));
+  top: calc(20% + (var(--spark-index, 0) * 4%));
+  opacity: 0;
+  animation: session-spark 1600ms ease-out infinite;
+  animation-delay: calc(var(--spark-index, 0) * 120ms);
+}
+
+.screen-panel.is-session-wrap .screen-session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.screen-session-title-block {
+  min-width: 0;
+}
+
+.screen-session-day {
+  margin: 0;
+  color: rgba(183, 212, 240, 0.82);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.screen-session-result {
+  margin: 6px 0 0;
+  color: #f4fbff;
+  font-family: var(--theme-font-display);
+  font-size: clamp(34px, 6.8vw, 48px);
+  letter-spacing: 0.03em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.screen-session-subtitle {
+  margin: 8px 0 0;
+  color: rgba(189, 212, 235, 0.86);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.screen-session-tier {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
+  border-radius: 14px;
+  border: 1px solid rgba(246, 211, 144, 0.62);
+  background: linear-gradient(160deg, rgba(255, 206, 123, 0.26), rgba(255, 153, 84, 0.28));
+  color: #ffe8c7;
+  min-width: 96px;
+  min-height: 74px;
+  padding: 8px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 239, 213, 0.38);
+}
+
+.screen-session-tier span {
+  color: rgba(255, 232, 191, 0.78);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.screen-session-tier strong {
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.screen-session-score-strip {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.screen-session-score-card {
+  border-radius: 14px;
+  border: 1px solid rgba(166, 207, 240, 0.34);
+  background: rgba(7, 14, 28, 0.72);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.screen-session-score-card span {
+  color: rgba(170, 204, 236, 0.78);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.screen-session-score-card strong {
+  color: #f4fbff;
+  font-size: clamp(19px, 4vw, 26px);
+  letter-spacing: 0.01em;
+}
+
+.screen-session-score-card.is-run-total {
+  border-color: rgba(255, 201, 136, 0.52);
+}
+
+.screen-session-metrics {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.screen-session-metric {
+  border-radius: 12px;
+  border: 1px solid rgba(160, 200, 234, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 9px 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.screen-session-metric-label {
+  color: rgba(169, 203, 233, 0.8);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.screen-session-metric-value {
+  color: #e9f6ff;
+  font-size: 15px;
+}
+
+.screen-session-metric.is-positive {
+  border-color: rgba(123, 235, 199, 0.52);
+  background: rgba(83, 229, 197, 0.09);
+}
+
+.screen-session-metric.is-warning {
+  border-color: rgba(255, 164, 132, 0.5);
+  background: rgba(255, 128, 96, 0.08);
+}
+
+.screen-session-progress {
+  margin-top: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(159, 201, 236, 0.24);
+  background: rgba(6, 12, 22, 0.58);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.screen-session-progress-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.screen-session-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(170, 212, 242, 0.34);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(205, 229, 250, 0.92);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+}
+
+.screen-session-next {
+  margin: 0;
+  color: rgba(211, 230, 246, 0.92);
+  font-size: 12px;
+}
+
+.screen-panel.is-session-wrap .screen-actions {
+  margin-top: 14px;
+}
+
+.screen-panel.is-session-wrap .screen-action.primary {
+  min-height: 54px;
+  font-size: 16px;
+}
+
+.screen-overlay[data-screen="level_complete"] .screen-panel.is-session-wrap,
+.screen-overlay[data-screen="festival_complete"] .screen-panel.is-session-wrap {
+  animation:
+    panel-enter calc(var(--theme-motion-transition-ms) * 1ms) cubic-bezier(0.2, 0.78, 0.2, 1),
+    session-pulse 2200ms ease-in-out infinite;
+}
+
+.screen-overlay[data-screen="festival_complete"] .screen-panel.is-session-wrap .screen-session-spark {
+  animation-duration: 1900ms;
+}
+
+.screen-overlay[data-screen="level_failed"] .screen-panel.is-session-wrap {
+  background:
+    radial-gradient(340px 200px at 10% 8%, rgba(255, 120, 94, 0.16), transparent 70%),
+    radial-gradient(320px 190px at 88% 0%, rgba(255, 186, 92, 0.08), transparent 72%),
+    linear-gradient(170deg, rgba(14, 10, 16, 0.92), rgba(8, 7, 14, 0.95));
+}
+
+@keyframes session-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 24px 58px rgba(2, 7, 16, 0.64),
+      inset 0 1px 0 rgba(236, 250, 255, 0.09);
+  }
+  50% {
+    box-shadow:
+      0 26px 64px rgba(3, 11, 24, 0.7),
+      0 0 0 1px rgba(111, 232, 200, 0.26),
+      inset 0 1px 0 rgba(236, 250, 255, 0.11);
+  }
+}
+
+@keyframes session-spark {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.3);
+  }
+  24% {
+    opacity: 0.88;
+    transform: translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.75);
+  }
+}
+
 @media (max-width: 680px) {
   .game-frame {
     padding: 0;
@@ -394,6 +653,19 @@ canvas {
 
   .screen-action {
     width: 100%;
+  }
+
+  .screen-session-header {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .screen-session-tier {
+    justify-self: start;
+  }
+
+  .screen-session-score-strip {
+    grid-template-columns: 1fr;
   }
 }
 
