@@ -732,13 +732,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball2026/committed/artist-new-a-walk1-ce533c39.png",
-            "assets/maps/govball2026/committed/artist-new-a-walk2-3c58b302.png",
-            "assets/maps/govball2026/committed/artist-new-a-walk3-f90678dc.png"
+            "assets/maps/govball2026/committed/artist-new-a-walk1-37db7718.png",
+            "assets/maps/govball2026/committed/artist-new-a-walk2-c0c36123.png",
+            "assets/maps/govball2026/committed/artist-new-a-walk3-9e4d10a7.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_a_idle.png",
-          "distracted": "assets/maps/govball2026/committed/artist-new-a-distracted-8b23cdde.png",
-          "performing": "assets/maps/govball2026/committed/artist-new-a-performing-1d58ea18.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-a-distracted-0396324c.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-a-performing-02abf730.png"
         }
       },
       {
