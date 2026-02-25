@@ -1,3 +1,5 @@
-Negative feedback cue for missed artist.
-Gentle descending tone with subtle crowd disappointment texture.
-Should feel informative, not harsh; around 1.5 seconds.
+Gameplay miss feedback SFX when artist route fails.
+Tone: gentle descending motif with subtle disappointment texture.
+Envelope: moderate attack, short-mid decay.
+Duration: about 1.2-1.6 seconds.
+Constraints: informative not punishing, avoid harsh buzzer style.

@@ -45,13 +45,24 @@ export interface AssetSlot {
   meta: SlotMeta;
 }
 
+export interface BuildAssetSlotsOptions {
+  inPlayOnly?: boolean;
+  inPlayLevel?: number;
+}
+
 export function buildAssetSlots(
   map: FestivalMap,
   overrides: AdminAssetOverrides,
   spriteCatalog: SpriteCatalogEntry[],
-  audioCatalog: AudioCatalogEntry[]
+  audioCatalog: AudioCatalogEntry[],
+  options: BuildAssetSlotsOptions = {}
 ): AssetSlot[] {
   const slots: AssetSlot[] = [];
+  const inPlayArtistIds = resolveInPlayArtistIds(
+    map,
+    options.inPlayLevel ?? 1,
+    options.inPlayOnly !== false
+  );
 
   const backgroundOverride = normalizeOverride(overrides.background);
   slots.push({
@@ -101,6 +112,9 @@ export function buildAssetSlots(
   }
 
   for (const artist of map.assets.artists) {
+    if (inPlayArtistIds && !inPlayArtistIds.has(artist.id)) {
+      continue;
+    }
     const artistOverrides = overrides.artistSprites?.[artist.id];
     slots.push({
       id: `artist:${artist.id}:idle`,
@@ -170,6 +184,27 @@ export function buildAssetSlots(
   }
 
   return slots;
+}
+
+export function resolveInPlayArtistIds(
+  map: FestivalMap,
+  inPlayLevel: number,
+  inPlayOnly = true
+): Set<string> | null {
+  if (!inPlayOnly) {
+    return null;
+  }
+  const level = Math.max(1, Math.floor(inPlayLevel));
+  return new Set(
+    map.assets.artists
+      .filter((artist) => {
+        const debut = Number.isInteger(artist.debutLevel)
+          ? Math.max(1, artist.debutLevel ?? 1)
+          : 1;
+        return debut <= level;
+      })
+      .map((artist) => artist.id)
+  );
 }
 
 export function filterAssetSlots(

@@ -5,79 +5,79 @@
       "id": "bg_chill_v1",
       "type": "music",
       "assetPath": "assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
-      "promptText": "Instrumental loop for a festival strategy game. Mood: relaxed daytime crowd energy, warm and optimistic, medium-low intensity. Style: indie electronic with soft percussion, clean bass, subtle guitar plucks. Constraints: no vocals, seamless loop behavior, avoid harsh transients."
+      "promptText": "Instrumental background loop for an early-round festival routing game. Mood: morning setup energy, relaxed confidence, airy and optimistic. Style: indie-electronic with soft kick, brushed percussion, warm bass, subtle guitar or plucky synth motifs. Tempo: 96-104 BPM. Structure: seamless loop, stable groove, no long intro/outro, no sudden breakdowns. Constraints: no vocals, no spoken words, no harsh transients, clean mobile-friendly low-end."
     },
     {
       "id": "bg_energy_v1",
       "type": "music",
       "assetPath": "assets/audio/govball/generated/music/audio_bg_energy_v1.mp3",
-      "promptText": "Instrumental loop for a festival routing game. Mood: momentum and urgency for mid-game rounds, bright and driving. Style: punchy dance-pop groove, syncopated percussion, energetic synth stabs. Constraints: no vocals, seamless loop, keep melodic hooks short and repeatable."
+      "promptText": "Instrumental background loop for mid-round festival gameplay. Mood: forward momentum, crowd-building urgency, bright and focused. Style: dance-pop/electro groove with tight drums, syncopated hats, punchy bass, short synth hooks. Tempo: 118-124 BPM. Structure: seamless loop with consistent pulse, minimal arrangement drift. Constraints: no vocals, no spoken words, avoid brittle highs, keep hooks short and repeatable."
     },
     {
       "id": "bg_peak_v1",
       "type": "music",
       "assetPath": "assets/audio/govball/generated/music/audio_bg_peak_v1.mp3",
-      "promptText": "Instrumental loop for final high-pressure rounds in a festival game. Mood: intense but triumphant, high energy, late-night main-stage vibe. Style: electro-rock hybrid with strong kick, sidechained synths, big risers. Constraints: no vocals, seamless loop, avoid muddy low-end."
+      "promptText": "Instrumental background loop for late-round peak festival pressure. Mood: intense, triumphant, headliner-night adrenaline. Style: electro-rock crossover with strong kick-snare backbone, sidechained synth layers, festival-scale riser texture. Tempo: 128-134 BPM. Structure: loop-ready with clear downbeat continuity and no hard cutoff tail. Constraints: no vocals, no spoken words, powerful but controlled low-end, avoid distortion fatigue."
     },
     {
       "id": "sfx_spawn_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
-      "promptText": "Short game UI stinger for artist spawn. Bright electronic pluck with tiny crowd texture tail. Length around one second."
+      "promptText": "Short gameplay SFX for artist spawn. Tone: bright welcoming electronic ping with a tiny crowd-air tail. Envelope: fast attack, short decay. Duration: about 0.8-1.0 seconds. Constraints: clean transient, no clipping, readable over music."
     },
     {
       "id": "sfx_path_draw_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_path_draw_v1.mp3",
-      "promptText": "Soft swoosh sound for drawing path lines on touch screen. Smooth airy texture, light friction feel, no click at end. Length around one second."
+      "promptText": "Touch interaction SFX for drawing artist path lines. Tone: smooth airy swipe with light friction texture. Envelope: soft attack, short trail, no click at end. Duration: about 0.9-1.2 seconds. Constraints: subtle and non-intrusive, no harsh highs."
     },
     {
       "id": "sfx_deliver_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_deliver_v1.mp3",
-      "promptText": "Positive festival delivery cue. Short crowd cheer with a clean upward musical hit. Length around 1.3 seconds."
+      "promptText": "Positive delivery confirmation SFX for reaching a stage. Tone: concise celebratory hit with small crowd-lift character. Envelope: fast attack, medium-short decay. Duration: about 1.1-1.4 seconds. Constraints: uplifting but not oversized, no clipping."
     },
     {
       "id": "sfx_deliver_combo_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_deliver_combo_v1.mp3",
-      "promptText": "Bigger combo success cue for chaining deliveries. Layered crowd shout plus sparkling synth flourish. Celebratory and punchy, around two seconds."
+      "promptText": "Hero combo-delivery SFX for chained successful sets. Tone: bigger celebratory impact than standard delivery, sparkling upper flourish, energetic crowd accent. Envelope: fast attack, controlled tail. Duration: about 1.6-2.0 seconds. Constraints: high excitement, still clean and mobile-safe."
     },
     {
       "id": "sfx_miss_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_miss_v1.mp3",
-      "promptText": "Negative feedback cue for missed artist. Gentle descending tone with subtle crowd disappointment texture. Should feel informative, not harsh; around 1.5 seconds."
+      "promptText": "Gameplay miss feedback SFX when artist route fails. Tone: gentle descending motif with subtle disappointment texture. Envelope: moderate attack, short-mid decay. Duration: about 1.2-1.6 seconds. Constraints: informative not punishing, avoid harsh buzzer style."
     },
     {
       "id": "sfx_chat_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
-      "promptText": "Short playful chatter cue for two artists colliding into conversation. Light babble-like texture with warm tone, non-verbal. Length under one second."
+      "promptText": "Short SFX for two artists stopping to chat. Tone: playful social interruption cue with warm non-verbal texture. Envelope: quick and light. Duration: about 0.7-1.0 seconds. Constraints: non-annoying, no intelligible words."
     },
     {
       "id": "sfx_distraction_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_distraction_v1.mp3",
-      "promptText": "Cue for distraction trigger (fans/food/merch pull). Curious attention-grabbing tone with light sparkle. Length around 1.2 seconds."
+      "promptText": "SFX for distraction encounter trigger (merch, food, fan pull). Tone: curious attention-grab with slight whimsical sparkle. Envelope: quick rise, short decay. Duration: about 1.0-1.3 seconds. Constraints: must be distinct from miss cue and timer warning."
     },
     {
       "id": "sfx_level_complete_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
-      "promptText": "Level completion fanfare for festival game. Triumphant but compact orchestral-electronic hit with crowd uplift. Length around 2.5 seconds."
+      "promptText": "Round completion fanfare SFX for festival game. Tone: triumphant compact stinger, uplifting and polished. Envelope: strong opening, quick celebratory release. Duration: about 2.2-2.6 seconds. Constraints: cinematic but concise, no muddy low-end."
     },
     {
       "id": "sfx_level_failed_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
-      "promptText": "Level failed sting for festival game. Sympathetic descending motif, soft impact, emotional but not punitive. Length around two seconds."
+      "promptText": "Round failed stinger SFX for festival game. Tone: empathetic downward cadence, emotional but quick reset energy. Envelope: soft impact then short resolve. Duration: about 1.8-2.2 seconds. Constraints: avoid harsh alarm feel, keep it tasteful."
     },
     {
       "id": "sfx_timer_warning_v1",
       "type": "sfx",
       "assetPath": "assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3",
-      "promptText": "Low-time warning pulse for gameplay urgency. Short ticking pulse with subtle high-frequency alert. Length about one second and loop-friendly cadence."
+      "promptText": "Urgency SFX for low-time warning during gameplay. Tone: rhythmic alert pulse with clear high-mid definition. Envelope: fast, percussive, repeat-safe. Duration: about 0.8-1.0 seconds. Constraints: loop-friendly cadence, no piercing frequencies, must cut through mix."
     }
   ]
 }

@@ -43,6 +43,7 @@ import { createLayerSet } from "./maps/layers";
 import { RunPersistence } from "./persistence/RunPersistence";
 import type { ScreenActionId } from "./ui/ScreenState";
 import { AdminPanel } from "./ui/AdminPanel";
+import { resolveGameFrameLayout } from "./ui/GameFrameLayout";
 import { KioskModeController } from "./ui/KioskModeController";
 import { runScreenActionWithAssets } from "./ui/ScreenActionRunner";
 import { ScreenOverlayController } from "./ui/ScreenOverlayController";
@@ -154,13 +155,14 @@ function readSafeAreaInsets(): { top: number; bottom: number } {
 function applyQualityResolution(
   app: Application,
   qualityTier: QualityTier,
-  baseResolution: number
+  baseResolution: number,
+  viewport: { width: number; height: number }
 ): void {
   const targetResolution = Math.max(
     0.5,
     baseResolution * getQualityPreset(qualityTier).resolutionScale
   );
-  app.renderer.resize(window.innerWidth, window.innerHeight, targetResolution);
+  app.renderer.resize(viewport.width, viewport.height, targetResolution);
 }
 
 async function bootstrap(): Promise<void> {
@@ -169,6 +171,7 @@ async function bootstrap(): Promise<void> {
   const perfFlags = parsePerformanceFlags();
   const dpr = window.devicePixelRatio || 1;
   const baseResolution = isMobile ? Math.min(dpr, 1.5) : dpr;
+  const baseViewport = { width: 432, height: 768 };
   let qualityTier: QualityTier = "high";
   let lowFpsWindows = 0;
   let highFpsWindows = 0;
@@ -177,16 +180,36 @@ async function bootstrap(): Promise<void> {
 
   const app = new Application();
   await app.init({
-    resizeTo: window,
+    width: baseViewport.width,
+    height: baseViewport.height,
     autoDensity: true,
     resolution: baseResolution,
     powerPreference: isMobile ? "low-power" : "high-performance",
     backgroundAlpha: 1,
     backgroundColor: 0x1a1a2e
   });
-  applyQualityResolution(app, qualityTier, baseResolution);
+  applyQualityResolution(app, qualityTier, baseResolution, baseViewport);
 
-  document.body.appendChild(app.canvas);
+  const gameFrame = document.createElement("div");
+  gameFrame.className = "game-frame";
+  gameFrame.appendChild(app.canvas);
+  document.body.appendChild(gameFrame);
+  let frameScale = 1;
+  const layoutGameFrame = (): void => {
+    const frameLayout = resolveGameFrameLayout({
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      isMobile,
+      baseWidth: baseViewport.width,
+      baseHeight: baseViewport.height,
+      desktopMaxScale: 1
+    });
+    frameScale = frameLayout.scale;
+    app.canvas.style.width = `${frameLayout.displayWidth}px`;
+    app.canvas.style.height = `${frameLayout.displayHeight}px`;
+  };
+  layoutGameFrame();
+
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
   const performanceOverlay = new PerformanceOverlay(perfFlags.showOverlay);
@@ -399,8 +422,13 @@ async function bootstrap(): Promise<void> {
     );
   };
 
-  window.addEventListener("resize", redraw);
+  const handleResize = (): void => {
+    layoutGameFrame();
+    redraw();
+  };
+  window.addEventListener("resize", handleResize);
   window.addEventListener("beforeunload", () => {
+    window.removeEventListener("resize", handleResize);
     performanceOverlay.dispose();
     kioskController.dispose();
   });
@@ -489,19 +517,20 @@ async function bootstrap(): Promise<void> {
         qualityTier = nextTier;
         lowFpsWindows = 0;
         highFpsWindows = 0;
-        applyQualityResolution(app, qualityTier, baseResolution);
+        applyQualityResolution(app, qualityTier, baseResolution, baseViewport);
         redraw();
       }
     }
 
     const safeInsets = readSafeAreaInsets();
+    const safeInsetScale = frameScale > 0 ? frameScale : 1;
     gameManager?.update(
       ticker.deltaMS / 1000,
       {
         width: app.renderer.width,
         height: app.renderer.height,
-        safeAreaTopPx: safeInsets.top,
-        safeAreaBottomPx: safeInsets.bottom
+        safeAreaTopPx: safeInsets.top / safeInsetScale,
+        safeAreaBottomPx: safeInsets.bottom / safeInsetScale
       },
       performance.now()
     );

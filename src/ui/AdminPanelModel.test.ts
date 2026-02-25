@@ -78,6 +78,7 @@ function makeFixtureMap(): FestivalMap {
           id: "headliner-a",
           name: "Headliner A",
           tier: "headliner",
+          debutLevel: 1,
           sprites: {
             walk: [
               "assets/maps/fixture/artist_headliner_walk1.png",
@@ -85,6 +86,20 @@ function makeFixtureMap(): FestivalMap {
             ],
             idle: "assets/maps/fixture/artist_headliner_idle.png",
             performing: "assets/maps/fixture/artist_headliner_performing.png"
+          }
+        },
+        {
+          id: "headliner-b",
+          name: "Headliner B",
+          tier: "headliner",
+          debutLevel: 4,
+          sprites: {
+            walk: [
+              "assets/maps/fixture/artist_headliner_b_walk1.png",
+              "assets/maps/fixture/artist_headliner_b_walk2.png"
+            ],
+            idle: "assets/maps/fixture/artist_headliner_b_idle.png",
+            performing: "assets/maps/fixture/artist_headliner_b_performing.png"
           }
         }
       ],
@@ -194,5 +209,33 @@ describe("AdminPanelModel", () => {
 
     const query = filterAssetSlots(slots, "headliner", "all");
     expect(query).toHaveLength(4);
+  });
+
+  it("includes only in-play artist slots for selected level", () => {
+    const levelOneSlots = buildAssetSlots(
+      makeFixtureMap(),
+      {},
+      makeSpriteCatalog(),
+      makeAudioCatalog(),
+      { inPlayLevel: 1, inPlayOnly: true }
+    );
+    const levelFiveSlots = buildAssetSlots(
+      makeFixtureMap(),
+      {},
+      makeSpriteCatalog(),
+      makeAudioCatalog(),
+      { inPlayLevel: 5, inPlayOnly: true }
+    );
+
+    const levelOneArtistIds = levelOneSlots
+      .filter((slot) => slot.category === "artist")
+      .map((slot) => slot.id);
+    const levelFiveArtistIds = levelFiveSlots
+      .filter((slot) => slot.category === "artist")
+      .map((slot) => slot.id);
+
+    expect(levelOneArtistIds.some((id) => id.includes("headliner-a"))).toBe(true);
+    expect(levelOneArtistIds.some((id) => id.includes("headliner-b"))).toBe(false);
+    expect(levelFiveArtistIds.some((id) => id.includes("headliner-b"))).toBe(true);
   });
 });

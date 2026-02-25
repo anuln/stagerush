@@ -1,4 +1,6 @@
-Instrumental loop for a festival strategy game.
-Mood: relaxed daytime crowd energy, warm and optimistic, medium-low intensity.
-Style: indie electronic with soft percussion, clean bass, subtle guitar plucks.
-Constraints: no vocals, seamless loop behavior, avoid harsh transients.
+Instrumental background loop for an early-round festival routing game.
+Mood: morning setup energy, relaxed confidence, airy and optimistic.
+Style: indie-electronic with soft kick, brushed percussion, warm bass, subtle guitar or plucky synth motifs.
+Tempo: 96-104 BPM.
+Structure: seamless loop, stable groove, no long intro/outro, no sudden breakdowns.
+Constraints: no vocals, no spoken words, no harsh transients, clean mobile-friendly low-end.

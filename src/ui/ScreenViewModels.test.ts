@@ -23,8 +23,9 @@ describe("buildScreenViewModel", () => {
     });
 
     expect(model?.screen).toBe("MENU");
+    expect(model?.title).toBe("STAGE RUSH");
     expect(model?.actions[0].id).toBe("START_FESTIVAL");
-    expect(model?.actions[0].label).toBe("Open Gates");
+    expect(model?.actions[0].label).toBe("Start Festival");
   });
 
   it("builds failed-level summary with retry and menu actions", () => {

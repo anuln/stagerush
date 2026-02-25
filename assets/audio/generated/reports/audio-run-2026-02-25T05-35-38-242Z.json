@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-02-25T05:34:16.342Z",
+  "manifest": "/Users/anubhav.mehrotra/Documents/codex/Stage Call/assets/audio/generated/manifest.json",
+  "outputFormat": "mp3_44100_128",
+  "entries": [
+    {
+      "id": "bg_chill_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
+      "bytes": 1121011,
+      "durationMs": 16764
+    },
+    {
+      "id": "bg_energy_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/music/audio_bg_energy_v1.mp3",
+      "bytes": 1121011,
+      "durationMs": 16439
+    },
+    {
+      "id": "bg_peak_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/music/audio_bg_peak_v1.mp3",
+      "bytes": 1120593,
+      "durationMs": 17688
+    },
+    {
+      "id": "sfx_spawn_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "bytes": 18434,
+      "durationMs": 2782
+    },
+    {
+      "id": "sfx_path_draw_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_path_draw_v1.mp3",
+      "bytes": 21359,
+      "durationMs": 3262
+    },
+    {
+      "id": "sfx_deliver_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_deliver_v1.mp3",
+      "bytes": 23031,
+      "durationMs": 2845
+    },
+    {
+      "id": "sfx_deliver_combo_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_deliver_combo_v1.mp3",
+      "bytes": 30973,
+      "durationMs": 2798
+    },
+    {
+      "id": "sfx_miss_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_miss_v1.mp3",
+      "bytes": 26793,
+      "durationMs": 2993
+    },
+    {
+      "id": "sfx_chat_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
+      "bytes": 17180,
+      "durationMs": 2356
+    },
+    {
+      "id": "sfx_distraction_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_distraction_v1.mp3",
+      "bytes": 20106,
+      "durationMs": 3261
+    },
+    {
+      "id": "sfx_level_complete_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
+      "bytes": 40586,
+      "durationMs": 3618
+    },
+    {
+      "id": "sfx_level_failed_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
+      "bytes": 33062,
+      "durationMs": 4227
+    },
+    {
+      "id": "sfx_timer_warning_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3",
+      "bytes": 17180,
+      "durationMs": 2864
+    }
+  ]
+}

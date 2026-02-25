@@ -1,3 +1,5 @@
-Level completion fanfare for festival game.
-Triumphant but compact orchestral-electronic hit with crowd uplift.
-Length around 2.5 seconds.
+Round completion fanfare SFX for festival game.
+Tone: triumphant compact stinger, uplifting and polished.
+Envelope: strong opening, quick celebratory release.
+Duration: about 2.2-2.6 seconds.
+Constraints: cinematic but concise, no muddy low-end.

@@ -27,16 +27,16 @@ export function buildScreenViewModel(
   if (snapshot.screen === "MENU") {
     return {
       screen: "MENU",
-      title: "Stage Call",
+      title: "STAGE RUSH",
       subtitle:
-        "Run the festival setlist under pressure. Draw routes fast, keep momentum high, and own the crowd flow.",
+        "Build the cleanest festival flow. Draw artist routes, dodge distractions, and keep the hype climbing.",
       summaryRows: [
-        { label: "Set count", value: `${level.totalLevels}` },
-        { label: "Unlocked", value: `Up to Level ${snapshot.profile.highestUnlockedLevel}` },
+        { label: "Festival Days", value: `${level.totalLevels}` },
+        { label: "Unlocked", value: `Up to Day ${snapshot.profile.highestUnlockedLevel}` },
         { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
-        { id: "START_FESTIVAL", label: "Open Gates", emphasis: "primary" }
+        { id: "START_FESTIVAL", label: "Start Festival", emphasis: "primary" }
       ]
     };
   }

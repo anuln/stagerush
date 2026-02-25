@@ -1,3 +1,5 @@
-Level failed sting for festival game.
-Sympathetic descending motif, soft impact, emotional but not punitive.
-Length around two seconds.
+Round failed stinger SFX for festival game.
+Tone: empathetic downward cadence, emotional but quick reset energy.
+Envelope: soft impact then short resolve.
+Duration: about 1.8-2.2 seconds.
+Constraints: avoid harsh alarm feel, keep it tasteful.

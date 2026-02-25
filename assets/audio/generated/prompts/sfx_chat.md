@@ -1,3 +1,5 @@
-Short playful chatter cue for two artists colliding into conversation.
-Light babble-like texture with warm tone, non-verbal.
-Length under one second.
+Short SFX for two artists stopping to chat.
+Tone: playful social interruption cue with warm non-verbal texture.
+Envelope: quick and light.
+Duration: about 0.7-1.0 seconds.
+Constraints: non-annoying, no intelligible words.

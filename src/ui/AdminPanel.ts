@@ -10,6 +10,7 @@ import {
   buildAssetSlots,
   filterAssetSlots,
   getStagePosition,
+  resolveInPlayArtistIds,
   setOverrideForSlot,
   setStagePositionOverride,
   type AssetSlot,
@@ -335,6 +336,7 @@ export class AdminPanel {
   private audioCatalog: AudioCatalogEntry[] = [];
   private activeTab: AdminTab = "assets";
   private categoryFilter: "all" | SlotCategory = "all";
+  private inPlayLevel = 1;
   private assetSearch = "";
   private selectedSlotId: string | null = null;
   private selectedStageForMap: string | null = null;
@@ -477,7 +479,11 @@ export class AdminPanel {
       this.map,
       this.draftOverrides,
       this.spriteCatalog,
-      this.audioCatalog
+      this.audioCatalog,
+      {
+        inPlayOnly: true,
+        inPlayLevel: this.inPlayLevel
+      }
     );
   }
 
@@ -532,7 +538,7 @@ export class AdminPanel {
     brand.className = "admin-brand";
     const title = document.createElement("h2");
     title.className = "admin-title";
-    title.textContent = "Stage Call Admin";
+    title.textContent = "Stage Rush Admin";
     const subtitle = document.createElement("p");
     subtitle.className = "admin-subtitle";
     subtitle.textContent = "Asset pipeline, generation, and map layout control.";
@@ -604,12 +610,12 @@ export class AdminPanel {
 
     const tabs = document.createElement("div");
     tabs.className = "admin-tabs";
-    const tabDefs: Array<{ id: AdminTab; label: string }> = [
-      { id: "assets", label: "Assets" },
-      { id: "generate", label: "Generate" },
-      { id: "map", label: "Map" },
-      { id: "library", label: "Library" },
-      { id: "publish", label: "Publish" }
+    const tabDefs: Array<{ id: AdminTab; label: string; hint: string }> = [
+      { id: "assets", label: "Assets", hint: "Live game slots" },
+      { id: "generate", label: "Generate", hint: "Create new art" },
+      { id: "map", label: "Map", hint: "Pin stage markers" },
+      { id: "library", label: "Library", hint: "Review variants" },
+      { id: "publish", label: "Publish", hint: "Apply and reload" }
     ];
     for (const tabDef of tabDefs) {
       const button = document.createElement("button");
@@ -618,7 +624,15 @@ export class AdminPanel {
       if (this.activeTab === tabDef.id) {
         button.classList.add("is-active");
       }
-      button.textContent = tabDef.label;
+      const title = document.createElement("span");
+      title.className = "admin-tab-title";
+      title.textContent = tabDef.label;
+      button.appendChild(title);
+
+      const hint = document.createElement("span");
+      hint.className = "admin-tab-hint";
+      hint.textContent = tabDef.hint;
+      button.appendChild(hint);
       button.addEventListener("click", () => {
         this.activeTab = tabDef.id;
         this.generateStatus = "";
@@ -665,6 +679,24 @@ export class AdminPanel {
         this.render();
       });
       filters.appendChild(category);
+
+      const levelSelect = document.createElement("select");
+      levelSelect.className = "admin-select";
+      for (let level = 1; level <= this.map.totalLevels; level += 1) {
+        const option = document.createElement("option");
+        option.value = String(level);
+        option.textContent = `In-play roster: Level ${level}`;
+        levelSelect.appendChild(option);
+      }
+      levelSelect.value = String(this.inPlayLevel);
+      levelSelect.addEventListener("change", () => {
+        const next = Number.parseInt(levelSelect.value, 10);
+        this.inPlayLevel = Number.isFinite(next)
+          ? Math.max(1, Math.min(this.map.totalLevels, next))
+          : 1;
+        this.render();
+      });
+      filters.appendChild(levelSelect);
       sidebar.appendChild(filters);
 
       const slotList = document.createElement("div");
@@ -694,6 +726,28 @@ export class AdminPanel {
       }
       sidebar.appendChild(slotList);
     } else {
+      if (this.activeTab === "library") {
+        const levelControls = document.createElement("div");
+        levelControls.className = "admin-filter-card";
+        const levelSelect = document.createElement("select");
+        levelSelect.className = "admin-select";
+        for (let level = 1; level <= this.map.totalLevels; level += 1) {
+          const option = document.createElement("option");
+          option.value = String(level);
+          option.textContent = `In-play roster: Level ${level}`;
+          levelSelect.appendChild(option);
+        }
+        levelSelect.value = String(this.inPlayLevel);
+        levelSelect.addEventListener("change", () => {
+          const next = Number.parseInt(levelSelect.value, 10);
+          this.inPlayLevel = Number.isFinite(next)
+            ? Math.max(1, Math.min(this.map.totalLevels, next))
+            : 1;
+          this.render();
+        });
+        levelControls.appendChild(levelSelect);
+        sidebar.appendChild(levelControls);
+      }
       const help = document.createElement("p");
       help.className = "admin-empty";
       if (this.activeTab === "map") {
@@ -1228,6 +1282,10 @@ export class AdminPanel {
     title.textContent = "Prompt and Asset Library";
     card.appendChild(title);
 
+    const inPlaySlots = this.getAllSlots();
+    const allowedAssetPaths = new Set(
+      inPlaySlots.map((slot) => slot.defaultPath.replace(/^\/+/, ""))
+    );
     const entries = [
       ...this.spriteCatalog.map((entry) => ({
         id: entry.id,
@@ -1243,7 +1301,9 @@ export class AdminPanel {
         promptText: entry.promptText,
         mediaType: "audio" as const
       }))
-    ];
+    ].filter((entry) =>
+      allowedAssetPaths.has(entry.assetPath.replace(/^\/+/, ""))
+    );
 
     if (entries.length === 0) {
       const empty = document.createElement("p");
