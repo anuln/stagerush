@@ -167,6 +167,10 @@ describe("AdminPanelModel", () => {
     expect(audioSlot?.category).toBe("audio");
     expect(audioSlot?.mediaType).toBe("audio");
     expect(audioSlot?.promptText).toBe("Music prompt");
+
+    const artistPoseSlot = slots.find((slot) => slot.id === "artist:headliner-a:pose1");
+    expect(artistPoseSlot?.defaultPath).toBe("");
+    expect(artistPoseSlot?.resolvedPath).toBe("/");
   });
 
   it("applies and clears overrides by slot meta", () => {

@@ -1,4 +1,5 @@
 import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { getAssetCandidatePaths } from "../assets/GlobalAssetFallbacks";
 import type { ResolvedDistraction } from "../maps/MapLoader";
 import { resolveAssetPath } from "../maps/MapLoader";
 
@@ -66,14 +67,17 @@ export class DistractionRenderer {
   }
 
   private getTexture(path: string): Texture | null {
-    const resolved = resolveAssetPath(path);
-    const texture = Assets.get(resolved) as Texture | undefined;
-    if (texture && texture !== Texture.EMPTY) {
-      return texture;
-    }
-    const direct = Assets.get(path) as Texture | undefined;
-    if (direct && direct !== Texture.EMPTY) {
-      return direct;
+    const candidates = getAssetCandidatePaths("distraction", path);
+    for (const candidate of candidates) {
+      const resolved = resolveAssetPath(candidate);
+      const texture = Assets.get(resolved) as Texture | undefined;
+      if (texture && texture !== Texture.EMPTY) {
+        return texture;
+      }
+      const direct = Assets.get(candidate) as Texture | undefined;
+      if (direct && direct !== Texture.EMPTY) {
+        return direct;
+      }
     }
     return null;
   }

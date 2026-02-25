@@ -154,9 +154,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 1`,
       category: "artist",
       mediaType: "image",
-      defaultPath: pose1Path,
+      defaultPath: "",
       overridePath: normalizeOverride(artistOverrides?.walk1),
-      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? pose1Path),
+      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? ""),
       promptText:
         artist.promptByPose?.pose1 ??
         resolvePromptText(pose1Path, spriteCatalog, audioCatalog),
@@ -167,9 +167,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 2`,
       category: "artist",
       mediaType: "image",
-      defaultPath: pose2Path,
+      defaultPath: "",
       overridePath: normalizeOverride(artistOverrides?.walk2),
-      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? pose2Path),
+      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? ""),
       promptText:
         artist.promptByPose?.pose2 ??
         resolvePromptText(pose2Path, spriteCatalog, audioCatalog),
@@ -180,9 +180,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 3`,
       category: "artist",
       mediaType: "image",
-      defaultPath: pose3Path,
+      defaultPath: "",
       overridePath: normalizeOverride(artistOverrides?.walk3),
-      resolvedPath: toResolvedPath(artistOverrides?.walk3 ?? pose3Path),
+      resolvedPath: toResolvedPath(artistOverrides?.walk3 ?? ""),
       promptText:
         artist.promptByPose?.pose3 ??
         resolvePromptText(pose3Path, spriteCatalog, audioCatalog),
@@ -193,11 +193,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · distraction pose`,
       category: "artist",
       mediaType: "image",
-      defaultPath: distractionPath,
+      defaultPath: "",
       overridePath: normalizeOverride(artistOverrides?.distracted),
-      resolvedPath: toResolvedPath(
-        artistOverrides?.distracted ?? distractionPath
-      ),
+      resolvedPath: toResolvedPath(artistOverrides?.distracted ?? ""),
       promptText:
         artist.promptByPose?.distracted ??
         resolvePromptText(distractionPath, spriteCatalog, audioCatalog),
@@ -208,11 +206,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · performance pose`,
       category: "artist",
       mediaType: "image",
-      defaultPath: artist.sprites.performing,
+      defaultPath: "",
       overridePath: normalizeOverride(artistOverrides?.performing),
-      resolvedPath: toResolvedPath(
-        artistOverrides?.performing ?? artist.sprites.performing
-      ),
+      resolvedPath: toResolvedPath(artistOverrides?.performing ?? ""),
       promptText:
         artist.promptByPose?.performing ??
         resolvePromptText(artist.sprites.performing, spriteCatalog, audioCatalog),

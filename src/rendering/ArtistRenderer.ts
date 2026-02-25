@@ -1,4 +1,8 @@
 import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import {
+  GLOBAL_FALLBACK_ASSET_PATHS,
+  getAssetCandidatePaths
+} from "../assets/GlobalAssetFallbacks";
 import { GAME_CONFIG } from "../config/GameConfig";
 import type { ArtistSpriteConfig } from "../config/FestivalConfig";
 import { Artist } from "../entities/Artist";
@@ -87,7 +91,7 @@ export function resolveArtistSpritePath(
       ? candidates[pickVariantIndex(artist.id, candidates.length)]
       : null);
   if (!profile) {
-    return null;
+    return GLOBAL_FALLBACK_ASSET_PATHS.artist;
   }
   if (isPerformingState(artist.state)) {
     return profile.sprites.performing;
@@ -98,13 +102,13 @@ export function resolveArtistSpritePath(
       profile.sprites.distracted ??
       profile.sprites.walk[0] ??
       profile.sprites.idle ??
-      null
+      GLOBAL_FALLBACK_ASSET_PATHS.artist
     );
   }
 
   if (isWalkState(artist.state)) {
     if (!Array.isArray(profile.sprites.walk) || profile.sprites.walk.length === 0) {
-      return profile.sprites.idle ?? null;
+      return profile.sprites.idle ?? GLOBAL_FALLBACK_ASSET_PATHS.artist;
     }
     const frameIndex =
       Math.floor(nowMs / WALK_FRAME_DURATION_MS) % profile.sprites.walk.length;
@@ -114,7 +118,7 @@ export function resolveArtistSpritePath(
   return (
     profile.sprites.walk[0] ??
     profile.sprites.idle ??
-    null
+    GLOBAL_FALLBACK_ASSET_PATHS.artist
   );
 }
 
@@ -227,15 +231,17 @@ export class ArtistRenderer {
   }
 
   private getTexture(path: string): Texture | null {
-    const resolved = resolveAssetPath(path);
-    const texture = Assets.get(resolved) as Texture | undefined;
-    if (texture && texture !== Texture.EMPTY) {
-      return texture;
-    }
-
-    const direct = Assets.get(path) as Texture | undefined;
-    if (direct && direct !== Texture.EMPTY) {
-      return direct;
+    const candidates = getAssetCandidatePaths("artist", path);
+    for (const candidate of candidates) {
+      const resolved = resolveAssetPath(candidate);
+      const texture = Assets.get(resolved) as Texture | undefined;
+      if (texture && texture !== Texture.EMPTY) {
+        return texture;
+      }
+      const direct = Assets.get(candidate) as Texture | undefined;
+      if (direct && direct !== Texture.EMPTY) {
+        return direct;
+      }
     }
 
     return null;

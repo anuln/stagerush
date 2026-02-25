@@ -1,4 +1,5 @@
 import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { getAssetCandidatePaths } from "../assets/GlobalAssetFallbacks";
 import type { DebugToggles } from "../debug/DebugToggles";
 import { resolveAssetPath } from "./MapLoader";
 import type { ResolvedFestivalLayout } from "./MapLoader";
@@ -34,7 +35,7 @@ export class MapRenderer {
   }
 
   private renderBackground(layout: ResolvedFestivalLayout): void {
-    const texture = this.getTexture(layout.map.background);
+    const texture = this.getTexture(layout.map.background, "background");
     if (texture) {
       const bg = new Sprite(texture);
       bg.width = layout.viewport.width;
@@ -51,7 +52,7 @@ export class MapRenderer {
 
   private renderStages(layout: ResolvedFestivalLayout): void {
     layout.stages.forEach((stage) => {
-      const texture = this.getTexture(stage.sprite);
+      const texture = this.getTexture(stage.sprite, "stage");
       if (texture) {
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5);
@@ -109,16 +110,18 @@ export class MapRenderer {
     });
   }
 
-  private getTexture(path: string): Texture | null {
-    const resolved = resolveAssetPath(path);
-    const texture = Assets.get(resolved) as Texture | undefined;
-    if (texture && texture !== Texture.EMPTY) {
-      return texture;
-    }
-
-    const direct = Assets.get(path) as Texture | undefined;
-    if (direct && direct !== Texture.EMPTY) {
-      return direct;
+  private getTexture(path: string, kind: "background" | "stage"): Texture | null {
+    const candidates = getAssetCandidatePaths(kind, path);
+    for (const candidate of candidates) {
+      const resolved = resolveAssetPath(candidate);
+      const texture = Assets.get(resolved) as Texture | undefined;
+      if (texture && texture !== Texture.EMPTY) {
+        return texture;
+      }
+      const direct = Assets.get(candidate) as Texture | undefined;
+      if (direct && direct !== Texture.EMPTY) {
+        return direct;
+      }
     }
 
     return null;

@@ -1,4 +1,5 @@
 import { getStagePixelSize, type ViewportSize } from "../config/GameConfig";
+import { getAllGlobalFallbackAssetPaths } from "../assets/GlobalAssetFallbacks";
 import type {
   DistractionConfig,
   DistractionType,
@@ -414,6 +415,9 @@ export function collectMapAssetPaths(map: FestivalMap): string[] {
   }
   for (const audioPath of Object.values(map.assets.audio)) {
     paths.add(audioPath);
+  }
+  for (const fallbackPath of getAllGlobalFallbackAssetPaths()) {
+    paths.add(fallbackPath);
   }
 
   return Array.from(paths);

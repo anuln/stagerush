@@ -794,6 +794,37 @@ export class AdminPanel {
     return seed;
   }
 
+  private resetArtistSet(artistId: string): number {
+    const seed = Math.floor(Math.random() * 9_999_999);
+    const next = structuredClone(this.draftOverrides);
+    const artistSprites = { ...(next.artistSprites ?? {}) };
+    const existingEntry = artistSprites[artistId] ?? {};
+    const resetEntry: Record<string, unknown> = {
+      seed
+    };
+    if (Number.isFinite(existingEntry.performanceAudioLengthSec)) {
+      resetEntry.performanceAudioLengthSec = existingEntry.performanceAudioLengthSec;
+    }
+    artistSprites[artistId] = resetEntry;
+    next.artistSprites = artistSprites;
+    this.draftOverrides = next;
+
+    const artistSlots = this.getArtistSlots(this.getAllSlots(), artistId);
+    const mapArtist = this.map.assets.artists.find((entry) => entry.id === artistId);
+    for (const slot of artistSlots) {
+      this.slotCandidates.delete(slot.id);
+      if (slot.mediaType === "image") {
+        this.pathDraftBySlot.set(slot.id, "");
+      } else if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
+        this.pathDraftBySlot.set(slot.id, mapArtist?.performanceAudio?.clip ?? "");
+      }
+    }
+    this.artistSeedDraftByArtist.set(artistId, String(seed));
+    this.artistSeedWarningByArtist.delete(artistId);
+    this.notifyPreviewChange();
+    return seed;
+  }
+
   private setArtistSeed(artistId: string, value: string): void {
     const parsed = Number.parseInt(value.trim(), 10);
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -1354,6 +1385,22 @@ export class AdminPanel {
     });
     rotateWrap.appendChild(rotateButton);
     controls.appendChild(rotateWrap);
+
+    const resetWrap = document.createElement("div");
+    resetWrap.className = "admin-field";
+    resetWrap.innerHTML = "<span>Artist Reset</span>";
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.className = "admin-btn";
+    resetButton.textContent = "Reset Artist";
+    resetButton.addEventListener("click", () => {
+      const nextSeed = this.resetArtistSet(selectedArtistId);
+      seedInput.value = String(nextSeed);
+      this.generateStatus = `Reset ${artist?.name ?? selectedArtistId}: seed rotated and generated assets cleared.`;
+      this.render();
+    });
+    resetWrap.appendChild(resetButton);
+    controls.appendChild(resetWrap);
 
     const audioLengthField = document.createElement("label");
     audioLengthField.className = "admin-field";
@@ -2818,15 +2865,46 @@ export class AdminPanel {
     if (artistSlots.length === 0) {
       return null;
     }
-    const preferredSlot =
-      artistSlots.find((entry) => entry.meta.field === "walk1") ?? artistSlots[0];
-    const preferredPath =
-      this.slotCandidates.get(preferredSlot.id) ?? preferredSlot.resolvedPath;
-    const dataUrl = await resolveImagePathToDataUrl(preferredPath);
-    if (!dataUrl) {
-      return null;
+
+    const orderedFields: ArtistSlotField[] = [
+      "walk1",
+      "walk2",
+      "walk3",
+      "distracted",
+      "performing"
+    ];
+    const prioritized = [
+      ...orderedFields
+        .map((field) => artistSlots.find((slot) => slot.meta.field === field))
+        .filter((slot): slot is (typeof artistSlots)[number] => Boolean(slot)),
+      ...artistSlots.filter(
+        (slot) => !orderedFields.includes(slot.meta.field as ArtistSlotField)
+      )
+    ];
+
+    for (const slot of prioritized) {
+      const candidate = this.slotCandidates.get(slot.id);
+      if (candidate) {
+        const candidateDataUrl = await resolveImagePathToDataUrl(candidate);
+        if (candidateDataUrl) {
+          const inline = dataUrlToInlineDataPart(candidateDataUrl);
+          if (inline) {
+            return inline;
+          }
+        }
+      }
+      const overridePath = slot.overridePath?.trim() ?? "";
+      if (overridePath.length > 0) {
+        const overrideDataUrl = await resolveImagePathToDataUrl(overridePath);
+        if (overrideDataUrl) {
+          const inline = dataUrlToInlineDataPart(overrideDataUrl);
+          if (inline) {
+            return inline;
+          }
+        }
+      }
     }
-    return dataUrlToInlineDataPart(dataUrl);
+    return null;
   }
 
   private async runElevenLabsGeneration(slot: AssetSlot): Promise<void> {

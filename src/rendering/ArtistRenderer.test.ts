@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { GLOBAL_FALLBACK_ASSET_PATHS } from "../assets/GlobalAssetFallbacks";
 import type { ArtistSpriteConfig } from "../config/FestivalConfig";
 import { Artist } from "../entities/Artist";
 import { resolveArtistSpritePath } from "./ArtistRenderer";
@@ -68,9 +69,11 @@ describe("resolveArtistSpritePath", () => {
     );
   });
 
-  it("returns null when no sprite config exists for tier", () => {
+  it("falls back to global artist sprite when no tier sprite config exists", () => {
     const artist = makeArtist("mid-1", "midtier", "DRIFTING");
-    expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBeNull();
+    expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBe(
+      GLOBAL_FALLBACK_ASSET_PATHS.artist
+    );
   });
 
   it("does not use performance pose while routing when walk/idle are missing", () => {
@@ -88,7 +91,9 @@ describe("resolveArtistSpritePath", () => {
     const routingArtist = makeArtist("new-3", "newcomer", "FOLLOWING");
     const performingArtist = makeArtist("new-3", "newcomer", "PERFORMING");
 
-    expect(resolveArtistSpritePath(routingArtist, sparseSprites, 0)).toBeNull();
+    expect(resolveArtistSpritePath(routingArtist, sparseSprites, 0)).toBe(
+      GLOBAL_FALLBACK_ASSET_PATHS.artist
+    );
     expect(resolveArtistSpritePath(performingArtist, sparseSprites, 0)).toBe(
       "artists/new-solo-performing.png"
     );
