@@ -20,8 +20,8 @@
       "id": "main-stage",
       "size": "large",
       "position": {
-        "x": 0.5,
-        "y": 0.14
+        "x": 0.37869561236837634,
+        "y": 0.17951147769148407
       },
       "snapRadius": 0.06,
       "sprite": "assets/maps/govball2026/committed/stage-main-stage-c98db538.png",
@@ -31,22 +31,22 @@
       "id": "side-stage",
       "size": "medium",
       "position": {
-        "x": 0.76,
-        "y": 0.53
+        "x": 0.5395651775857676,
+        "y": 0.509675632794479
       },
       "snapRadius": 0.055,
-      "sprite": "assets/maps/govball/generated/stages/stage_side_v1.png",
+      "sprite": "assets/maps/govball2026/committed/stage-side-stage-4781679d.png",
       "color": "#00D4FF"
     },
     {
       "id": "acoustic-stage",
       "size": "small",
       "position": {
-        "x": 0.52,
-        "y": 0.86
+        "x": 0.3373912645422894,
+        "y": 0.8562257086671972
       },
       "snapRadius": 0.05,
-      "sprite": "assets/maps/govball/generated/stages/stage_acoustic_v1.png",
+      "sprite": "assets/maps/govball2026/committed/stage-acoustic-stage-d5a70bb6.png",
       "color": "#7BFF00"
     }
   ],
@@ -95,7 +95,7 @@
       "radius": 0.07,
       "delay": 2,
       "appearsAtLevel": 4,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_merch_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-merch1-66501032.png"
     },
     {
       "id": "burger1",
@@ -107,7 +107,7 @@
       "radius": 0.06,
       "delay": 2,
       "appearsAtLevel": 4,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_burger_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-burger1-6c4bf3da.png"
     },
     {
       "id": "paparazzi1",
@@ -119,7 +119,7 @@
       "radius": 0.06,
       "delay": 3,
       "appearsAtLevel": 6,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-paparazzi1-c2533695.png"
     },
     {
       "id": "fans1",
@@ -131,7 +131,7 @@
       "radius": 0.08,
       "delay": 3,
       "appearsAtLevel": 7,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_fans_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-fans1-a59dd895.png"
     },
     {
       "id": "burger2",
@@ -143,7 +143,7 @@
       "radius": 0.06,
       "delay": 2,
       "appearsAtLevel": 8,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_burger_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-burger1-6c4bf3da.png"
     },
     {
       "id": "merch2",
@@ -155,7 +155,7 @@
       "radius": 0.07,
       "delay": 2,
       "appearsAtLevel": 9,
-      "sprite": "assets/maps/govball/generated/distractions/distraction_merch_v1.png"
+      "sprite": "assets/maps/govball2026/committed/distraction-merch1-66501032.png"
     }
   ],
   "levels": [
@@ -406,8 +406,9 @@
         "rotationWeight": 2.2,
         "seed": 112301,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Vanta (Electro Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Vanta (Electro Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-headliner-a-performanceaudio-867ec6d2.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Electro Pop festival artist sprite for Vanta, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -419,13 +420,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_headliner_a_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_a_walk2.png",
-            "assets/maps/govball/artists/artist_headliner_a_walk3.png"
+            "assets/maps/govball2026/committed/artist-headliner-a-walk1-a7551809.png",
+            "assets/maps/govball2026/committed/artist-headliner-a-walk2-63bb32a4.png",
+            "assets/maps/govball2026/committed/artist-headliner-a-walk3-089910b3.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_a_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_headliner_a_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_headliner_a_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-headliner-a-distracted-77f289b8.png",
+          "performing": "assets/maps/govball2026/committed/artist-headliner-a-performing-73bab07b.png"
         }
       },
       {
@@ -717,8 +718,9 @@
         "rotationWeight": 2.3,
         "seed": 174390,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Pocket Amp (Bedroom Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Pocket Amp (Bedroom Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-new-a-performanceaudio-8e21e289.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Bedroom Pop festival artist sprite for Pocket Amp, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -730,13 +732,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_new_a_walk1.png",
-            "assets/maps/govball/artists/artist_new_a_walk2.png",
-            "assets/maps/govball/artists/artist_new_a_walk3.png"
+            "assets/maps/govball2026/committed/artist-new-a-walk1-ce533c39.png",
+            "assets/maps/govball2026/committed/artist-new-a-walk2-3c58b302.png",
+            "assets/maps/govball2026/committed/artist-new-a-walk3-f90678dc.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_a_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_new_a_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_new_a_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-a-distracted-8b23cdde.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-a-performing-1d58ea18.png"
         }
       },
       {
@@ -866,14 +868,14 @@
     ],
     "stageSprites": {
       "main-stage": "assets/maps/govball2026/committed/stage-main-stage-c98db538.png",
-      "side-stage": "assets/maps/govball/generated/stages/stage_side_v1.png",
-      "acoustic-stage": "assets/maps/govball/generated/stages/stage_acoustic_v1.png"
+      "side-stage": "assets/maps/govball2026/committed/stage-side-stage-4781679d.png",
+      "acoustic-stage": "assets/maps/govball2026/committed/stage-acoustic-stage-d5a70bb6.png"
     },
     "distractionSprites": {
-      "merch_stand": "assets/maps/govball/generated/distractions/distraction_merch_v1.png",
-      "burger_shack": "assets/maps/govball/generated/distractions/distraction_burger_v1.png",
-      "paparazzi": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png",
-      "fan_crowd": "assets/maps/govball/generated/distractions/distraction_fans_v1.png"
+      "merch_stand": "assets/maps/govball2026/committed/distraction-merch1-66501032.png",
+      "burger_shack": "assets/maps/govball2026/committed/distraction-burger1-6c4bf3da.png",
+      "paparazzi": "assets/maps/govball2026/committed/distraction-paparazzi1-c2533695.png",
+      "fan_crowd": "assets/maps/govball2026/committed/distraction-fans1-a59dd895.png"
     },
     "audio": {
       "bg_chill": "assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
