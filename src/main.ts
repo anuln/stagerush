@@ -17,6 +17,11 @@ import {
 import { AudioManager } from "./audio/AudioManager";
 import type { FestivalMap } from "./config/FestivalConfig";
 import {
+  normalizeSessionPeriod,
+  resolveSessionPreviewMode,
+  type SessionFxPreviewMode
+} from "./config/SessionFx";
+import {
   loadFestivalRegistry,
   type FestivalRegistry
 } from "./config/FestivalRegistry";
@@ -46,6 +51,7 @@ import {
 import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
 import { RunPersistence } from "./persistence/RunPersistence";
+import { SessionAtmosphereRenderer } from "./rendering/SessionAtmosphereRenderer";
 import type { ScreenActionId } from "./ui/ScreenState";
 import { AdminPanel } from "./ui/AdminPanel";
 import { resolveGameFrameLayout } from "./ui/GameFrameLayout";
@@ -82,6 +88,23 @@ function shouldAutoPinScreen(actionId: ScreenActionId): boolean {
     actionId === "START_FESTIVAL" ||
     actionId === "RETRY_LEVEL" ||
     actionId === "NEXT_LEVEL"
+  );
+}
+
+function resolveAtmosphereSession(
+  gameManager: GameManager | null,
+  previewMode: SessionFxPreviewMode
+): "morning" | "afternoon" | "evening" {
+  if (previewMode !== "auto") {
+    return previewMode;
+  }
+  const snapshot = gameManager?.snapshot;
+  if (!snapshot) {
+    return "morning";
+  }
+  return normalizeSessionPeriod(
+    snapshot.runtime?.sessionName,
+    snapshot.runtime?.sessionIndexInDay
   );
 }
 
@@ -248,6 +271,7 @@ async function bootstrap(): Promise<void> {
   const debugToggles = createDebugToggles();
   const performanceOverlay = new PerformanceOverlay(perfFlags.showOverlay);
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
+  const atmosphereRenderer = new SessionAtmosphereRenderer(layerSet.atmosphereLayer);
   const runPersistence = new RunPersistence();
   const bundleManager = new BundleManager([BOOT_BUNDLE_MANIFEST]);
   const screenOverlay = new ScreenOverlayController();
@@ -261,6 +285,7 @@ async function bootstrap(): Promise<void> {
   let activeBundleId = "";
   let activeFestivalId = "";
   let sourceMap: FestivalMap | null = null;
+  let previewSessionMode: SessionFxPreviewMode = "auto";
 
   let currentLayout: ResolvedFestivalLayout | null = null;
 
@@ -303,6 +328,8 @@ async function bootstrap(): Promise<void> {
     });
     currentLayout = nextLayout;
     mapRenderer.render(nextLayout);
+    atmosphereRenderer.setLayout(nextLayout);
+    atmosphereRenderer.setConfig(nextLayout.map.sessionFx);
     gameManager?.onLayoutChanged(nextLayout);
   };
 
@@ -315,6 +342,7 @@ async function bootstrap(): Promise<void> {
     const previewMap = hasAdminAssetOverrides(nextOverrides)
       ? applyAdminAssetOverrides(sourceMap, nextOverrides)
       : sourceMap;
+    previewSessionMode = resolveSessionPreviewMode(nextOverrides.sessionFxPreview);
     applyIntroScreenMedia(screenOverlay, previewMap);
     bundleManager.registerManifest(
       createFestivalBundleManifest(previewMap, activeBundleId)
@@ -325,6 +353,8 @@ async function bootstrap(): Promise<void> {
       height: app.renderer.height
     });
     mapRenderer.render(currentLayout);
+    atmosphereRenderer.setLayout(currentLayout);
+    atmosphereRenderer.setConfig(currentLayout.map.sessionFx);
     gameManager?.onLayoutChanged(currentLayout);
   };
 
@@ -337,6 +367,7 @@ async function bootstrap(): Promise<void> {
 
     sourceMap = await loadFestivalMap(selection.mapConfigPath);
     const initialOverrides = loadAdminAssetOverrides(activeFestivalId);
+    previewSessionMode = resolveSessionPreviewMode(initialOverrides.sessionFxPreview);
     const theme = resolveThemePreset({
       festivalId: sourceMap.id,
       themeId: sourceMap.themeId
@@ -367,6 +398,8 @@ async function bootstrap(): Promise<void> {
       height: app.renderer.height
     });
     mapRenderer.render(currentLayout);
+    atmosphereRenderer.setLayout(currentLayout);
+    atmosphereRenderer.setConfig(currentLayout.map.sessionFx);
     gameManager = new GameManager({
       layout: currentLayout,
       persistence: runPersistence,
@@ -569,6 +602,16 @@ async function bootstrap(): Promise<void> {
         safeAreaBottomPx: safeInsets.bottom / safeInsetScale
       },
       performance.now()
+    );
+
+    const atmosphereSession = resolveAtmosphereSession(
+      gameManager,
+      previewSessionMode
+    );
+    atmosphereRenderer.setSession(atmosphereSession);
+    atmosphereRenderer.update(
+      ticker.deltaMS / 1000,
+      getQualityPreset(qualityTier).effectsDensity
     );
 
     const runtimeTelemetry = latestRuntimeTelemetry ?? {

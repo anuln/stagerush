@@ -1,7 +1,12 @@
 import type {
   FestivalMap,
-  IntroPresentationConfig
+  IntroPresentationConfig,
+  SessionPeriod
 } from "../config/FestivalConfig";
+import {
+  DEFAULT_SESSION_FX_CONFIG,
+  resolveSessionPreviewMode
+} from "../config/SessionFx";
 import {
   applyAdminAssetOverrides,
   hasAdminAssetOverrides,
@@ -524,6 +529,7 @@ export class AdminPanel {
   private assetSearch = "";
   private selectedSlotId: string | null = null;
   private selectedStageForMap: string | null = null;
+  private selectedSessionFxProfile: SessionPeriod = "morning";
   private slotCandidates = new Map<string, string>();
   private promptDraftBySlot = new Map<string, string>();
   private pathDraftBySlot = new Map<string, string>();
@@ -1075,6 +1081,280 @@ export class AdminPanel {
     this.draftOverrides = next;
     this.notifyPreviewChange();
     this.render();
+  }
+
+  private getSessionFxPreviewMode(): "auto" | SessionPeriod {
+    return resolveSessionPreviewMode(this.draftOverrides.sessionFxPreview);
+  }
+
+  private setSessionFxPreviewMode(mode: "auto" | SessionPeriod): void {
+    const next = structuredClone(this.draftOverrides);
+    if (mode === "auto") {
+      delete next.sessionFxPreview;
+    } else {
+      next.sessionFxPreview = mode;
+    }
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private getSessionFxProfileDraft(
+    period: SessionPeriod
+  ): Required<(typeof DEFAULT_SESSION_FX_CONFIG)[SessionPeriod]> {
+    const defaults = DEFAULT_SESSION_FX_CONFIG[period];
+    const fromMap = this.map.sessionFx?.[period];
+    const fromOverride = this.draftOverrides.sessionFx?.[period];
+    return {
+      overlayColor:
+        fromOverride?.overlayColor ??
+        fromMap?.overlayColor ??
+        defaults.overlayColor,
+      overlayOpacity: clamp(
+        fromOverride?.overlayOpacity ??
+          fromMap?.overlayOpacity ??
+          defaults.overlayOpacity,
+        0,
+        0.6
+      ),
+      particleColor:
+        fromOverride?.particleColor ??
+        fromMap?.particleColor ??
+        defaults.particleColor,
+      particleCount: Math.round(
+        clamp(
+          fromOverride?.particleCount ??
+            fromMap?.particleCount ??
+            defaults.particleCount,
+          0,
+          80
+        )
+      ),
+      particleSpeed: clamp(
+        fromOverride?.particleSpeed ??
+          fromMap?.particleSpeed ??
+          defaults.particleSpeed,
+        4,
+        64
+      ),
+      stageGlow: clamp(
+        fromOverride?.stageGlow ??
+          fromMap?.stageGlow ??
+          defaults.stageGlow,
+        0,
+        1
+      )
+    };
+  }
+
+  private setSessionFxProfile(
+    period: SessionPeriod,
+    partial: Partial<(typeof DEFAULT_SESSION_FX_CONFIG)[SessionPeriod]>
+  ): void {
+    const current = this.getSessionFxProfileDraft(period);
+    const normalized = {
+      overlayColor: partial.overlayColor ?? current.overlayColor,
+      overlayOpacity:
+        partial.overlayOpacity !== undefined
+          ? clamp(partial.overlayOpacity, 0, 0.6)
+          : current.overlayOpacity,
+      particleColor: partial.particleColor ?? current.particleColor,
+      particleCount:
+        partial.particleCount !== undefined
+          ? Math.round(clamp(partial.particleCount, 0, 80))
+          : current.particleCount,
+      particleSpeed:
+        partial.particleSpeed !== undefined
+          ? clamp(partial.particleSpeed, 4, 64)
+          : current.particleSpeed,
+      stageGlow:
+        partial.stageGlow !== undefined
+          ? clamp(partial.stageGlow, 0, 1)
+          : current.stageGlow
+    };
+    const next = structuredClone(this.draftOverrides);
+    next.sessionFx = {
+      ...(next.sessionFx ?? {}),
+      [period]: normalized
+    };
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private resetSessionFxProfile(period: SessionPeriod): void {
+    const next = structuredClone(this.draftOverrides);
+    if (next.sessionFx) {
+      delete next.sessionFx[period];
+      if (Object.keys(next.sessionFx).length === 0) {
+        delete next.sessionFx;
+      }
+    }
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private buildSessionFxControls(): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = "admin-filter-card";
+
+    const heading = document.createElement("p");
+    heading.className = "admin-preview-meta";
+    heading.textContent = "Session atmosphere";
+    wrapper.appendChild(heading);
+
+    const previewField = document.createElement("label");
+    previewField.className = "admin-field";
+    previewField.innerHTML = "<span>Preview Session</span>";
+    const previewSelect = document.createElement("select");
+    previewSelect.className = "admin-select";
+    previewSelect.innerHTML = [
+      "<option value=\"auto\">Auto (from game session)</option>",
+      "<option value=\"morning\">Morning</option>",
+      "<option value=\"afternoon\">Afternoon</option>",
+      "<option value=\"evening\">Evening</option>"
+    ].join("");
+    previewSelect.value = this.getSessionFxPreviewMode();
+    previewSelect.addEventListener("change", () => {
+      const next = resolveSessionPreviewMode(previewSelect.value);
+      this.setSessionFxPreviewMode(next);
+    });
+    previewField.appendChild(previewSelect);
+    wrapper.appendChild(previewField);
+
+    const profileField = document.createElement("label");
+    profileField.className = "admin-field";
+    profileField.innerHTML = "<span>Edit Profile</span>";
+    const profileSelect = document.createElement("select");
+    profileSelect.className = "admin-select";
+    profileSelect.innerHTML = [
+      "<option value=\"morning\">Morning</option>",
+      "<option value=\"afternoon\">Afternoon</option>",
+      "<option value=\"evening\">Evening</option>"
+    ].join("");
+    profileSelect.value = this.selectedSessionFxProfile;
+    profileSelect.addEventListener("change", () => {
+      const next = resolveSessionPreviewMode(profileSelect.value);
+      if (next !== "auto") {
+        this.selectedSessionFxProfile = next;
+        this.render();
+      }
+    });
+    profileField.appendChild(profileSelect);
+    wrapper.appendChild(profileField);
+
+    const profile = this.getSessionFxProfileDraft(this.selectedSessionFxProfile);
+
+    const overlayColorField = document.createElement("label");
+    overlayColorField.className = "admin-field";
+    overlayColorField.innerHTML = "<span>Overlay Color</span>";
+    const overlayColorInput = document.createElement("input");
+    overlayColorInput.type = "color";
+    overlayColorInput.className = "admin-input";
+    overlayColorInput.value = profile.overlayColor;
+    overlayColorInput.addEventListener("input", () => {
+      this.setSessionFxProfile(this.selectedSessionFxProfile, {
+        overlayColor: overlayColorInput.value
+      });
+    });
+    overlayColorField.appendChild(overlayColorInput);
+    wrapper.appendChild(overlayColorField);
+
+    const overlayAlphaField = document.createElement("label");
+    overlayAlphaField.className = "admin-field";
+    overlayAlphaField.innerHTML = "<span>Overlay Opacity</span>";
+    const overlayAlphaInput = document.createElement("input");
+    overlayAlphaInput.type = "range";
+    overlayAlphaInput.className = "admin-input";
+    overlayAlphaInput.min = "0";
+    overlayAlphaInput.max = "60";
+    overlayAlphaInput.step = "1";
+    overlayAlphaInput.value = String(Math.round(profile.overlayOpacity * 100));
+    const overlayAlphaValue = document.createElement("small");
+    overlayAlphaValue.className = "admin-preview-meta";
+    overlayAlphaValue.textContent = `${Math.round(profile.overlayOpacity * 100)}%`;
+    overlayAlphaInput.addEventListener("input", () => {
+      const value = Number.parseFloat(overlayAlphaInput.value) / 100;
+      overlayAlphaValue.textContent = `${Math.round(value * 100)}%`;
+      this.setSessionFxProfile(this.selectedSessionFxProfile, {
+        overlayOpacity: value
+      });
+    });
+    overlayAlphaField.append(overlayAlphaInput, overlayAlphaValue);
+    wrapper.appendChild(overlayAlphaField);
+
+    const particleColorField = document.createElement("label");
+    particleColorField.className = "admin-field";
+    particleColorField.innerHTML = "<span>Particle Color</span>";
+    const particleColorInput = document.createElement("input");
+    particleColorInput.type = "color";
+    particleColorInput.className = "admin-input";
+    particleColorInput.value = profile.particleColor;
+    particleColorInput.addEventListener("input", () => {
+      this.setSessionFxProfile(this.selectedSessionFxProfile, {
+        particleColor: particleColorInput.value
+      });
+    });
+    particleColorField.appendChild(particleColorInput);
+    wrapper.appendChild(particleColorField);
+
+    const particleCountField = document.createElement("label");
+    particleCountField.className = "admin-field";
+    particleCountField.innerHTML = "<span>Particle Count</span>";
+    const particleCountInput = document.createElement("input");
+    particleCountInput.type = "range";
+    particleCountInput.className = "admin-input";
+    particleCountInput.min = "0";
+    particleCountInput.max = "80";
+    particleCountInput.step = "1";
+    particleCountInput.value = String(profile.particleCount);
+    const particleCountValue = document.createElement("small");
+    particleCountValue.className = "admin-preview-meta";
+    particleCountValue.textContent = String(profile.particleCount);
+    particleCountInput.addEventListener("input", () => {
+      const value = Math.round(Number.parseFloat(particleCountInput.value));
+      particleCountValue.textContent = String(value);
+      this.setSessionFxProfile(this.selectedSessionFxProfile, {
+        particleCount: value
+      });
+    });
+    particleCountField.append(particleCountInput, particleCountValue);
+    wrapper.appendChild(particleCountField);
+
+    const stageGlowField = document.createElement("label");
+    stageGlowField.className = "admin-field";
+    stageGlowField.innerHTML = "<span>Stage Glow</span>";
+    const stageGlowInput = document.createElement("input");
+    stageGlowInput.type = "range";
+    stageGlowInput.className = "admin-input";
+    stageGlowInput.min = "0";
+    stageGlowInput.max = "100";
+    stageGlowInput.step = "1";
+    stageGlowInput.value = String(Math.round(profile.stageGlow * 100));
+    const stageGlowValue = document.createElement("small");
+    stageGlowValue.className = "admin-preview-meta";
+    stageGlowValue.textContent = `${Math.round(profile.stageGlow * 100)}%`;
+    stageGlowInput.addEventListener("input", () => {
+      const value = Number.parseFloat(stageGlowInput.value) / 100;
+      stageGlowValue.textContent = `${Math.round(value * 100)}%`;
+      this.setSessionFxProfile(this.selectedSessionFxProfile, {
+        stageGlow: value
+      });
+    });
+    stageGlowField.append(stageGlowInput, stageGlowValue);
+    wrapper.appendChild(stageGlowField);
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "admin-btn";
+    reset.textContent = "Reset Session FX";
+    reset.addEventListener("click", () => {
+      this.resetSessionFxProfile(this.selectedSessionFxProfile);
+    });
+    wrapper.appendChild(reset);
+
+    return wrapper;
   }
 
   private buildIntroFramingControls(): HTMLElement {
@@ -2683,6 +2963,7 @@ export class AdminPanel {
     hint.textContent =
       "Click map to place selected stage marker. Marker changes apply instantly to live preview.";
     card.appendChild(hint);
+    card.appendChild(this.buildSessionFxControls());
 
     section.appendChild(card);
     return section;
@@ -3505,6 +3786,9 @@ export class AdminPanel {
       nextOverrides.introPresentation = {
         ...committedMap.introPresentation
       };
+    }
+    if (nextOverrides.sessionFx && committedMap.sessionFx) {
+      nextOverrides.sessionFx = structuredClone(committedMap.sessionFx);
     }
 
     if (nextOverrides.stageSprites) {

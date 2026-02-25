@@ -2,6 +2,7 @@ import { Container } from "pixi.js";
 
 export interface LayerSet {
   mapLayer: Container;
+  atmosphereLayer: Container;
   stageLayer: Container;
   distractionLayer: Container;
   pathLayer: Container;
@@ -13,6 +14,9 @@ export interface LayerSet {
 export function createLayerSet(root: Container): LayerSet {
   const mapLayer = new Container();
   mapLayer.label = "mapLayer";
+
+  const atmosphereLayer = new Container();
+  atmosphereLayer.label = "atmosphereLayer";
 
   const stageLayer = new Container();
   stageLayer.label = "stageLayer";
@@ -33,6 +37,7 @@ export function createLayerSet(root: Container): LayerSet {
   uiLayer.label = "uiLayer";
 
   root.addChild(mapLayer);
+  root.addChild(atmosphereLayer);
   root.addChild(stageLayer);
   root.addChild(distractionLayer);
   root.addChild(pathLayer);
@@ -42,6 +47,7 @@ export function createLayerSet(root: Container): LayerSet {
 
   return {
     mapLayer,
+    atmosphereLayer,
     stageLayer,
     distractionLayer,
     pathLayer,

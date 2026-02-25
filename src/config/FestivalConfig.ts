@@ -1,6 +1,7 @@
 export type StageSize = "large" | "medium" | "small";
 export type ArtistTier = "headliner" | "midtier" | "newcomer";
 export type AssetPath = string;
+export type SessionPeriod = "morning" | "afternoon" | "evening";
 export type DistractionType =
   | "merch_stand"
   | "burger_shack"
@@ -96,6 +97,21 @@ export interface IntroPresentationConfig {
   overlayOpacity?: number;
 }
 
+export interface SessionFxProfileConfig {
+  overlayColor?: string;
+  overlayOpacity?: number;
+  particleColor?: string;
+  particleCount?: number;
+  particleSpeed?: number;
+  stageGlow?: number;
+}
+
+export interface SessionFxConfig {
+  morning?: SessionFxProfileConfig;
+  afternoon?: SessionFxProfileConfig;
+  evening?: SessionFxProfileConfig;
+}
+
 export interface FestivalAssets {
   artists: ArtistSpriteConfig[];
   stageSprites: Record<string, AssetPath>;
@@ -113,6 +129,7 @@ export interface FestivalMap {
   background: AssetPath;
   introScreen?: AssetPath;
   introPresentation?: IntroPresentationConfig;
+  sessionFx?: SessionFxConfig;
   stages: StageConfig[];
   spawnPoints: SpawnPointConfig[];
   distractions: DistractionConfig[];

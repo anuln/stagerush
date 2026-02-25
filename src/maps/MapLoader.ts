@@ -129,6 +129,62 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
       );
     }
   }
+  if (parsed.sessionFx !== undefined) {
+    if (!isObject(parsed.sessionFx)) {
+      throw new Error("sessionFx must be an object");
+    }
+    const sessionFx = parsed.sessionFx as Record<string, unknown>;
+    for (const key of ["morning", "afternoon", "evening"]) {
+      const profile = sessionFx[key];
+      if (profile === undefined) {
+        continue;
+      }
+      if (!isObject(profile)) {
+        throw new Error(`sessionFx.${key} must be an object`);
+      }
+      const candidate = profile as Record<string, unknown>;
+      if (candidate.overlayColor !== undefined) {
+        requireString(candidate.overlayColor, `sessionFx.${key}.overlayColor`);
+      }
+      if (candidate.particleColor !== undefined) {
+        requireString(candidate.particleColor, `sessionFx.${key}.particleColor`);
+      }
+      if (candidate.overlayOpacity !== undefined) {
+        if (
+          !Number.isFinite(candidate.overlayOpacity as number) ||
+          (candidate.overlayOpacity as number) < 0 ||
+          (candidate.overlayOpacity as number) > 0.6
+        ) {
+          throw new Error(`sessionFx.${key}.overlayOpacity must be between 0 and 0.6`);
+        }
+      }
+      if (candidate.particleCount !== undefined) {
+        assertIntegerInRange(
+          candidate.particleCount as number,
+          0,
+          80,
+          `sessionFx.${key}.particleCount`
+        );
+      }
+      if (candidate.particleSpeed !== undefined) {
+        if (
+          !Number.isFinite(candidate.particleSpeed as number) ||
+          (candidate.particleSpeed as number) <= 0
+        ) {
+          throw new Error(`sessionFx.${key}.particleSpeed must be a positive number`);
+        }
+      }
+      if (candidate.stageGlow !== undefined) {
+        if (
+          !Number.isFinite(candidate.stageGlow as number) ||
+          (candidate.stageGlow as number) < 0 ||
+          (candidate.stageGlow as number) > 1
+        ) {
+          throw new Error(`sessionFx.${key}.stageGlow must be between 0 and 1`);
+        }
+      }
+    }
+  }
   if (parsed.schedule !== undefined) {
     if (!isObject(parsed.schedule)) {
       throw new Error("schedule must be an object");

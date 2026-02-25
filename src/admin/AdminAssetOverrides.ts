@@ -1,8 +1,16 @@
 import type {
   FestivalMap,
   IntroPresentationConfig,
-  NormalizedPoint
+  NormalizedPoint,
+  SessionFxConfig,
+  SessionPeriod
 } from "../config/FestivalConfig";
+import {
+  resolveSessionPreviewMode,
+  sanitizeSessionFxProfile,
+  SESSION_PERIODS,
+  type SessionFxPreviewMode
+} from "../config/SessionFx";
 
 export const ADMIN_OVERRIDES_STORAGE_KEY = "stagecall:admin-asset-overrides:v1";
 
@@ -28,6 +36,8 @@ export interface AdminAssetOverrides {
   background?: string;
   introScreen?: string;
   introPresentation?: IntroPresentationConfig;
+  sessionFx?: SessionFxConfig;
+  sessionFxPreview?: SessionFxPreviewMode;
   stageSprites?: Record<string, string>;
   stagePositions?: Record<string, NormalizedPoint>;
   distractionSprites?: Record<string, string>;
@@ -148,6 +158,53 @@ function sanitizeIntroPresentation(
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
+function sanitizeSessionFxConfig(
+  sessionFx?: SessionFxConfig
+): SessionFxConfig | undefined {
+  if (!sessionFx) {
+    return undefined;
+  }
+  const next: SessionFxConfig = {};
+  for (const session of SESSION_PERIODS) {
+    const source = sessionFx[session];
+    if (!source) {
+      continue;
+    }
+    const fallback = {
+      overlayColor: "#FFFFFF",
+      overlayOpacity: 0,
+      particleColor: "#FFFFFF",
+      particleCount: 0,
+      particleSpeed: 12,
+      stageGlow: 0
+    };
+    const sanitized = sanitizeSessionFxProfile(source, fallback);
+    const partial: NonNullable<SessionFxConfig[SessionPeriod]> = {};
+    if (source.overlayColor !== undefined) {
+      partial.overlayColor = sanitized.overlayColor;
+    }
+    if (source.overlayOpacity !== undefined) {
+      partial.overlayOpacity = sanitized.overlayOpacity;
+    }
+    if (source.particleColor !== undefined) {
+      partial.particleColor = sanitized.particleColor;
+    }
+    if (source.particleCount !== undefined) {
+      partial.particleCount = sanitized.particleCount;
+    }
+    if (source.particleSpeed !== undefined) {
+      partial.particleSpeed = sanitized.particleSpeed;
+    }
+    if (source.stageGlow !== undefined) {
+      partial.stageGlow = sanitized.stageGlow;
+    }
+    if (Object.keys(partial).length > 0) {
+      next[session] = partial;
+    }
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
 export function loadAdminAssetOverrides(festivalId: string): AdminAssetOverrides {
   const store = readStore();
   const direct = store.byFestival[festivalId];
@@ -169,6 +226,8 @@ export function saveAdminAssetOverrides(
   const normalized: AdminAssetOverrides = {
     ...cloneOverrides(overrides),
     introPresentation: sanitizeIntroPresentation(overrides.introPresentation),
+    sessionFx: sanitizeSessionFxConfig(overrides.sessionFx),
+    sessionFxPreview: resolveSessionPreviewMode(overrides.sessionFxPreview),
     stagePositions: sanitizeStagePositions(overrides.stagePositions)
   };
 
@@ -210,6 +269,9 @@ export function hasAdminAssetOverrides(overrides: AdminAssetOverrides): boolean 
     overrides.introPresentation &&
     Object.keys(overrides.introPresentation).length > 0
   ) {
+    return true;
+  }
+  if (overrides.sessionFx && Object.keys(overrides.sessionFx).length > 0) {
     return true;
   }
   if (overrides.stageSprites && Object.keys(overrides.stageSprites).length > 0) {
@@ -264,6 +326,12 @@ export function applyAdminAssetOverrides(
     cloned.introPresentation = {
       ...(cloned.introPresentation ?? {}),
       ...sanitizeIntroPresentation(overrides.introPresentation)
+    };
+  }
+  if (overrides.sessionFx) {
+    cloned.sessionFx = {
+      ...(cloned.sessionFx ?? {}),
+      ...sanitizeSessionFxConfig(overrides.sessionFx)
     };
   }
 
