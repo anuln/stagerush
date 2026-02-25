@@ -23,9 +23,6 @@ export interface SessionWrapMetric {
 }
 
 export interface SessionWrapProgress {
-  dayLabel: string;
-  sessionLabel: string;
-  sequenceLabel: string;
   nextLabel: string;
 }
 

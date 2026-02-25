@@ -74,24 +74,13 @@ describe("buildScreenViewModel", () => {
     expect(model?.sessionWrap?.resultLabel).toBe("Session Turbulence");
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
-    ).toMatchObject({ label: "Artists Routed", value: "3", tone: "positive" });
+    ).toMatchObject({ label: "Artists Routed", value: "3 👎", tone: "warning" });
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-missed")
     ).toMatchObject({ label: "Artists Missed", value: "4", tone: "warning" });
-    expect(
-      model?.sessionWrap?.metrics.find((metric) => metric.id === "sets-vs-target")
-    ).toMatchObject({ label: "Sets vs Target", value: "3/8", tone: "neutral" });
-    expect(
-      model?.sessionWrap?.metrics.find((metric) => metric.id === "pace")
-    ).toMatchObject({ label: "Pace", value: "-1 Behind", tone: "warning" });
-    expect(model?.sessionWrap?.progress.dayLabel).toBe("Day 2");
-    expect(model?.sessionWrap?.progress.sessionLabel).toBe("Evening Session");
-    expect(model?.sessionWrap?.progress.sequenceLabel).toBe("Session 3 / 10");
-    expect(model?.sessionWrap?.progress.nextLabel).toContain("Retry this session");
-    expect(model?.actions.map((action) => action.id)).toEqual([
-      "RETRY_LEVEL",
-      "RETURN_TO_MENU"
-    ]);
+    expect(model?.sessionWrap?.metrics).toHaveLength(2);
+    expect(model?.sessionWrap?.progress.nextLabel).toBe("Up Next · Day 2 Evening Session");
+    expect(model?.actions.map((action) => action.id)).toEqual(["RETRY_LEVEL"]);
   });
 
   it("builds level-complete and festival-complete actions correctly", () => {
@@ -169,17 +158,16 @@ describe("buildScreenViewModel", () => {
     });
 
     expect(levelComplete?.actions.map((action) => action.id)).toEqual([
-      "NEXT_LEVEL",
-      "RETURN_TO_MENU"
+      "NEXT_LEVEL"
     ]);
     expect(levelComplete?.actions[0].label).toBe("Next Session");
     expect(levelComplete?.sessionWrap?.outcome).toBe("complete");
     expect(levelComplete?.sessionWrap?.resultLabel).toBe("Session Locked In");
     expect(
-      levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "pace")
-    ).toMatchObject({ value: "+1 Ahead", tone: "positive" });
+      levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
+    ).toMatchObject({ value: "6 👍", tone: "positive" });
     expect(levelComplete?.sessionWrap?.progress.nextLabel).toBe(
-      "Up Next · Session 3 / 4"
+      "Up Next · Day 1 Evening Session"
     );
     expect(levelComplete?.summaryRows.some((row) => row.label === "Session Tier")).toBe(
       true
@@ -193,8 +181,7 @@ describe("buildScreenViewModel", () => {
       true
     );
     expect(festivalComplete?.actions.map((action) => action.id)).toEqual([
-      "START_FESTIVAL",
-      "RETURN_TO_MENU"
+      "START_FESTIVAL"
     ]);
   });
 });

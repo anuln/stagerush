@@ -2,6 +2,8 @@ import type { GameManagerSnapshot } from "../game/GameManager";
 import { resolvePerformanceTier } from "../game/GameRuntime";
 import type { ScreenViewModel, SessionWrapModel } from "./ScreenState";
 
+const SESSION_NAME_SEQUENCE = ["Morning", "Afternoon", "Evening"] as const;
+
 function formatScore(value: number | null | undefined): string {
   const normalized = Math.max(0, Math.floor(value ?? 0));
   return `${normalized.toLocaleString()} pts`;
@@ -26,20 +28,50 @@ function formatDaySession(snapshot: GameManagerSnapshot): string {
   return `Day ${runtime.dayNumber} · ${runtime.sessionName}`;
 }
 
-function formatPaceLabel(paceDeltaSets: number | null): {
-  label: string;
-  tone: "neutral" | "positive" | "warning";
-} {
-  if (typeof paceDeltaSets !== "number" || !Number.isFinite(paceDeltaSets)) {
-    return { label: "On Track", tone: "neutral" };
+function formatSessionName(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return "Session";
   }
-  if (paceDeltaSets >= 0.75) {
-    return { label: `+${Math.round(paceDeltaSets)} Ahead`, tone: "positive" };
+  if (/session$/i.test(trimmed)) {
+    return trimmed;
   }
-  if (paceDeltaSets <= -0.75) {
-    return { label: `${Math.round(paceDeltaSets)} Behind`, tone: "warning" };
+  return `${trimmed} Session`;
+}
+
+function resolveUpNextLabel(
+  snapshot: GameManagerSnapshot,
+  outcome: SessionWrapModel["outcome"]
+): string {
+  const runtime = snapshot.runtime;
+  const level = snapshot.level;
+  if (outcome === "festival_complete") {
+    return "Festival complete.";
   }
-  return { label: "On Track", tone: "neutral" };
+  if (outcome === "failed") {
+    if (runtime) {
+      return `Up Next · Day ${runtime.dayNumber} ${formatSessionName(runtime.sessionName)}`;
+    }
+    return `Up Next · Session ${level.currentLevel}`;
+  }
+  if (level.currentLevel >= level.totalLevels) {
+    return "Festival complete.";
+  }
+  if (!runtime) {
+    return `Up Next · Session ${level.currentLevel + 1}`;
+  }
+
+  const totalFestivalDays = Math.max(runtime.dayNumber, runtime.totalFestivalDays);
+  const sessionsPerDay = SESSION_NAME_SEQUENCE.length;
+  let nextDay = runtime.dayNumber;
+  let nextSessionIndex = runtime.sessionIndexInDay + 1;
+  if (nextSessionIndex > sessionsPerDay) {
+    nextDay = Math.min(totalFestivalDays, runtime.dayNumber + 1);
+    nextSessionIndex = 1;
+  }
+  const nextSessionName =
+    SESSION_NAME_SEQUENCE[nextSessionIndex - 1] ?? `Session ${nextSessionIndex}`;
+  return `Up Next · Day ${nextDay} ${formatSessionName(nextSessionName)}`;
 }
 
 function buildSessionWrap(
@@ -52,16 +84,8 @@ function buildSessionWrap(
   const delivered = Math.max(0, runtime?.deliveredArtists ?? 0);
   const missed = Math.max(0, runtime?.missedArtists ?? 0);
   const targetSets = Math.max(1, runtime?.sessionTargetSets ?? 1);
-  const pace = formatPaceLabel(runtime?.paceDeltaSets ?? null);
-  const hasNextSession = level.currentLevel < level.totalLevels;
-  const nextLabel =
-    outcome === "festival_complete"
-      ? "Festival complete. Run it again for a higher headliner score."
-      : outcome === "failed"
-        ? "Retry this session to recover momentum."
-        : hasNextSession
-          ? `Up Next · Session ${level.currentLevel + 1} / ${level.totalLevels}`
-          : "Final session complete.";
+  const nextLabel = resolveUpNextLabel(snapshot, outcome);
+  const targetStatus = delivered >= targetSets ? "👍" : "👎";
 
   const resultLabel =
     outcome === "festival_complete"
@@ -80,32 +104,17 @@ function buildSessionWrap(
       {
         id: "artists-routed",
         label: "Artists Routed",
-        value: String(delivered),
-        tone: "positive"
+        value: `${delivered} ${targetStatus}`,
+        tone: delivered >= targetSets ? "positive" : "warning"
       },
       {
         id: "artists-missed",
         label: "Artists Missed",
         value: String(missed),
         tone: missed > 0 ? "warning" : "neutral"
-      },
-      {
-        id: "sets-vs-target",
-        label: "Sets vs Target",
-        value: `${delivered}/${targetSets}`,
-        tone: delivered >= targetSets ? "positive" : "neutral"
-      },
-      {
-        id: "pace",
-        label: "Pace",
-        value: pace.label,
-        tone: pace.tone
       }
     ],
     progress: {
-      dayLabel: runtime ? `Day ${runtime.dayNumber}` : "Day -",
-      sessionLabel: runtime?.sessionName ?? "Session",
-      sequenceLabel: `Session ${level.currentLevel} / ${level.totalLevels}`,
       nextLabel
     }
   };
@@ -115,14 +124,13 @@ export function buildScreenViewModel(
   snapshot: GameManagerSnapshot
 ): ScreenViewModel | null {
   const level = snapshot.level;
-  const levelLabel = `Level ${level.currentLevel} / ${level.totalLevels}`;
 
   if (snapshot.screen === "MENU") {
     return {
       screen: "MENU",
       title: "STAGE RUSH",
       subtitle:
-        "Guide artists to stages by drawing routes. Avoid distractions and collisions to keep festival hype rising.",
+        "Guide artists to stages by drawing routes. Avoid distractions and collisions to keep festival score rising.",
       summaryRows: [
         { label: "Festival Days", value: `${level.totalLevels}` },
         { label: "Unlocked", value: `Up to Day ${snapshot.profile.highestUnlockedLevel}` },
@@ -143,7 +151,7 @@ export function buildScreenViewModel(
         "Session Wrap Card · crowd pressure spiked past limit.",
       summaryRows: [
         { label: "Session Score", value: formatScore(level.lastLevelScore) },
-        { label: "Festival Hype", value: formatScore(level.cumulativeScore) },
+        { label: "Festival Score", value: formatScore(level.cumulativeScore) },
         {
           label: "Session Tier",
           value: sessionWrap.tier
@@ -154,8 +162,7 @@ export function buildScreenViewModel(
         }
       ],
       actions: [
-        { id: "RETRY_LEVEL", label: "Retry Session", emphasis: "primary" },
-        { id: "RETURN_TO_MENU", label: "Back to Menu", emphasis: "secondary" }
+        { id: "RETRY_LEVEL", label: "Retry Session", emphasis: "primary" }
       ],
       sessionWrap
     };
@@ -170,15 +177,14 @@ export function buildScreenViewModel(
       summaryRows: [
         { label: "Session Score", value: formatScore(level.lastLevelScore) },
         { label: "Session Tier", value: sessionWrap.tier },
-        { label: "Festival Hype", value: formatScore(level.cumulativeScore) },
+        { label: "Festival Score", value: formatScore(level.cumulativeScore) },
         {
           label: "Session Best",
           value: formatScore(snapshot.profile.bestLevelScore)
         }
       ],
       actions: [
-        { id: "NEXT_LEVEL", label: "Next Session", emphasis: "primary" },
-        { id: "RETURN_TO_MENU", label: "Back to Menu", emphasis: "secondary" }
+        { id: "NEXT_LEVEL", label: "Next Session", emphasis: "primary" }
       ],
       sessionWrap
     };
@@ -192,13 +198,12 @@ export function buildScreenViewModel(
       subtitle: "Session Wrap Card Finale · lineup complete.",
       summaryRows: [
         { label: "Sessions Cleared", value: `${level.totalLevels}` },
-        { label: "Final Hype", value: formatScore(level.cumulativeScore) },
+        { label: "Festival Score", value: formatScore(level.cumulativeScore) },
         { label: "Final Tier", value: sessionWrap.tier },
         { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
-        { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" },
-        { id: "RETURN_TO_MENU", label: "Back to Menu", emphasis: "secondary" }
+        { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" }
       ],
       sessionWrap
     };

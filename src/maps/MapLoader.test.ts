@@ -145,12 +145,12 @@ describe("MapLoader", () => {
     const map = parseFestivalMapData(parsed);
 
     expect(map.id).toBe("govball2026");
-    expect(map.totalLevels).toBe(10);
-    expect(map.levels).toHaveLength(10);
+    expect(map.totalLevels).toBe(9);
+    expect(map.levels).toHaveLength(9);
     expect(map.distractions.length).toBeGreaterThanOrEqual(6);
     expect(map.assets.artists.length).toBeGreaterThanOrEqual(9);
     expect(map.assets.audio["level_complete"]).toBeDefined();
-    expect(map.levels[9].activeDistractions.length).toBeGreaterThan(0);
+    expect(map.levels[8].activeDistractions.length).toBeGreaterThan(0);
   });
 
   it("collects unique asset paths across map references", () => {

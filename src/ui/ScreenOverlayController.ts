@@ -81,7 +81,7 @@ export class ScreenOverlayController {
     return actions;
   }
 
-  private formatPaceTone(
+  private formatMetricTone(
     tone: SessionWrapModel["metrics"][number]["tone"]
   ): string {
     if (tone === "positive") {
@@ -149,7 +149,7 @@ export class ScreenOverlayController {
     scoreStrip.className = "screen-session-score-strip";
     const sessionScoreCard = document.createElement("article");
     sessionScoreCard.className = "screen-session-score-card";
-    sessionScoreCard.innerHTML = "<span>Session Hype</span>";
+    sessionScoreCard.innerHTML = "<span>Session Score</span>";
     const sessionValue = document.createElement("strong");
     sessionValue.className = "screen-score-counter";
     sessionValue.dataset.counterTarget = String(sessionWrap.sessionScore);
@@ -158,7 +158,7 @@ export class ScreenOverlayController {
 
     const runScoreCard = document.createElement("article");
     runScoreCard.className = "screen-session-score-card is-run-total";
-    runScoreCard.innerHTML = "<span>Festival Hype Total</span>";
+    runScoreCard.innerHTML = "<span>Festival Score</span>";
     const runValue = document.createElement("strong");
     runValue.className = "screen-score-counter";
     runValue.dataset.counterTarget = String(sessionWrap.runTotalScore);
@@ -171,7 +171,7 @@ export class ScreenOverlayController {
     metrics.className = "screen-session-metrics";
     sessionWrap.metrics.forEach((metric) => {
       const card = document.createElement("article");
-      card.className = `screen-session-metric ${this.formatPaceTone(metric.tone)}`;
+      card.className = `screen-session-metric ${this.formatMetricTone(metric.tone)}`;
       const label = document.createElement("span");
       label.className = "screen-session-metric-label";
       label.textContent = metric.label;
@@ -185,20 +185,10 @@ export class ScreenOverlayController {
 
     const progress = document.createElement("section");
     progress.className = "screen-session-progress";
-    const chips = document.createElement("div");
-    chips.className = "screen-session-progress-chips";
-    [sessionWrap.progress.dayLabel, sessionWrap.progress.sessionLabel, sessionWrap.progress.sequenceLabel].forEach(
-      (value) => {
-        const chip = document.createElement("span");
-        chip.className = "screen-session-chip";
-        chip.textContent = value;
-        chips.appendChild(chip);
-      }
-    );
     const next = document.createElement("p");
     next.className = "screen-session-next";
     next.textContent = sessionWrap.progress.nextLabel;
-    progress.append(chips, next);
+    progress.append(next);
     panel.appendChild(progress);
 
     panel.appendChild(this.createActions(model.actions, onAction));

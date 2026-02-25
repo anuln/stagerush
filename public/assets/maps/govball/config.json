@@ -4,7 +4,7 @@
   "description": "Urban festival routing map for Stage Rush",
   "themeId": "urban_pulse",
   "schedule": {
-    "days": 4,
+    "days": 3,
     "sessionsPerDay": 3,
     "sessionNames": [
       "Morning",
@@ -12,7 +12,7 @@
       "Evening"
     ]
   },
-  "totalLevels": 10,
+  "totalLevels": 9,
   "background": "assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
   "introScreen": "assets/maps/govball2026/committed/intro-screen-9c67d6b5.png",
   "stages": [
@@ -365,33 +365,6 @@
       "spawnInterval": [
         750,
         1400
-      ]
-    },
-    {
-      "levelNumber": 10,
-      "totalArtists": 30,
-      "targetSets": 16,
-      "maxSimultaneous": 5,
-      "timerRange": [
-        8,
-        13
-      ],
-      "tierWeights": {
-        "headliner": 0.37,
-        "midtier": 0.36,
-        "newcomer": 0.27
-      },
-      "activeDistractions": [
-        "merch1",
-        "burger1",
-        "paparazzi1",
-        "fans1",
-        "burger2",
-        "merch2"
-      ],
-      "spawnInterval": [
-        700,
-        1300
       ]
     }
   ],
