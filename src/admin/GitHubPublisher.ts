@@ -6,6 +6,7 @@ export interface GitHubPutFileInput {
   path: string;
   message: string;
   content: string;
+  contentBase64?: string;
 }
 
 export interface GitHubPutFileResult {
@@ -72,7 +73,8 @@ export async function putFileToGitHub(
     branch: trimRequired(rawInput.branch, "Branch"),
     path: trimRequired(rawInput.path, "Path"),
     message: trimRequired(rawInput.message, "Commit message"),
-    content: rawInput.content
+    content: rawInput.content,
+    contentBase64: rawInput.contentBase64
   };
 
   const sha = await readExistingSha(input, fetchImpl);
@@ -80,7 +82,10 @@ export async function putFileToGitHub(
   const body: Record<string, unknown> = {
     message: input.message,
     branch: input.branch,
-    content: encodeBase64Utf8(input.content)
+    content:
+      typeof input.contentBase64 === "string" && input.contentBase64.trim().length > 0
+        ? input.contentBase64.trim()
+        : encodeBase64Utf8(input.content)
   };
   if (sha) {
     body.sha = sha;

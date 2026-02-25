@@ -326,6 +326,63 @@ function hasInlineAssetPath(path: string): boolean {
   return path.startsWith("data:") || path.startsWith("blob:");
 }
 
+export function parseInlineDataAsset(
+  value: string
+): { mimeType: string; base64: string } | null {
+  const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/i.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+  return {
+    mimeType: match[1].toLowerCase(),
+    base64: match[2]
+  };
+}
+
+function extensionForMimeType(mimeType: string): string {
+  switch (mimeType.toLowerCase()) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+    case "image/jpg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    case "image/svg+xml":
+      return "svg";
+    case "audio/mpeg":
+      return "mp3";
+    case "audio/wav":
+    case "audio/x-wav":
+      return "wav";
+    case "audio/ogg":
+      return "ogg";
+    case "audio/mp4":
+      return "m4a";
+    default:
+      return "bin";
+  }
+}
+
+function hashString(input: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function sanitizeAssetLabel(label: string): string {
+  const cleaned = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned.length > 0 ? cleaned.slice(0, 56) : "asset";
+}
+
 function isArtistImageSlot(
   slot: AssetSlot,
   artistId: string
@@ -357,19 +414,17 @@ Character consistency requirements:
 }
 
 export function dataUrlToInlineDataPart(dataUrl: string): GeminiInlineDataPart | null {
-  const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl.trim());
-  if (!match) {
+  const parsed = parseInlineDataAsset(dataUrl);
+  if (!parsed) {
     return null;
   }
-  const mimeType = match[1];
-  const base64 = match[2];
-  if (!mimeType.startsWith("image/")) {
+  if (!parsed.mimeType.startsWith("image/")) {
     return null;
   }
   return {
     inline_data: {
-      mime_type: mimeType,
-      data: base64
+      mime_type: parsed.mimeType,
+      data: parsed.base64
     }
   };
 }
@@ -2995,6 +3050,119 @@ export class AdminPanel {
     return paths;
   }
 
+  private buildInlineAssetRepoPath(label: string, mimeType: string, base64: string): string {
+    const ext = extensionForMimeType(mimeType);
+    const hash = hashString(`${mimeType}:${base64}`);
+    const safeLabel = sanitizeAssetLabel(label);
+    return `public/assets/maps/${this.activeFestivalId}/committed/${safeLabel}-${hash}.${ext}`;
+  }
+
+  private async materializeInlineAssetsForCommit(map: FestivalMap): Promise<number> {
+    const rewrittenByInlineValue = new Map<string, string>();
+
+    const ensureRepoPath = async (path: string, label: string): Promise<string> => {
+      if (path.startsWith("blob:")) {
+        throw new Error(
+          `Cannot commit blob asset '${label}'. Apply/upload as a file-backed path or data URL first.`
+        );
+      }
+      if (!path.startsWith("data:")) {
+        return path;
+      }
+      const cached = rewrittenByInlineValue.get(path);
+      if (cached) {
+        return cached;
+      }
+      const parsed = parseInlineDataAsset(path);
+      if (!parsed) {
+        throw new Error(`Unsupported inline asset format for '${label}'.`);
+      }
+      const repoPath = this.buildInlineAssetRepoPath(label, parsed.mimeType, parsed.base64);
+      this.publishStatus = `Uploading inline asset: ${label}`;
+      this.render();
+      await putFileToGitHub({
+        token: this.githubToken,
+        owner: this.githubOwner,
+        repo: this.githubRepo,
+        branch: this.githubBranch,
+        path: repoPath,
+        message: `chore(admin): materialize ${label} asset for ${this.activeFestivalId}`,
+        content: "",
+        contentBase64: parsed.base64
+      });
+      const publicAssetPath = repoPath.startsWith("public/")
+        ? repoPath.slice("public/".length)
+        : repoPath;
+      rewrittenByInlineValue.set(path, publicAssetPath);
+      return publicAssetPath;
+    };
+
+    map.background = await ensureRepoPath(map.background, "background");
+    if (map.introScreen) {
+      map.introScreen = await ensureRepoPath(map.introScreen, "intro-screen");
+    }
+
+    for (const stage of map.stages) {
+      stage.sprite = await ensureRepoPath(stage.sprite, `stage:${stage.id}`);
+    }
+    for (const [stageId, stageSprite] of Object.entries(map.assets.stageSprites)) {
+      map.assets.stageSprites[stageId] = await ensureRepoPath(
+        stageSprite,
+        `assets.stageSprites:${stageId}`
+      );
+    }
+
+    for (const distraction of map.distractions) {
+      distraction.sprite = await ensureRepoPath(
+        distraction.sprite,
+        `distraction:${distraction.id}`
+      );
+    }
+    for (const [type, distractionSprite] of Object.entries(map.assets.distractionSprites)) {
+      map.assets.distractionSprites[type] = await ensureRepoPath(
+        distractionSprite,
+        `assets.distractionSprites:${type}`
+      );
+    }
+
+    for (const artist of map.assets.artists) {
+      for (let index = 0; index < artist.sprites.walk.length; index += 1) {
+        artist.sprites.walk[index] = await ensureRepoPath(
+          artist.sprites.walk[index],
+          `artist:${artist.id}:walk${index + 1}`
+        );
+      }
+      if (artist.sprites.idle) {
+        artist.sprites.idle = await ensureRepoPath(
+          artist.sprites.idle,
+          `artist:${artist.id}:idle`
+        );
+      }
+      if (artist.sprites.distracted) {
+        artist.sprites.distracted = await ensureRepoPath(
+          artist.sprites.distracted,
+          `artist:${artist.id}:distracted`
+        );
+      }
+      artist.sprites.performing = await ensureRepoPath(
+        artist.sprites.performing,
+        `artist:${artist.id}:performing`
+      );
+      if (artist.performanceAudio?.clip) {
+        artist.performanceAudio.clip = await ensureRepoPath(
+          artist.performanceAudio.clip,
+          `artist:${artist.id}:performanceAudio`
+        );
+      }
+    }
+
+    for (const [cueId, cuePath] of Object.entries(map.assets.audio)) {
+      map.assets.audio[cueId] = await ensureRepoPath(cuePath, `audio:${cueId}`);
+    }
+
+    return rewrittenByInlineValue.size;
+  }
+
   private async commitFestivalMapToGitHub(): Promise<void> {
     if (this.isPublishing) {
       return;
@@ -3004,14 +3172,19 @@ export class AdminPanel {
     this.render();
     try {
       const mapToCommit = this.resolveMapWithOverrides();
-      const inlineReferences = this.collectInlineAssetPaths(mapToCommit);
-      if (inlineReferences.length > 0) {
+      const inlineReferencesBeforeUpload = this.collectInlineAssetPaths(mapToCommit);
+      const hasBlobInline = inlineReferencesBeforeUpload.some((entry) =>
+        entry.includes("blob-url")
+      );
+      if (hasBlobInline) {
         throw new Error(
-          `Cannot commit map config with inline assets. Convert to file paths first.\n${inlineReferences
+          `Cannot commit map config with blob assets. Convert to file/data URLs first.\n${inlineReferencesBeforeUpload
             .slice(0, 5)
             .join("\n")}`
         );
       }
+      const uploadedInlineAssets = await this.materializeInlineAssetsForCommit(mapToCommit);
+
       const content = `${JSON.stringify(mapToCommit, null, 2)}\n`;
       const result = await putFileToGitHub({
         token: this.githubToken,
@@ -3026,7 +3199,11 @@ export class AdminPanel {
       });
       const commitLine = result.commitUrl ? `Commit: ${result.commitUrl}` : "Commit pushed.";
       const fileLine = result.fileUrl ? ` File: ${result.fileUrl}` : "";
-      this.publishStatus = `${commitLine}${fileLine}`;
+      const uploadLine =
+        uploadedInlineAssets > 0
+          ? ` Uploaded ${uploadedInlineAssets} inline assets.`
+          : "";
+      this.publishStatus = `${commitLine}${fileLine}${uploadLine}`;
       this.persistGithubSettings();
     } catch (error) {
       this.publishStatus = String(error);

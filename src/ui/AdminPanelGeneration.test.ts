@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildArtistSeedPrompt,
   dataUrlToInlineDataPart,
+  parseInlineDataAsset,
   isGeminiSeedUnsupportedError
 } from "./AdminPanel";
 
@@ -48,5 +49,13 @@ describe("AdminPanel generation helpers", () => {
     expect(
       isGeminiSeedUnsupportedError(400, '{"error":{"message":"Prompt too long"}}')
     ).toBe(false);
+  });
+
+  it("parses inline data URLs for publish pipeline", () => {
+    expect(parseInlineDataAsset("data:image/png;base64,QUJDRA==")).toEqual({
+      mimeType: "image/png",
+      base64: "QUJDRA=="
+    });
+    expect(parseInlineDataAsset("assets/maps/govball/bg.png")).toBeNull();
   });
 });
