@@ -17,6 +17,7 @@ import { ArtistRenderer } from "../rendering/ArtistRenderer";
 import { ComboFeedbackRenderer } from "../rendering/ComboFeedbackRenderer";
 import {
   DeliveryFeedbackRenderer,
+  type HazardFeedbackEvent,
   type MissEvent
 } from "../rendering/DeliveryFeedbackRenderer";
 import { DistractionRenderer } from "../rendering/DistractionRenderer";
@@ -34,6 +35,7 @@ import { SpawnSystem } from "../systems/SpawnSystem";
 import { StageSystem } from "../systems/StageSystem";
 import { TimerSystem } from "../systems/TimerSystem";
 import { ComboTracker } from "./ComboTracker";
+import { ArtistProfilePool } from "./ArtistProfilePool";
 import { PathPlanner, type PlannedPath } from "./PathPlanner";
 import { LivesState } from "./LivesState";
 import { ScoreManager, type ScoreEvent } from "./ScoreManager";
@@ -41,15 +43,33 @@ import { ScoreManager, type ScoreEvent } from "./ScoreManager";
 export interface RuntimeViewport {
   width: number;
   height: number;
+  safeAreaTopPx?: number;
+  safeAreaBottomPx?: number;
 }
 
 export type RuntimeOutcome = "ACTIVE" | "FAILED" | "COMPLETED";
+export type PerformanceTier = "BRONZE" | "SILVER" | "GOLD";
+
+export interface PerformanceTierInput {
+  score: number;
+  deliveredArtists: number;
+}
 
 export interface RuntimeStatus {
   levelNumber: number;
+  dayNumber: number;
+  sessionName: string;
+  sessionIndexInDay: number;
+  totalFestivalDays: number;
+  sessionTargetSets: number;
+  paceDeltaSets: number;
   levelScore: number;
   outcome: RuntimeOutcome;
+  performanceTier: PerformanceTier | null;
+  deliveredArtists: number;
+  missedArtists: number;
   remainingLives: number;
+  remainingTimeSeconds: number;
   totalArtists: number;
   spawnedArtists: number;
   resolvedArtists: number;
@@ -85,7 +105,7 @@ export class GameRuntime {
   private readonly timerSystem = new TimerSystem();
   private readonly comboTracker = new ComboTracker();
   private readonly scoreManager = new ScoreManager();
-  private readonly livesState = new LivesState(3);
+  private readonly livesState: LivesState;
   private readonly artistRenderer: ArtistRenderer;
   private readonly pathRenderer: PathRenderer;
   private readonly distractionRenderer: DistractionRenderer;
@@ -94,10 +114,15 @@ export class GameRuntime {
   private readonly comboFeedbackRenderer: ComboFeedbackRenderer;
   private readonly hudRenderer: HudRenderer;
   private readonly deliveryFeedbackRenderer: DeliveryFeedbackRenderer;
+  private readonly runtimeUiLayer: Container;
   private readonly pathFollower: PathFollower;
   private readonly pathInput: PathDrawingInput;
   private readonly pathPlanner: PathPlanner;
   private readonly runtimeLevel: RuntimeLevelConfig;
+  private remainingLevelTimeSeconds = 0;
+  private roundPerformanceTier: PerformanceTier | null = null;
+  private deliveredArtists = 0;
+  private missedArtists = 0;
   private levelFailureReported = false;
   private levelOutcome: RuntimeOutcome = "ACTIVE";
   private nowMs: number = getNowMs();
@@ -114,6 +139,7 @@ export class GameRuntime {
     activePaths: 0,
     runtimeOutcome: "ACTIVE"
   };
+  private readonly stageSetCounts = new Map<string, number>();
 
   constructor(
     layout: ResolvedFestivalLayout,
@@ -125,19 +151,37 @@ export class GameRuntime {
     const runtimeLevel =
       runtimeLevelOverride ?? toRuntimeLevelConfig(layout.map, 1);
     this.runtimeLevel = runtimeLevel;
+    this.remainingLevelTimeSeconds = Math.max(
+      0,
+      runtimeLevel.levelDurationSeconds
+    );
+    this.livesState = new LivesState(runtimeLevel.maxEncounterStrikes);
     this.levelNumber = runtimeLevel.levelNumber;
-    this.spawnSystem = new SpawnSystem(runtimeLevel, layout.spawnPoints);
+    const artistProfilePool = new ArtistProfilePool(
+      options.artistSprites ?? layout.map.assets.artists,
+      {
+        levelNumber: runtimeLevel.levelNumber
+      }
+    );
+    this.spawnSystem = new SpawnSystem(runtimeLevel, layout.spawnPoints, Math.random, {
+      stages: layout.stages,
+      viewport: layout.viewport,
+      pickArtistProfileId: (tier) => artistProfilePool.pickProfileId(tier)
+    });
+    this.syncStageSetCounts(layout.stages.map((stage) => stage.id));
     this.stageSystem = new StageSystem(
       layout.stages,
       GAME_CONFIG.stage.performanceDurationMs
     );
     this.collisionSystem = new CollisionSystem(
       GAME_CONFIG.hazards.collisionRadiusPx,
-      GAME_CONFIG.hazards.chatDurationMs
+      GAME_CONFIG.hazards.chatDurationMs,
+      GAME_CONFIG.hazards.immunityCooldownMs
     );
     this.distractionSystem = new DistractionSystem(
       layout.distractions,
-      runtimeLevel.activeDistractionIds
+      runtimeLevel.activeDistractionIds,
+      GAME_CONFIG.hazards.immunityCooldownMs
     );
     this.artistRenderer = new ArtistRenderer(
       layerSet.artistLayer,
@@ -145,6 +189,9 @@ export class GameRuntime {
     );
     this.pathRenderer = new PathRenderer(layerSet.pathLayer);
     this.distractionRenderer = new DistractionRenderer(layerSet.distractionLayer);
+
+    this.runtimeUiLayer = new Container();
+    this.runtimeUiLayer.label = "runtimeUiLayer";
 
     const feedbackLayer = new Container();
     feedbackLayer.label = "deliveryFeedbackLayer";
@@ -156,13 +203,14 @@ export class GameRuntime {
     hudLayer.label = "hudLayer";
     const etaLayer = new Container();
     etaLayer.label = "etaLayer";
-    layerSet.uiLayer.addChild(
+    this.runtimeUiLayer.addChild(
       feedbackLayer,
       hazardLayer,
       comboLayer,
       hudLayer,
       etaLayer
     );
+    layerSet.uiLayer.addChild(this.runtimeUiLayer);
 
     this.etaRenderer = new EtaRenderer(etaLayer);
     this.hazardOverlayRenderer = new HazardOverlayRenderer(hazardLayer);
@@ -189,9 +237,12 @@ export class GameRuntime {
   onLayoutChanged(nextLayout: ResolvedFestivalLayout): void {
     this.layout = nextLayout;
     this.spawnSystem.setSpawnPoints(nextLayout.spawnPoints);
+    this.spawnSystem.setStageTargets(nextLayout.stages);
+    this.spawnSystem.setViewport(nextLayout.viewport);
     this.stageSystem.setStages(nextLayout.stages);
     this.distractionSystem.setDistractions(nextLayout.distractions);
     this.pathPlanner.setStages(nextLayout.stages);
+    this.syncStageSetCounts(nextLayout.stages.map((stage) => stage.id));
   }
 
   onPointerDown(x: number, y: number, nowMs = getNowMs()): boolean {
@@ -242,8 +293,13 @@ export class GameRuntime {
     }
 
     this.nowMs = nowMs;
+    this.remainingLevelTimeSeconds = Math.max(
+      0,
+      this.remainingLevelTimeSeconds - deltaSeconds
+    );
     const missEvents: MissEvent[] = [];
     const scoreEvents: ScoreEvent[] = [];
+    const hazardEvents: HazardFeedbackEvent[] = [];
 
     const activeArtists = this.artists.filter((artist) => artist.isActive());
     const spawned = this.spawnSystem.update(deltaSeconds, activeArtists);
@@ -268,6 +324,23 @@ export class GameRuntime {
     for (const started of collisionUpdate.started) {
       this.pathFollower.blockArtist(started.artistAId, "chat");
       this.pathFollower.blockArtist(started.artistBId, "chat");
+      this.livesState.recordIncident();
+      const artistA = this.artists.find((entry) => entry.id === started.artistAId);
+      const artistB = this.artists.find((entry) => entry.id === started.artistBId);
+      const center =
+        artistA && artistB
+          ? {
+              x: (artistA.position.x + artistB.position.x) / 2,
+              y: (artistA.position.y + artistB.position.y) / 2
+            }
+          : null;
+      if (center) {
+        hazardEvents.push({
+          id: started.sessionId,
+          type: "chat",
+          position: center
+        });
+      }
       this.playSfx("chat");
     }
     for (const resolved of collisionUpdate.resolved) {
@@ -284,6 +357,15 @@ export class GameRuntime {
     const distractionUpdate = this.distractionSystem.update(this.artists, this.nowMs);
     for (const started of distractionUpdate.started) {
       this.pathFollower.blockArtist(started.artistId, "distraction");
+      this.livesState.recordIncident();
+      const artist = this.artists.find((entry) => entry.id === started.artistId);
+      if (artist) {
+        hazardEvents.push({
+          id: `${started.artistId}-${started.distractionId}`,
+          type: "distraction",
+          position: { ...artist.position }
+        });
+      }
       this.playSfx("distraction");
     }
     for (const resolved of distractionUpdate.resolved) {
@@ -299,7 +381,7 @@ export class GameRuntime {
         this.pathFollower.clearArtist(artist.id);
         continue;
       }
-      if (artist.state === "DRIFTING") {
+      if (artist.state === "DRIFTING" || artist.state === "SPAWNING") {
         artist.updateDrift(deltaSeconds);
       }
 
@@ -310,7 +392,9 @@ export class GameRuntime {
         maxY: viewport.height
       });
       if (boundsMissed) {
-        this.livesState.recordMiss();
+        this.missedArtists += 1;
+        this.comboTracker.breakAllChains();
+        this.scoreManager.applyMissPenalty("bounds");
         missEvents.push(this.buildMissEvent(artist, "bounds"));
         this.playSfx("miss");
       }
@@ -318,9 +402,11 @@ export class GameRuntime {
 
     const timeoutEvents = this.timerSystem.update(this.artists, deltaSeconds);
     for (const event of timeoutEvents) {
-      this.livesState.recordMiss();
       const artist = this.artists.find((entry) => entry.id === event.artistId);
       if (artist) {
+        this.missedArtists += 1;
+        this.comboTracker.breakAllChains();
+        this.scoreManager.applyMissPenalty(event.reason);
         missEvents.push(this.buildMissEvent(artist, event.reason));
         this.playSfx("miss");
       }
@@ -328,6 +414,11 @@ export class GameRuntime {
 
     const stageUpdate = this.stageSystem.update(this.nowMs);
     for (const delivery of stageUpdate.completedDeliveries) {
+      this.deliveredArtists += 1;
+      this.stageSetCounts.set(
+        delivery.stageId,
+        (this.stageSetCounts.get(delivery.stageId) ?? 0) + 1
+      );
       const combo = this.comboTracker.registerDelivery(
         delivery.stageId,
         delivery.completedAtMs
@@ -341,7 +432,7 @@ export class GameRuntime {
       this.levelFailureReported = true;
       this.levelOutcome = "FAILED";
       this.playSfx("level_failed");
-      console.warn("Level failed: 3 misses reached.");
+      console.warn("Level failed: encounter limit reached.");
     }
 
     this.pathStates = advancePathLifecycles(
@@ -375,32 +466,44 @@ export class GameRuntime {
           : scoreEvents;
     const renderedMissEvents =
       effectsDensity < 0.55 ? missEvents.slice(-1) : missEvents;
+    const renderedHazardEvents =
+      effectsDensity < 0.55 ? hazardEvents.slice(-1) : hazardEvents;
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
       scoreEvents: renderedScoreEvents,
       missEvents: renderedMissEvents,
+      hazardEvents: renderedHazardEvents,
       stageSnapshots,
       viewport
     });
     this.hudRenderer.render({
       score: this.scoreManager.totalScore,
       remainingLives: this.livesState.remainingLives,
+      maxLives: this.runtimeLevel.maxEncounterStrikes,
+      remainingTimeSeconds: this.remainingLevelTimeSeconds,
+      sessionDurationSeconds: this.runtimeLevel.levelDurationSeconds,
       levelNumber: this.levelNumber,
+      dayNumber: this.runtimeLevel.sessionDayNumber,
+      sessionName: this.runtimeLevel.sessionName,
+      setsPlayed: this.deliveredArtists,
+      targetSets: this.runtimeLevel.sessionTargetSets,
       comboMultiplier: strongestCombo?.multiplier ?? null,
-      viewportWidth: viewport.width
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      safeAreaTopPx: viewport.safeAreaTopPx ?? 0,
+      safeAreaBottomPx: viewport.safeAreaBottomPx ?? 0,
+      stageProgress: this.buildStageSetProgress()
     });
     this.etaRenderer.render(preview.eta);
     this.artistRenderer.render(this.artists, this.nowMs);
 
-    if (this.levelOutcome === "ACTIVE") {
-      const hasActiveArtists = this.artists.some((artist) => artist.isActive());
-      const hasActiveStages = stageSnapshots.some(
-        (snapshot) => snapshot.isOccupied || snapshot.queueLength > 0
-      );
-      if (this.spawnSystem.isExhausted && !hasActiveArtists && !hasActiveStages) {
-        this.levelOutcome = "COMPLETED";
-        this.playSfx("level_complete");
-      }
+    if (this.levelOutcome === "ACTIVE" && this.remainingLevelTimeSeconds <= 0) {
+      this.roundPerformanceTier = resolvePerformanceTier({
+        score: this.scoreManager.totalScore,
+        deliveredArtists: this.deliveredArtists
+      });
+      this.levelOutcome = "COMPLETED";
+      this.playSfx("level_complete");
     }
 
     this.emitTelemetry(
@@ -412,11 +515,31 @@ export class GameRuntime {
 
   getStatus(): RuntimeStatus {
     const resolvedArtists = this.artists.filter((artist) => !artist.isActive()).length;
+    const elapsedSeconds = Math.max(
+      0,
+      this.runtimeLevel.levelDurationSeconds - this.remainingLevelTimeSeconds
+    );
+    const expectedSets =
+      this.runtimeLevel.levelDurationSeconds > 0
+        ? (this.runtimeLevel.sessionTargetSets * elapsedSeconds) /
+          this.runtimeLevel.levelDurationSeconds
+        : this.runtimeLevel.sessionTargetSets;
+    const paceDeltaSets = this.deliveredArtists - expectedSets;
     return {
       levelNumber: this.levelNumber,
+      dayNumber: this.runtimeLevel.sessionDayNumber,
+      sessionName: this.runtimeLevel.sessionName,
+      sessionIndexInDay: this.runtimeLevel.sessionIndexInDay,
+      totalFestivalDays: this.runtimeLevel.totalFestivalDays,
+      sessionTargetSets: this.runtimeLevel.sessionTargetSets,
+      paceDeltaSets,
       levelScore: this.scoreManager.totalScore,
       outcome: this.levelOutcome,
+      performanceTier: this.roundPerformanceTier,
+      deliveredArtists: this.deliveredArtists,
+      missedArtists: this.missedArtists,
       remainingLives: this.livesState.remainingLives,
+      remainingTimeSeconds: this.remainingLevelTimeSeconds,
       totalArtists: this.spawnSystem.totalArtists,
       spawnedArtists: this.spawnSystem.spawnedArtists,
       resolvedArtists
@@ -442,17 +565,31 @@ export class GameRuntime {
       nowMs: this.nowMs,
       scoreEvents: [],
       missEvents: [],
+      hazardEvents: [],
       stageSnapshots: [],
       viewport: this.layout.viewport
     });
     this.hudRenderer.render({
       score: 0,
       remainingLives: 0,
+      maxLives: this.runtimeLevel.maxEncounterStrikes,
+      remainingTimeSeconds: 0,
+      sessionDurationSeconds: this.runtimeLevel.levelDurationSeconds,
       levelNumber: this.runtimeLevel.levelNumber,
+      dayNumber: this.runtimeLevel.sessionDayNumber,
+      sessionName: this.runtimeLevel.sessionName,
+      setsPlayed: 0,
+      targetSets: this.runtimeLevel.sessionTargetSets,
       comboMultiplier: null,
-      viewportWidth: this.layout.viewport.width
+      viewportWidth: this.layout.viewport.width,
+      viewportHeight: this.layout.viewport.height,
+      safeAreaTopPx: 0,
+      safeAreaBottomPx: 0,
+      stageProgress: this.buildStageSetProgress()
     });
     this.etaRenderer.render(null);
+    this.runtimeUiLayer.removeFromParent();
+    this.runtimeUiLayer.destroy({ children: true });
     this.emitTelemetry(0, 0, 0);
   }
 
@@ -503,11 +640,11 @@ export class GameRuntime {
       return;
     }
 
-    if (planned.isValid && planned.targetStageId) {
-      this.pathFollower.assignPath(artist, planned);
-      this.pathStates = this.pathStates.filter(
-        (path) => !(path.artistId === artist.id && path.state === "ACTIVE")
-      );
+    const assignment = this.pathFollower.assignPath(artist, planned);
+    this.pathStates = this.pathStates.filter(
+      (path) => !(path.artistId === artist.id && path.state === "ACTIVE")
+    );
+    if (assignment === "assigned" || assignment === "queued") {
       this.pathStates.push({
         id: planned.pathId,
         artistId: planned.artistId,
@@ -557,10 +694,12 @@ export class GameRuntime {
       }
       if (update.completed) {
         completedPathIds.add(update.pathId);
-        arrivals.push({
-          artistId: update.artistId,
-          stageId: update.targetStageId
-        });
+        if (update.targetStageId) {
+          arrivals.push({
+            artistId: update.artistId,
+            stageId: update.targetStageId
+          });
+        }
       }
     }
 
@@ -630,7 +769,44 @@ export class GameRuntime {
     if (!this.audioManager) {
       return;
     }
-    void this.audioManager.playSfx(cueId);
+    const category =
+      cueId === "deliver_combo"
+        ? "momentum"
+        : cueId === "level_complete" || cueId === "level_failed"
+          ? "hero"
+          : "tactical";
+    void this.audioManager.playSfx(cueId, { category });
+  }
+
+  private syncStageSetCounts(stageIds: string[]): void {
+    const active = new Set(stageIds);
+    for (const stageId of stageIds) {
+      if (!this.stageSetCounts.has(stageId)) {
+        this.stageSetCounts.set(stageId, 0);
+      }
+    }
+    for (const stageId of this.stageSetCounts.keys()) {
+      if (!active.has(stageId)) {
+        this.stageSetCounts.delete(stageId);
+      }
+    }
+  }
+
+  private buildStageSetProgress(): Array<{
+    stageId: string;
+    deliveredSets: number;
+    color: string;
+    position: { x: number; y: number };
+  }> {
+    return this.layout.stages.map((stage) => ({
+      stageId: stage.id,
+      deliveredSets: this.stageSetCounts.get(stage.id) ?? 0,
+      color: stage.color,
+      position: {
+        x: stage.screenPosition.x,
+        y: stage.screenPosition.y
+      }
+    }));
   }
 
   private emitTelemetry(
@@ -663,6 +839,24 @@ function resolveMusicCue(levelNumber: number): string {
     return "bg_energy";
   }
   return "bg_peak";
+}
+
+export function resolvePerformanceTier(
+  input: PerformanceTierInput
+): PerformanceTier {
+  const score = Math.max(0, Math.floor(input.score));
+  const deliveries = Math.max(0, Math.floor(input.deliveredArtists));
+  const tiers = GAME_CONFIG.round.performanceTiers;
+  if (score >= tiers.gold.minScore && deliveries >= tiers.gold.minDeliveries) {
+    return "GOLD";
+  }
+  if (
+    score >= tiers.silver.minScore &&
+    deliveries >= tiers.silver.minDeliveries
+  ) {
+    return "SILVER";
+  }
+  return "BRONZE";
 }
 
 function clampEffectsDensity(value: number): number {

@@ -1,0 +1,8 @@
+Create a burger shack distraction sprite for a top-down festival game.
+Requirements:
+- Transparent background.
+- Size target 96x96 after resize.
+- Small food cart or mini truck with grill cues and burger iconography.
+- Colors should harmonize with orange/navy/cyan festival palette.
+- Keep shape easy to recognize at small size.
+- Flat style with clean outlines, no text.

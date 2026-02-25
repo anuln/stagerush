@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "bg_chill_v1",
+      "type": "music",
+      "assetPath": "assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
+      "promptText": "Instrumental loop for a festival strategy game. Mood: relaxed daytime crowd energy, warm and optimistic, medium-low intensity. Style: indie electronic with soft percussion, clean bass, subtle guitar plucks. Constraints: no vocals, seamless loop behavior, avoid harsh transients."
+    },
+    {
+      "id": "bg_energy_v1",
+      "type": "music",
+      "assetPath": "assets/audio/govball/generated/music/audio_bg_energy_v1.mp3",
+      "promptText": "Instrumental loop for a festival routing game. Mood: momentum and urgency for mid-game rounds, bright and driving. Style: punchy dance-pop groove, syncopated percussion, energetic synth stabs. Constraints: no vocals, seamless loop, keep melodic hooks short and repeatable."
+    },
+    {
+      "id": "bg_peak_v1",
+      "type": "music",
+      "assetPath": "assets/audio/govball/generated/music/audio_bg_peak_v1.mp3",
+      "promptText": "Instrumental loop for final high-pressure rounds in a festival game. Mood: intense but triumphant, high energy, late-night main-stage vibe. Style: electro-rock hybrid with strong kick, sidechained synths, big risers. Constraints: no vocals, seamless loop, avoid muddy low-end."
+    },
+    {
+      "id": "sfx_spawn_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "promptText": "Short game UI stinger for artist spawn. Bright electronic pluck with tiny crowd texture tail. Length around one second."
+    },
+    {
+      "id": "sfx_path_draw_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_path_draw_v1.mp3",
+      "promptText": "Soft swoosh sound for drawing path lines on touch screen. Smooth airy texture, light friction feel, no click at end. Length around one second."
+    },
+    {
+      "id": "sfx_deliver_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_deliver_v1.mp3",
+      "promptText": "Positive festival delivery cue. Short crowd cheer with a clean upward musical hit. Length around 1.3 seconds."
+    },
+    {
+      "id": "sfx_deliver_combo_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_deliver_combo_v1.mp3",
+      "promptText": "Bigger combo success cue for chaining deliveries. Layered crowd shout plus sparkling synth flourish. Celebratory and punchy, around two seconds."
+    },
+    {
+      "id": "sfx_miss_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_miss_v1.mp3",
+      "promptText": "Negative feedback cue for missed artist. Gentle descending tone with subtle crowd disappointment texture. Should feel informative, not harsh; around 1.5 seconds."
+    },
+    {
+      "id": "sfx_chat_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
+      "promptText": "Short playful chatter cue for two artists colliding into conversation. Light babble-like texture with warm tone, non-verbal. Length under one second."
+    },
+    {
+      "id": "sfx_distraction_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_distraction_v1.mp3",
+      "promptText": "Cue for distraction trigger (fans/food/merch pull). Curious attention-grabbing tone with light sparkle. Length around 1.2 seconds."
+    },
+    {
+      "id": "sfx_level_complete_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
+      "promptText": "Level completion fanfare for festival game. Triumphant but compact orchestral-electronic hit with crowd uplift. Length around 2.5 seconds."
+    },
+    {
+      "id": "sfx_level_failed_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
+      "promptText": "Level failed sting for festival game. Sympathetic descending motif, soft impact, emotional but not punitive. Length around two seconds."
+    },
+    {
+      "id": "sfx_timer_warning_v1",
+      "type": "sfx",
+      "assetPath": "assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3",
+      "promptText": "Low-time warning pulse for gameplay urgency. Short ticking pulse with subtle high-frequency alert. Length about one second and loop-friendly cadence."
+    }
+  ]
+}

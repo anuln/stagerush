@@ -1,0 +1,272 @@
+{
+  "checkedAt": "2026-02-24T20:34:57.010Z",
+  "checkOnly": true,
+  "processed": [
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_a_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_a_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_a_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_a_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_b_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_b_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_b_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_b_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_c_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_c_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_c_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_headliner_c_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_a_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_a_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_a_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_a_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_b_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_b_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_b_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_b_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_c_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_c_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_c_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_mid_c_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_a_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_a_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_a_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_a_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_b_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_b_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_b_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_b_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_c_idle.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_c_perform.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_c_walk1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/artists/artist_new_c_walk2.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/artists/artist_headliner_a_idle_v1.png",
+      "changed": false,
+      "transparentPixels": 3987,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/distractions/distraction_burger_v1.png",
+      "changed": false,
+      "transparentPixels": 7635,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/distractions/distraction_fans_v1.png",
+      "changed": false,
+      "transparentPixels": 7340,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/distractions/distraction_merch_v1.png",
+      "changed": false,
+      "transparentPixels": 7746,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png",
+      "changed": false,
+      "transparentPixels": 5631,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/stages/stage_acoustic_v1.png",
+      "changed": false,
+      "transparentPixels": 4695,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "changed": false,
+      "transparentPixels": 10891,
+      "semiTransparentPixels": 0
+    },
+    {
+      "path": "assets/maps/govball/generated/stages/stage_side_v1.png",
+      "changed": false,
+      "transparentPixels": 8957,
+      "semiTransparentPixels": 0
+    }
+  ],
+  "missing": [],
+  "failedTransparency": []
+}

@@ -8,6 +8,19 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "assets:sprites:dry": "node scripts/assets/generate-gemini-sprites.mjs --dry-run",
+    "assets:sprites:pilot": "node scripts/assets/generate-gemini-sprites.mjs --only stage_main_v1,distraction_merch_v1,artist_headliner_a_idle_v1",
+    "assets:sprites:generate": "node scripts/assets/generate-gemini-sprites.mjs",
+    "assets:sprites:transparency": "node scripts/assets/ensure-sprite-transparency.mjs",
+    "assets:sprites:transparency:check": "node scripts/assets/ensure-sprite-transparency.mjs --check --no-hydrate-missing",
+    "assets:audio:dry": "node scripts/audio/generate-eleven-assets.mjs --dry-run",
+    "assets:audio:pilot": "node scripts/audio/generate-eleven-assets.mjs --only bg_chill_v1,sfx_spawn_v1,sfx_chat_v1",
+    "assets:audio:generate": "node scripts/audio/generate-eleven-assets.mjs",
+    "assets:catalog:validate": "node scripts/assets/validate-admin-catalogs.mjs",
+    "qa:pw:start": "node scripts/playwright/run-start-check.mjs",
+    "qa:pw:storyboard": "node scripts/playwright/run-storyboard-check.mjs",
+    "ui:rollback:create": "scripts/ui-overhaul/create-rollback-snapshot.sh",
+    "ui:rollback:restore": "scripts/ui-overhaul/restore-rollback-snapshot.sh",
     "perf:profile": "node scripts/profile-runtime.mjs",
     "qa:soak": "node scripts/soak-session.mjs --runs=5",
     "qa:release": "npm run build && npm test && npm run perf:profile && npm run qa:soak"
@@ -17,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.8.0",
     "vite": "^7.0.0",
     "vitest": "^3.2.0"

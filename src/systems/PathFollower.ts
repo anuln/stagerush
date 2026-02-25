@@ -5,12 +5,13 @@ import { pathLength } from "../utils/Spline";
 
 interface PathAssignment {
   pathId: string;
-  targetStageId: string;
+  targetStageId: string | null;
   points: Vector2[];
   segmentIndex: number;
   segmentProgress: number;
   consumedLength: number;
   totalLength: number;
+  completionVelocity: Vector2;
 }
 
 export type PathBlockReason = "chat" | "distraction";
@@ -21,7 +22,7 @@ export interface PathFollowUpdate {
   consumedLength: number;
   totalLength: number;
   completed: boolean;
-  targetStageId: string;
+  targetStageId: string | null;
 }
 
 export class PathFollower {
@@ -38,11 +39,7 @@ export class PathFollower {
     artist: Artist,
     plannedPath: PlannedPath
   ): "assigned" | "queued" | "ignored" {
-    if (
-      !plannedPath.isValid ||
-      !plannedPath.targetStageId ||
-      plannedPath.smoothedPoints.length < 2
-    ) {
+    if (plannedPath.smoothedPoints.length < 2) {
       return "ignored";
     }
 
@@ -92,14 +89,15 @@ export class PathFollower {
   }
 
   private applyAssignment(artist: Artist, plannedPath: PlannedPath): void {
-    if (!plannedPath.targetStageId) {
-      return;
-    }
-
     const points = [
       { x: artist.position.x, y: artist.position.y },
       ...plannedPath.smoothedPoints.slice(1).map((point) => ({ ...point }))
     ];
+    const completionVelocity = resolveCompletionVelocity(
+      points,
+      this.speedPxPerSecond,
+      artist.velocity
+    );
 
     this.assignments.set(artist.id, {
       pathId: plannedPath.pathId,
@@ -108,7 +106,8 @@ export class PathFollower {
       segmentIndex: 0,
       segmentProgress: 0,
       consumedLength: 0,
-      totalLength: pathLength(points)
+      totalLength: pathLength(points),
+      completionVelocity
     });
     artist.state = "FOLLOWING";
     artist.velocity = { x: 0, y: 0 };
@@ -188,7 +187,13 @@ export class PathFollower {
       if (completed) {
         this.assignments.delete(artist.id);
         this.pendingPaths.delete(artist.id);
-        artist.state = "ARRIVING";
+        if (assignment.targetStageId) {
+          artist.state = "ARRIVING";
+          artist.velocity = { x: 0, y: 0 };
+        } else {
+          artist.state = "DRIFTING";
+          artist.velocity = { ...assignment.completionVelocity };
+        }
       } else {
         artist.state = "FOLLOWING";
       }
@@ -196,4 +201,34 @@ export class PathFollower {
 
     return updates;
   }
+}
+
+function resolveCompletionVelocity(
+  points: Vector2[],
+  speedPxPerSecond: number,
+  fallbackVelocity: Vector2
+): Vector2 {
+  for (let index = points.length - 1; index > 0; index -= 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy);
+    if (length > 0.0001) {
+      return {
+        x: (dx / length) * speedPxPerSecond,
+        y: (dy / length) * speedPxPerSecond
+      };
+    }
+  }
+
+  const fallbackLength = Math.hypot(fallbackVelocity.x, fallbackVelocity.y);
+  if (fallbackLength > 0.0001) {
+    return {
+      x: (fallbackVelocity.x / fallbackLength) * speedPxPerSecond,
+      y: (fallbackVelocity.y / fallbackLength) * speedPxPerSecond
+    };
+  }
+
+  return { x: 0, y: 0 };
 }

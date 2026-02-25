@@ -19,6 +19,7 @@ const ACTIVE_STATES: Set<ArtistState> = new Set([
 export class Artist {
   readonly id: string;
   readonly tier: ArtistTier;
+  readonly spriteProfileId: string | null;
   position: Vector2;
   velocity: Vector2;
   state: ArtistState;
@@ -29,6 +30,7 @@ export class Artist {
   constructor(config: ArtistConfig) {
     this.id = config.id;
     this.tier = config.tier;
+    this.spriteProfileId = config.spriteProfileId ?? null;
     this.position = { ...config.position };
     this.velocity = { ...config.velocity };
     this.state = config.state ?? "DRIFTING";
@@ -77,6 +79,13 @@ export class Artist {
       this.position.y < bounds.minY ||
       this.position.x > bounds.maxX ||
       this.position.y > bounds.maxY;
+
+    if (this.state === "SPAWNING") {
+      if (!isOutOfBounds) {
+        this.state = "DRIFTING";
+      }
+      return false;
+    }
 
     if (isOutOfBounds) {
       this.markMissed("bounds");

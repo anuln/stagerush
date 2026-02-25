@@ -77,4 +77,15 @@ describe("ComboTracker", () => {
     ]);
     expect(expired).toHaveLength(0);
   });
+
+  it("breaks all active chains when a miss penalty occurs", () => {
+    const tracker = new ComboTracker();
+
+    tracker.registerDelivery("main-stage", 1000);
+    tracker.registerDelivery("main-stage", 3000);
+    expect(tracker.getActiveChains(4000)).toHaveLength(1);
+
+    tracker.breakAllChains();
+    expect(tracker.getActiveChains(4000)).toHaveLength(0);
+  });
 });

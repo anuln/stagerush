@@ -59,4 +59,19 @@ describe("CollisionSystem", () => {
     expect(a.state).toBe("FOLLOWING");
     expect(b.state).toBe("DRIFTING");
   });
+
+  it("prevents retriggering until cooldown window elapses", () => {
+    const a = makeArtist("a", 100, 100, "FOLLOWING");
+    const b = makeArtist("b", 120, 100, "DRIFTING");
+    const system = new CollisionSystem(40, 2000, 1500);
+
+    system.update([a, b], 0);
+    const resolved = system.update([a, b], 2001);
+    const blockedByCooldown = system.update([a, b], 2600);
+    const retriggered = system.update([a, b], 3600);
+
+    expect(resolved.resolved).toHaveLength(1);
+    expect(blockedByCooldown.started).toHaveLength(0);
+    expect(retriggered.started).toHaveLength(1);
+  });
 });

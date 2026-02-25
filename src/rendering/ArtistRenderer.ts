@@ -45,12 +45,18 @@ export function resolveArtistSpritePath(
   artistSprites: ArtistSpriteConfig[],
   nowMs: number
 ): string | null {
+  const explicitProfile = artist.spriteProfileId
+    ? artistSprites.find((entry) => entry.id === artist.spriteProfileId) ?? null
+    : null;
   const candidates = artistSprites.filter((entry) => entry.tier === artist.tier);
-  if (candidates.length === 0) {
+  const profile =
+    explicitProfile ??
+    (candidates.length > 0
+      ? candidates[pickVariantIndex(artist.id, candidates.length)]
+      : null);
+  if (!profile) {
     return null;
   }
-
-  const profile = candidates[pickVariantIndex(artist.id, candidates.length)];
   if (isPerformingState(artist.state)) {
     return profile.sprites.performing;
   }

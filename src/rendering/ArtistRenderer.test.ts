@@ -68,4 +68,20 @@ describe("resolveArtistSpritePath", () => {
     const artist = makeArtist("mid-1", "midtier", "DRIFTING");
     expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBeNull();
   });
+
+  it("prefers explicit sprite profile id over id-derived tier rotation", () => {
+    const artist = new Artist({
+      id: "headliner-999",
+      tier: "headliner",
+      state: "DRIFTING",
+      position: { x: 0, y: 0 },
+      velocity: { x: 0, y: 0 },
+      timerSeconds: 12,
+      spriteProfileId: "headliner-a"
+    });
+
+    expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBe(
+      "artists/headliner-a-walk1.png"
+    );
+  });
 });

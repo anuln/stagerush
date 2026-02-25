@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "stage_main_v1",
+      "category": "stage",
+      "assetPath": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "promptText": "Create a top-down festival main stage sprite for a mobile game. Requirements: Transparent background. Size target 160x120 after resize. Bold orange identity (#FF6B35), large truss arch, visible front entrance lip. Stylized flat illustration with subtle shading and dark clean outlines. Readable silhouette at small scale. No text, no logos, no UI."
+    },
+    {
+      "id": "distraction_merch_v1",
+      "category": "distraction",
+      "assetPath": "assets/maps/govball/generated/distractions/distraction_merch_v1.png",
+      "promptText": "Create a distraction sprite for a merch stand in a top-down festival game. Requirements: Transparent background. Size target 96x96 after resize. Small booth/tent with hanging shirts and folded merch table. Color accents: orange, cyan, navy; keep high contrast against grass. Flat illustrated style, crisp outline, no tiny unreadable details. No text labels."
+    },
+    {
+      "id": "artist_headliner_a_idle_v1",
+      "category": "artist",
+      "assetPath": "assets/maps/govball/generated/artists/artist_headliner_a_idle_v1.png",
+      "promptText": "Create a headliner artist idle sprite for a top-down festival routing game. Requirements: Transparent background. Size target 64x64 after resize. Character style: confident performer, standout outfit, sunglasses, iconic silhouette. Top-down / slight isometric angle consistent with game map assets. Idle stance only, centered in frame. Flat illustration with clean outlines and limited color palette. No text, no background scene."
+    },
+    {
+      "id": "stage_side_v1",
+      "category": "stage",
+      "assetPath": "assets/maps/govball/generated/stages/stage_side_v1.png",
+      "promptText": "Create a top-down side stage sprite for a mobile festival game. Requirements: Transparent background. Size target 120x96 after resize. Mid-sized canopy stage with cyan identity (#00D4FF), less massive than the main stage. Visible performer area and front approach path. Flat graphic style, dark outline, strong silhouette for readability. No text, no people crowd."
+    },
+    {
+      "id": "stage_acoustic_v1",
+      "category": "stage",
+      "assetPath": "assets/maps/govball/generated/stages/stage_acoustic_v1.png",
+      "promptText": "Create a top-down acoustic tent stage sprite for a mobile festival game. Requirements: Transparent background. Size target 96x80 after resize. Cozy small tent stage with lime accent (#7BFF00). Clear front entry edge and compact footprint. Flat illustration, subtle shading, thick readable contours. No text or crowd."
+    },
+    {
+      "id": "distraction_burger_v1",
+      "category": "distraction",
+      "assetPath": "assets/maps/govball/generated/distractions/distraction_burger_v1.png",
+      "promptText": "Create a burger shack distraction sprite for a top-down festival game. Requirements: Transparent background. Size target 96x96 after resize. Small food cart or mini truck with grill cues and burger iconography. Colors should harmonize with orange/navy/cyan festival palette. Keep shape easy to recognize at small size. Flat style with clean outlines, no text."
+    },
+    {
+      "id": "distraction_paparazzi_v1",
+      "category": "distraction",
+      "assetPath": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png",
+      "promptText": "Create a paparazzi distraction sprite for a top-down festival game. Requirements: Transparent background. Size target 80x80 after resize. One paparazzi figure with camera and flash rig, exaggerated silhouette. Stylized and readable from high-level camera view. Flat illustrated rendering, dark contour outline, no text."
+    },
+    {
+      "id": "distraction_fans_v1",
+      "category": "distraction",
+      "assetPath": "assets/maps/govball/generated/distractions/distraction_fans_v1.png",
+      "promptText": "Create a fan crowd distraction sprite for a top-down festival game. Requirements: Transparent background. Size target 112x80 after resize. Group of 3-4 fans as a compact cluster, energetic body language. Distinct shape from stages and food/merch distractions. Flat style, bold outline, no tiny details, no text."
+    },
+    {
+      "id": "govball_background_v1",
+      "category": "background",
+      "assetPath": "assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
+      "promptText": "Create a portrait top-down festival ground map background for a mobile game. Requirements: Final dimensions 1080x1920 after resize. Scene: urban NYC park vibe with grass patches, concrete paths, decorative tents, banners, sparse trees. Keep center lanes readable for gameplay path drawing. Palette should stay muted green/gray so bright gameplay sprites stand out. No text, no UI, no giant focal object. Clean illustrated style with subtle texture."
+    }
+  ]
+}

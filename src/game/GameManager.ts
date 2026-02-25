@@ -42,6 +42,7 @@ export interface GameManagerSnapshot {
   screen: ScreenState;
   level: LevelManagerSnapshot;
   profile: ProfileSnapshot;
+  runtime: RuntimeStatus | null;
 }
 
 export class GameManager {
@@ -74,7 +75,8 @@ export class GameManager {
         highestUnlockedLevel: persisted.highestUnlockedLevel,
         bestFestivalScore: persisted.bestFestivalScore,
         bestLevelScore: persisted.bestLevelScores[levelKey] ?? null
-      }
+      },
+      runtime: this.runtime ? this.runtime.getStatus() : null
     };
   }
 

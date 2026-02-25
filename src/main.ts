@@ -2,11 +2,24 @@ import { Application } from "pixi.js";
 import { BundleManager } from "./assets/BundleManager";
 import {
   BOOT_BUNDLE_MANIFEST,
-  GOVBALL_BUNDLE_ID,
-  GOVBALL_MAP_CONFIG_PATH,
-  createGovBallBundleManifest
+  FESTIVAL_INDEX_PATH,
+  createFestivalBundleManifest
 } from "./assets/manifest";
+import {
+  type AdminAssetOverrides,
+  applyAdminAssetOverrides,
+  clearAdminAssetOverrides,
+  hasAdminAssetOverrides,
+  isAdminModeEnabled,
+  loadAdminAssetOverrides,
+  saveAdminAssetOverrides
+} from "./admin/AdminAssetOverrides";
 import { AudioManager } from "./audio/AudioManager";
+import type { FestivalMap } from "./config/FestivalConfig";
+import {
+  loadFestivalRegistry,
+  type FestivalRegistry
+} from "./config/FestivalRegistry";
 import {
   GAME_CONFIG,
   getQualityPreset,
@@ -29,9 +42,19 @@ import { MapRenderer } from "./maps/MapRenderer";
 import { createLayerSet } from "./maps/layers";
 import { RunPersistence } from "./persistence/RunPersistence";
 import type { ScreenActionId } from "./ui/ScreenState";
+import { AdminPanel } from "./ui/AdminPanel";
+import { KioskModeController } from "./ui/KioskModeController";
+import { runScreenActionWithAssets } from "./ui/ScreenActionRunner";
 import { ScreenOverlayController } from "./ui/ScreenOverlayController";
 import { buildScreenViewModel } from "./ui/ScreenViewModels";
+import { applyThemeToDocument, resolveThemePreset } from "./theme/ThemeResolver";
 import "./styles.css";
+
+declare global {
+  interface Window {
+    render_game_to_text?: () => string;
+  }
+}
 
 function isMobileUserAgent(): boolean {
   return /Mobi|Android/i.test(navigator.userAgent);
@@ -48,6 +71,59 @@ function parsePerformanceFlags(): {
   };
 }
 
+function shouldAutoPinScreen(actionId: ScreenActionId): boolean {
+  return (
+    actionId === "START_FESTIVAL" ||
+    actionId === "RETRY_LEVEL" ||
+    actionId === "NEXT_LEVEL"
+  );
+}
+
+const FESTIVAL_SELECTION_STORAGE_KEY = "stagecall:selected-festival-id";
+
+function resolveFestivalSelection(registry: FestivalRegistry): {
+  selectedId: string;
+  mapConfigPath: string;
+  bundleId: string;
+  festivals: Array<{ id: string; name: string }>;
+} {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("festival");
+  const fromStorage = window.localStorage.getItem(FESTIVAL_SELECTION_STORAGE_KEY);
+  const fallback =
+    registry.defaultFestivalId ?? registry.festivals[0]?.id ?? "";
+  const requested = fromQuery || fromStorage || fallback;
+  const selected =
+    registry.festivals.find((entry) => entry.id === requested) ??
+    registry.festivals[0];
+  if (!selected) {
+    throw new Error("Festival registry is empty");
+  }
+
+  window.localStorage.setItem(FESTIVAL_SELECTION_STORAGE_KEY, selected.id);
+
+  return {
+    selectedId: selected.id,
+    mapConfigPath: selected.mapConfigPath,
+    bundleId: selected.bundleId ?? `festival-${selected.id}`,
+    festivals: registry.festivals.map((entry) => ({
+      id: entry.id,
+      name: entry.name
+    }))
+  };
+}
+
+function navigateToFestival(festivalId: string, adminMode: boolean): void {
+  window.localStorage.setItem(FESTIVAL_SELECTION_STORAGE_KEY, festivalId);
+  const params = new URLSearchParams(window.location.search);
+  params.set("festival", festivalId);
+  if (adminMode) {
+    params.set("admin", "1");
+  }
+  const search = params.toString();
+  window.location.search = search.length > 0 ? `?${search}` : "";
+}
+
 function average(values: number[]): number {
   if (values.length === 0) {
     return 0;
@@ -57,6 +133,22 @@ function average(values: number[]): number {
     total += value;
   }
   return total / values.length;
+}
+
+function parseCssPixels(value: string | null): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Number.parseFloat(value.trim().replace("px", ""));
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function readSafeAreaInsets(): { top: number; bottom: number } {
+  const computed = window.getComputedStyle(document.documentElement);
+  return {
+    top: parseCssPixels(computed.getPropertyValue("--safe-top")),
+    bottom: parseCssPixels(computed.getPropertyValue("--safe-bottom"))
+  };
 }
 
 function applyQualityResolution(
@@ -73,6 +165,7 @@ function applyQualityResolution(
 
 async function bootstrap(): Promise<void> {
   const isMobile = isMobileUserAgent();
+  const adminMode = isAdminModeEnabled();
   const perfFlags = parsePerformanceFlags();
   const dpr = window.devicePixelRatio || 1;
   const baseResolution = isMobile ? Math.min(dpr, 1.5) : dpr;
@@ -101,11 +194,16 @@ async function bootstrap(): Promise<void> {
   const runPersistence = new RunPersistence();
   const bundleManager = new BundleManager([BOOT_BUNDLE_MANIFEST]);
   const screenOverlay = new ScreenOverlayController();
+  const kioskController = new KioskModeController();
   let gameManager: GameManager | null = null;
   let audioManager: AudioManager | null = null;
+  let activeTheme: ReturnType<typeof resolveThemePreset> | null = null;
   let activePointerId: number | null = null;
   let isScreenActionPending = false;
   let hasFestivalManifest = false;
+  let activeBundleId = "";
+  let activeFestivalId = "";
+  let sourceMap: FestivalMap | null = null;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
 
@@ -114,23 +212,23 @@ async function bootstrap(): Promise<void> {
       return;
     }
 
+    if (shouldAutoPinScreen(actionId)) {
+      void kioskController.enterPinnedMode();
+    }
+
     isScreenActionPending = true;
     try {
-      if (
-        hasFestivalManifest &&
-        (actionId === "START_FESTIVAL" ||
-          actionId === "RETRY_LEVEL" ||
-          actionId === "NEXT_LEVEL")
-      ) {
-        await bundleManager.loadBundle(GOVBALL_BUNDLE_ID);
-      }
-
-      gameManager.handleScreenAction(actionId);
-
-      if (hasFestivalManifest && actionId === "RETURN_TO_MENU") {
-        await bundleManager.unloadBundle(GOVBALL_BUNDLE_ID);
-        audioManager?.stopMusic();
-      }
+      await runScreenActionWithAssets(
+        {
+          hasFestivalManifest,
+          bundleId: activeBundleId,
+          gameManager,
+          bundleManager,
+          audioManager,
+          redraw
+        },
+        actionId
+      );
     } catch (error) {
       console.error("Failed to run screen action", error);
     } finally {
@@ -151,12 +249,60 @@ async function bootstrap(): Promise<void> {
     gameManager?.onLayoutChanged(nextLayout);
   };
 
+  const applyPreviewOverrides = async (
+    nextOverrides: AdminAssetOverrides
+  ): Promise<void> => {
+    if (!sourceMap || !activeBundleId) {
+      return;
+    }
+    const previewMap = hasAdminAssetOverrides(nextOverrides)
+      ? applyAdminAssetOverrides(sourceMap, nextOverrides)
+      : sourceMap;
+    bundleManager.registerManifest(
+      createFestivalBundleManifest(previewMap, activeBundleId)
+    );
+    await bundleManager.warmBundle(activeBundleId);
+    currentLayout = resolveFestivalLayout(previewMap, {
+      width: app.renderer.width,
+      height: app.renderer.height
+    });
+    mapRenderer.render(currentLayout);
+    gameManager?.onLayoutChanged(currentLayout);
+  };
+
   try {
     await bundleManager.loadBundle(BOOT_BUNDLE_MANIFEST.id);
-    const map = await loadFestivalMap(GOVBALL_MAP_CONFIG_PATH);
-    bundleManager.registerManifest(createGovBallBundleManifest(map));
+    const registry = await loadFestivalRegistry(FESTIVAL_INDEX_PATH);
+    const selection = resolveFestivalSelection(registry);
+    activeBundleId = selection.bundleId;
+    activeFestivalId = selection.selectedId;
+
+    sourceMap = await loadFestivalMap(selection.mapConfigPath);
+    const initialOverrides = loadAdminAssetOverrides(activeFestivalId);
+    const theme = resolveThemePreset({
+      festivalId: sourceMap.id,
+      themeId: sourceMap.themeId
+    });
+    activeTheme = theme;
+    applyThemeToDocument(theme);
+    const map = hasAdminAssetOverrides(initialOverrides)
+      ? applyAdminAssetOverrides(sourceMap, initialOverrides)
+      : sourceMap;
+    bundleManager.registerManifest(
+      createFestivalBundleManifest(map, activeBundleId)
+    );
     hasFestivalManifest = true;
     audioManager = new AudioManager(map.assets.audio);
+    audioManager.setMixProfile(
+      (activeTheme?.audioMixProfile as "festival_default" | "festival_soft" | "festival_peak") ??
+        "festival_default"
+    );
+    const settings = runPersistence.getSnapshot().settings;
+    audioManager.setMix({
+      musicVolume: settings.musicVolume,
+      sfxVolume: settings.sfxVolume,
+      musicFadeMs: 220
+    });
     currentLayout = resolveFestivalLayout(map, {
       width: app.renderer.width,
       height: app.renderer.height
@@ -195,12 +341,69 @@ async function bootstrap(): Promise<void> {
         void runScreenAction(actionId);
       }
     );
+
+    if (adminMode) {
+      new AdminPanel({
+        map: sourceMap,
+        mapConfigPath: selection.mapConfigPath,
+        festivals: selection.festivals,
+        activeFestivalId,
+        initialOverrides,
+        onFestivalChange: (nextFestivalId) => {
+          navigateToFestival(nextFestivalId, adminMode);
+        },
+        onPreviewChange: (nextOverrides) => {
+          void applyPreviewOverrides(nextOverrides).catch((error) => {
+            console.error("Failed to apply admin preview overrides", error);
+          });
+        },
+        onApply: (nextOverrides) => {
+          try {
+            saveAdminAssetOverrides(activeFestivalId, nextOverrides);
+            window.location.reload();
+          } catch (error) {
+            console.error("Failed to persist admin overrides", error);
+            window.alert(
+              "Unable to save overrides on this browser (likely storage limit). Try fewer inline assets or use file paths."
+            );
+          }
+        },
+        onReset: () => {
+          clearAdminAssetOverrides(activeFestivalId);
+          window.location.reload();
+        }
+      });
+    }
   } catch (error) {
     console.error("Failed to load map configuration", error);
   }
 
+  window.render_game_to_text = () => {
+    const snapshot = gameManager?.snapshot ?? null;
+    const overlayElement = document.querySelector<HTMLDivElement>(".screen-overlay");
+    const overlayVisible = overlayElement
+      ? !overlayElement.classList.contains("is-hidden")
+      : false;
+    return JSON.stringify(
+      {
+        screen: snapshot?.screen ?? "UNINITIALIZED",
+        levelState: snapshot?.level.state ?? null,
+        levelNumber: snapshot?.level.currentLevel ?? null,
+        overlayVisible,
+        primaryActionLabel:
+          document.querySelector<HTMLButtonElement>(".screen-action.primary")
+            ?.textContent ?? null
+      },
+      null,
+      2
+    );
+  };
+
   window.addEventListener("resize", redraw);
-  window.addEventListener("beforeunload", () => performanceOverlay.dispose());
+  window.addEventListener("beforeunload", () => {
+    performanceOverlay.dispose();
+    kioskController.dispose();
+  });
 
   function toCanvasPoint(event: PointerEvent): { x: number; y: number } {
     const rect = app.canvas.getBoundingClientRect();
@@ -291,10 +494,17 @@ async function bootstrap(): Promise<void> {
       }
     }
 
-    gameManager?.update(ticker.deltaMS / 1000, {
-      width: app.renderer.width,
-      height: app.renderer.height
-    }, performance.now());
+    const safeInsets = readSafeAreaInsets();
+    gameManager?.update(
+      ticker.deltaMS / 1000,
+      {
+        width: app.renderer.width,
+        height: app.renderer.height,
+        safeAreaTopPx: safeInsets.top,
+        safeAreaBottomPx: safeInsets.bottom
+      },
+      performance.now()
+    );
 
     const runtimeTelemetry = latestRuntimeTelemetry ?? {
       frameDeltaMs: ticker.deltaMS,

@@ -25,12 +25,19 @@ function isCollisionEligibleState(state: ArtistState): boolean {
 export class CollisionSystem {
   private readonly collisionRadiusPx: number;
   private readonly chatDurationMs: number;
+  private readonly immunityCooldownMs: number;
   private readonly sessions = new Map<string, CollisionSession>();
   private readonly artistToSession = new Map<string, string>();
+  private readonly artistCooldownUntilMs = new Map<string, number>();
 
-  constructor(collisionRadiusPx = 40, chatDurationMs = 3000) {
+  constructor(
+    collisionRadiusPx = 40,
+    chatDurationMs = 3000,
+    immunityCooldownMs = 0
+  ) {
     this.collisionRadiusPx = collisionRadiusPx;
     this.chatDurationMs = chatDurationMs;
+    this.immunityCooldownMs = Math.max(0, immunityCooldownMs);
   }
 
   update(artists: Artist[], nowMs: number): CollisionUpdateResult {
@@ -63,6 +70,9 @@ export class CollisionSystem {
       this.sessions.delete(sessionId);
       this.artistToSession.delete(session.artistAId);
       this.artistToSession.delete(session.artistBId);
+      const cooldownUntil = nowMs + this.immunityCooldownMs;
+      this.artistCooldownUntilMs.set(session.artistAId, cooldownUntil);
+      this.artistCooldownUntilMs.set(session.artistBId, cooldownUntil);
       justResolvedArtists.add(session.artistAId);
       justResolvedArtists.add(session.artistBId);
       resolved.push({
@@ -78,6 +88,7 @@ export class CollisionSystem {
         !artistA.isActive() ||
         this.artistToSession.has(artistA.id) ||
         justResolvedArtists.has(artistA.id) ||
+        this.isInCooldown(artistA.id, nowMs) ||
         !isCollisionEligibleState(artistA.state)
       ) {
         continue;
@@ -89,6 +100,7 @@ export class CollisionSystem {
           !artistB.isActive() ||
           this.artistToSession.has(artistB.id) ||
           justResolvedArtists.has(artistB.id) ||
+          this.isInCooldown(artistB.id, nowMs) ||
           !isCollisionEligibleState(artistB.state)
         ) {
           continue;
@@ -135,6 +147,18 @@ export class CollisionSystem {
       resolved,
       activeChats: this.getActiveChats(artistMap, nowMs)
     };
+  }
+
+  private isInCooldown(artistId: string, nowMs: number): boolean {
+    const cooldownUntil = this.artistCooldownUntilMs.get(artistId);
+    if (cooldownUntil === undefined) {
+      return false;
+    }
+    if (cooldownUntil > nowMs) {
+      return true;
+    }
+    this.artistCooldownUntilMs.delete(artistId);
+    return false;
   }
 
   private getActiveChats(

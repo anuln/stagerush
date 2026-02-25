@@ -1,9 +1,21 @@
 import type { GameManagerSnapshot } from "../game/GameManager";
+import { resolvePerformanceTier } from "../game/GameRuntime";
 import type { ScreenViewModel } from "./ScreenState";
 
 function formatScore(value: number | null | undefined): string {
   const normalized = Math.max(0, Math.floor(value ?? 0));
   return `${normalized.toLocaleString()} pts`;
+}
+
+function formatPerformance(snapshot: GameManagerSnapshot): string {
+  const runtimeTier = snapshot.runtime?.performanceTier;
+  if (runtimeTier) {
+    return runtimeTier;
+  }
+  return resolvePerformanceTier({
+    score: snapshot.level.lastLevelScore ?? 0,
+    deliveredArtists: snapshot.runtime?.deliveredArtists ?? 0
+  });
 }
 
 export function buildScreenViewModel(
@@ -16,14 +28,15 @@ export function buildScreenViewModel(
     return {
       screen: "MENU",
       title: "Stage Call",
-      subtitle: "Route artists fast, keep combos alive, and complete the full festival run.",
+      subtitle:
+        "Run the festival setlist under pressure. Draw routes fast, keep momentum high, and own the crowd flow.",
       summaryRows: [
-        { label: "Festival levels", value: `${level.totalLevels}` },
+        { label: "Set count", value: `${level.totalLevels}` },
         { label: "Unlocked", value: `Up to Level ${snapshot.profile.highestUnlockedLevel}` },
         { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
-        { id: "START_FESTIVAL", label: "Start Festival", emphasis: "primary" }
+        { id: "START_FESTIVAL", label: "Open Gates", emphasis: "primary" }
       ]
     };
   }
@@ -32,10 +45,11 @@ export function buildScreenViewModel(
     return {
       screen: "LEVEL_FAILED",
       title: `${levelLabel} Failed`,
-      subtitle: "Three misses ended this attempt. Retry now or return to menu.",
+      subtitle:
+        "Crowd pressure spiked past the limit. Reset the set quickly or return to menu.",
       summaryRows: [
-        { label: "Attempt", value: `${level.attemptNumber}` },
-        { label: "Attempt score", value: formatScore(level.lastLevelScore) },
+        { label: "Set attempt", value: `${level.attemptNumber}` },
+        { label: "Set score", value: formatScore(level.lastLevelScore) },
         { label: "Run total", value: formatScore(level.cumulativeScore) },
         {
           label: "Level best",
@@ -43,7 +57,7 @@ export function buildScreenViewModel(
         }
       ],
       actions: [
-        { id: "RETRY_LEVEL", label: "Retry Level", emphasis: "primary" },
+        { id: "RETRY_LEVEL", label: "Run It Again", emphasis: "primary" },
         { id: "RETURN_TO_MENU", label: "Back to Menu", emphasis: "secondary" }
       ]
     };
@@ -53,9 +67,10 @@ export function buildScreenViewModel(
     return {
       screen: "LEVEL_COMPLETE",
       title: `${levelLabel} Complete`,
-      subtitle: "Clean run. Continue to the next level or return to menu.",
+      subtitle: "Set landed clean. Keep the stage hot or return to menu.",
       summaryRows: [
-        { label: "Level score", value: formatScore(level.lastLevelScore) },
+        { label: "Set score", value: formatScore(level.lastLevelScore) },
+        { label: "Performance", value: formatPerformance(snapshot) },
         { label: "Run total", value: formatScore(level.cumulativeScore) },
         {
           label: "Level best",
@@ -73,14 +88,15 @@ export function buildScreenViewModel(
     return {
       screen: "FESTIVAL_COMPLETE",
       title: "Festival Complete",
-      subtitle: "All levels cleared. Start a fresh run to chase a higher score.",
+      subtitle: "Lineup complete. Restart the festival to push a higher run total.",
       summaryRows: [
-        { label: "Levels cleared", value: `${level.totalLevels}` },
-        { label: "Final run score", value: formatScore(level.cumulativeScore) },
+        { label: "Sets cleared", value: `${level.totalLevels}` },
+        { label: "Final set score", value: formatScore(level.cumulativeScore) },
+        { label: "Final rating", value: formatPerformance(snapshot) },
         { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
       actions: [
-        { id: "START_FESTIVAL", label: "Play Again", emphasis: "primary" },
+        { id: "START_FESTIVAL", label: "Run It Again", emphasis: "primary" },
         { id: "RETURN_TO_MENU", label: "Back to Menu", emphasis: "secondary" }
       ]
     };

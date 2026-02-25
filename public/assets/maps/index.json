@@ -1,0 +1,11 @@
+{
+  "defaultFestivalId": "govball2026",
+  "festivals": [
+    {
+      "id": "govball2026",
+      "name": "Gov Ball 2026",
+      "mapConfigPath": "/assets/maps/govball/config.json",
+      "bundleId": "festival-govball2026"
+    }
+  ]
+}

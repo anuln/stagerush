@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-02-24T18:46:09.727Z",
+  "manifest": "/Users/anubhav.mehrotra/Documents/codex/Stage Call/assets/audio/generated/manifest.json",
+  "outputFormat": "mp3_44100_128",
+  "entries": [
+    {
+      "id": "bg_chill_v1",
+      "status": "error",
+      "out": "public/assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
+      "error": "TypeError: fetch failed",
+      "durationMs": 32
+    },
+    {
+      "id": "sfx_spawn_v1",
+      "status": "error",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "error": "TypeError: fetch failed",
+      "durationMs": 2
+    },
+    {
+      "id": "sfx_chat_v1",
+      "status": "error",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
+      "error": "TypeError: fetch failed",
+      "durationMs": 2
+    }
+  ]
+}

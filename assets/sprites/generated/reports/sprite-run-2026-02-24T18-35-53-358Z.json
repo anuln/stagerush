@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-02-24T18:35:53.517Z",
+  "model": "nano-banana-pro-preview",
+  "manifest": "/Users/anubhav.mehrotra/Documents/codex/Stage Call/assets/sprites/generated/manifest.json",
+  "entries": [
+    {
+      "id": "stage_main_v1",
+      "promptFile": "stage_main_prompt.txt",
+      "out": "public/assets/maps/govball/generated/stages/stage_main_v1.png",
+      "status": "ok",
+      "durationMs": 28354
+    },
+    {
+      "id": "distraction_merch_v1",
+      "promptFile": "distraction_merch_prompt.txt",
+      "out": "public/assets/maps/govball/generated/distractions/distraction_merch_v1.png",
+      "status": "ok",
+      "durationMs": 19519
+    },
+    {
+      "id": "artist_headliner_a_idle_v1",
+      "promptFile": "artist_headliner_a_idle_prompt.txt",
+      "out": "public/assets/maps/govball/generated/artists/artist_headliner_a_idle_v1.png",
+      "status": "ok",
+      "durationMs": 15730
+    }
+  ]
+}

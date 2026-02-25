@@ -1,0 +1,8 @@
+Create a top-down acoustic tent stage sprite for a mobile festival game.
+Requirements:
+- Transparent background.
+- Size target 96x80 after resize.
+- Cozy small tent stage with lime accent (#7BFF00).
+- Clear front entry edge and compact footprint.
+- Flat illustration, subtle shading, thick readable contours.
+- No text or crowd.

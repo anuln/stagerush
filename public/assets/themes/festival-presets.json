@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "defaultThemeId": "urban_pulse",
+  "festivalThemeById": {
+    "govball2026": "urban_pulse"
+  },
+  "themes": [
+    {
+      "id": "urban_pulse",
+      "name": "Urban Pulse",
+      "audioMixProfile": "festival_default",
+      "semantic": {
+        "success": "#56e8c9",
+        "warning": "#ffbf5b",
+        "danger": "#ff6f53",
+        "neutralMap": "#a8b395",
+        "energyAccent": "#ff6b35",
+        "textStrong": "#f3f9ff",
+        "textSoft": "#d2e3f8",
+        "panelBg": "rgba(8, 12, 23, 0.92)",
+        "panelStroke": "rgba(195, 220, 245, 0.25)"
+      },
+      "typography": {
+        "display": "\"Bebas Neue\", Impact, \"Franklin Gothic Medium\", sans-serif",
+        "body": "\"Manrope\", \"Avenir Next\", \"Segoe UI\", sans-serif"
+      },
+      "motion": {
+        "microMs": 140,
+        "transitionMs": 280,
+        "heroMs": 520
+      }
+    },
+    {
+      "id": "desert_mirage",
+      "name": "Desert Mirage",
+      "audioMixProfile": "festival_soft",
+      "semantic": {
+        "success": "#7de3c7",
+        "warning": "#ffcc7b",
+        "danger": "#ff8466",
+        "neutralMap": "#c8b08d",
+        "energyAccent": "#e36f4d",
+        "textStrong": "#fff7ef",
+        "textSoft": "#eddcc9",
+        "panelBg": "rgba(30, 20, 12, 0.9)",
+        "panelStroke": "rgba(246, 216, 178, 0.26)"
+      },
+      "typography": {
+        "display": "\"Bebas Neue\", Impact, \"Franklin Gothic Medium\", sans-serif",
+        "body": "\"Manrope\", \"Avenir Next\", \"Segoe UI\", sans-serif"
+      },
+      "motion": {
+        "microMs": 150,
+        "transitionMs": 300,
+        "heroMs": 560
+      }
+    }
+  ]
+}

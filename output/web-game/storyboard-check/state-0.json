@@ -1,0 +1,7 @@
+{
+  "screen": "PLAYING",
+  "levelState": "PLAYING",
+  "levelNumber": 1,
+  "overlayVisible": false,
+  "primaryActionLabel": "Open Gates"
+}

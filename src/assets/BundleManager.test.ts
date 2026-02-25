@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { FestivalMap } from "../config/FestivalConfig";
 import { BundleManager, type AssetLoader } from "./BundleManager";
 import {
@@ -17,6 +17,22 @@ class FakeLoader implements AssetLoader {
 
   async unload(assetPaths: string[]): Promise<void> {
     this.unloadedCalls.push([...assetPaths]);
+  }
+}
+
+class FlakyLoader extends FakeLoader {
+  private readonly failingAssets: Set<string>;
+
+  constructor(failingAssets: string[]) {
+    super();
+    this.failingAssets = new Set(failingAssets);
+  }
+
+  override async load(assetPaths: string[]): Promise<void> {
+    this.loadedCalls.push([...assetPaths]);
+    if (assetPaths.some((assetPath) => this.failingAssets.has(assetPath))) {
+      throw new Error(`Missing asset: ${assetPaths.join(",")}`);
+    }
   }
 }
 
@@ -113,7 +129,7 @@ describe("BundleManager", () => {
 
     expect(manager.isBundleLoaded(GOVBALL_BUNDLE_ID)).toBe(true);
     expect(loader.loadedCalls).toEqual([
-      ["/assets/maps/govball/config.json"],
+      ["/assets/maps/index.json"],
       ["/a.png", "/b.png"]
     ]);
 
@@ -161,5 +177,22 @@ describe("BundleManager", () => {
     );
     expect(manifest.assets).toContain("/assets/audio/govball/sfx_spawn.mp3");
     expect(new Set(manifest.assets).size).toBe(manifest.assets.length);
+  });
+
+  it("continues bundle activation when some assets fail to load", async () => {
+    const loader = new FlakyLoader(["/missing.png"]);
+    const manager = new BundleManager(
+      [{ id: "festival", assets: ["/ok.png", "/missing.png"] }],
+      { loader }
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(manager.loadBundle("festival")).resolves.toBe(true);
+    expect(manager.isBundleLoaded("festival")).toBe(true);
+    expect(manager.getStatus().warmedAssets).toEqual(["/ok.png"]);
+
+    await expect(manager.unloadBundle("festival")).resolves.toBe(true);
+    expect(loader.unloadedCalls).toEqual([["/ok.png"]]);
+    warnSpy.mockRestore();
   });
 });

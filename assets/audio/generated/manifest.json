@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "promptsRoot": "assets/audio/generated/prompts",
+  "outputsRoot": "public/assets/audio/govball/generated",
+  "entries": [
+    {
+      "id": "bg_chill_v1",
+      "type": "music",
+      "promptFile": "bg_chill.md",
+      "out": "music/audio_bg_chill_v1.mp3",
+      "durationMs": 70000
+    },
+    {
+      "id": "bg_energy_v1",
+      "type": "music",
+      "promptFile": "bg_energy.md",
+      "out": "music/audio_bg_energy_v1.mp3",
+      "durationMs": 70000
+    },
+    {
+      "id": "bg_peak_v1",
+      "type": "music",
+      "promptFile": "bg_peak.md",
+      "out": "music/audio_bg_peak_v1.mp3",
+      "durationMs": 70000
+    },
+    {
+      "id": "sfx_spawn_v1",
+      "type": "sfx",
+      "promptFile": "sfx_spawn.md",
+      "out": "sfx/sfx_spawn_v1.mp3",
+      "durationSec": 1.1,
+      "promptInfluence": 0.6
+    },
+    {
+      "id": "sfx_path_draw_v1",
+      "type": "sfx",
+      "promptFile": "sfx_path_draw.md",
+      "out": "sfx/sfx_path_draw_v1.mp3",
+      "durationSec": 1.3,
+      "promptInfluence": 0.55
+    },
+    {
+      "id": "sfx_deliver_v1",
+      "type": "sfx",
+      "promptFile": "sfx_deliver.md",
+      "out": "sfx/sfx_deliver_v1.mp3",
+      "durationSec": 1.4,
+      "promptInfluence": 0.6
+    },
+    {
+      "id": "sfx_deliver_combo_v1",
+      "type": "sfx",
+      "promptFile": "sfx_deliver_combo.md",
+      "out": "sfx/sfx_deliver_combo_v1.mp3",
+      "durationSec": 1.9,
+      "promptInfluence": 0.65
+    },
+    {
+      "id": "sfx_miss_v1",
+      "type": "sfx",
+      "promptFile": "sfx_miss.md",
+      "out": "sfx/sfx_miss_v1.mp3",
+      "durationSec": 1.6,
+      "promptInfluence": 0.62
+    },
+    {
+      "id": "sfx_chat_v1",
+      "type": "sfx",
+      "promptFile": "sfx_chat.md",
+      "out": "sfx/sfx_chat_v1.mp3",
+      "durationSec": 1.0,
+      "promptInfluence": 0.5
+    },
+    {
+      "id": "sfx_distraction_v1",
+      "type": "sfx",
+      "promptFile": "sfx_distraction.md",
+      "out": "sfx/sfx_distraction_v1.mp3",
+      "durationSec": 1.2,
+      "promptInfluence": 0.56
+    },
+    {
+      "id": "sfx_level_complete_v1",
+      "type": "sfx",
+      "promptFile": "sfx_level_complete.md",
+      "out": "sfx/sfx_level_complete_v1.mp3",
+      "durationSec": 2.5,
+      "promptInfluence": 0.63
+    },
+    {
+      "id": "sfx_level_failed_v1",
+      "type": "sfx",
+      "promptFile": "sfx_level_failed.md",
+      "out": "sfx/sfx_level_failed_v1.mp3",
+      "durationSec": 2.0,
+      "promptInfluence": 0.64
+    },
+    {
+      "id": "sfx_timer_warning_v1",
+      "type": "sfx",
+      "promptFile": "sfx_timer_warning.md",
+      "out": "sfx/sfx_timer_warning_v1.mp3",
+      "durationSec": 1.0,
+      "promptInfluence": 0.58
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Create a paparazzi distraction sprite for a top-down festival game.
+Requirements:
+- Transparent background.
+- Size target 80x80 after resize.
+- One paparazzi figure with camera and flash rig, exaggerated silhouette.
+- Stylized and readable from high-level camera view.
+- Flat illustrated rendering, dark contour outline, no text.

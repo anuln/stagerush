@@ -65,22 +65,27 @@ describe("PathFollower", () => {
     expect(artist.position.y).toBeGreaterThan(0);
   });
 
-  it("ignores invalid path assignment", () => {
+  it("follows a non-stage guide path and resumes drifting when complete", () => {
     const artist = makeArtist();
     const follower = new PathFollower(40);
 
     follower.assignPath(artist, {
       ...makePath("p3", [
         { x: 0, y: 0 },
-        { x: 10, y: 0 }
+        { x: 0, y: 80 }
       ]),
       isValid: false,
       targetStageId: null
     });
 
     follower.update([artist], 1);
-    expect(artist.position.x).toBeCloseTo(0, 4);
+    expect(artist.position.y).toBeGreaterThan(0);
+    expect(artist.state).toBe("FOLLOWING");
+
+    follower.update([artist], 4);
+    expect(artist.position.y).toBeCloseTo(80, 4);
     expect(artist.state).toBe("DRIFTING");
+    expect(artist.velocity.y).toBeGreaterThan(0);
   });
 
   it("queues reroute while blocked and applies on unblock", () => {

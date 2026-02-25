@@ -1,0 +1,8 @@
+Create a top-down side stage sprite for a mobile festival game.
+Requirements:
+- Transparent background.
+- Size target 120x96 after resize.
+- Mid-sized canopy stage with cyan identity (#00D4FF), less massive than the main stage.
+- Visible performer area and front approach path.
+- Flat graphic style, dark outline, strong silhouette for readability.
+- No text, no people crowd.

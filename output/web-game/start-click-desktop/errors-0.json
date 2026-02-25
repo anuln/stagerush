@@ -1,0 +1,6 @@
+[
+  {
+    "type": "console.error",
+    "text": "Failed to run screen action Error: [Loader.load] Failed to load http://127.0.0.1:4273/assets/maps/govball/govball_bg.png.\nInvalidStateError: The source image could not be decoded.\n    at _Loader2._loadAssetWithRetry (http://127.0.0.1:4273/node_modules/.vite/deps/pixi__js.js?v=e89cdf5a:7418:23)\n    at async http://127.0.0.1:4273/node_modules/.vite/deps/pixi__js.js?v=e89cdf5a:7343:7\n    at async Promise.all (index 0)\n    at async _Loader2.load (http://127.0.0.1:4273/node_modules/.vite/deps/pixi__js.js?v=e89cdf5a:7347:5)\n    at async AssetsClass._mapLoadToResolve (http://127.0.0.1:4273/node_modules/.vite/deps/pixi__js.js?v=e89cdf5a:8668:26)\n    at async AssetsClass.load (http://127.0.0.1:4273/node_modules/.vite/deps/pixi__js.js?v=e89cdf5a:8353:17)\n    at async Object.load (http://127.0.0.1:4273/src/assets/BundleManager.ts:7:5)\n    at async BundleManager.loadBundle (http://127.0.0.1:4273/src/assets/BundleManager.ts:66:7)\n    at async runScreenAction (http://127.0.0.1:4273/src/main.ts:99:9)"
+  }
+]

@@ -23,13 +23,17 @@ export class DistractionSystem {
   private distractions: ResolvedDistraction[];
   private activeDistractionIds: Set<string>;
   private readonly sessions = new Map<string, DistractionDelaySession>();
+  private readonly cooldownMs: number;
+  private readonly artistCooldownUntilMs = new Map<string, number>();
 
   constructor(
     distractions: ResolvedDistraction[],
-    activeDistractionIds: string[] = []
+    activeDistractionIds: string[] = [],
+    cooldownMs = 0
   ) {
     this.distractions = distractions;
     this.activeDistractionIds = new Set(activeDistractionIds);
+    this.cooldownMs = Math.max(0, cooldownMs);
   }
 
   setDistractions(distractions: ResolvedDistraction[]): void {
@@ -63,6 +67,7 @@ export class DistractionSystem {
       }
 
       this.sessions.delete(artistId);
+      this.artistCooldownUntilMs.set(artistId, nowMs + this.cooldownMs);
       justResolvedArtists.add(artistId);
       resolved.push({
         artistId,
@@ -80,6 +85,7 @@ export class DistractionSystem {
         !artist.isActive() ||
         this.sessions.has(artist.id) ||
         justResolvedArtists.has(artist.id) ||
+        this.isInCooldown(artist.id, nowMs) ||
         !isDistractionEligibleState(artist.state)
       ) {
         continue;
@@ -107,6 +113,18 @@ export class DistractionSystem {
     }
 
     return { started, resolved };
+  }
+
+  private isInCooldown(artistId: string, nowMs: number): boolean {
+    const cooldownUntil = this.artistCooldownUntilMs.get(artistId);
+    if (cooldownUntil === undefined) {
+      return false;
+    }
+    if (cooldownUntil > nowMs) {
+      return true;
+    }
+    this.artistCooldownUntilMs.delete(artistId);
+    return false;
   }
 }
 

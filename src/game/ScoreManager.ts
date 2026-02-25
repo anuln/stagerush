@@ -1,4 +1,5 @@
-import { SCORE_MATRIX } from "../config/ScoreConfig";
+import { MISS_PENALTIES, SCORE_MATRIX } from "../config/ScoreConfig";
+import type { ArtistMissReason } from "../entities/ArtistState";
 import type {
   StageDeliveryCompletionEvent
 } from "../entities/StageState";
@@ -13,9 +14,16 @@ export interface ScoreEvent extends StageDeliveryCompletionEvent {
   totalScore: number;
 }
 
+export interface PenaltyEvent {
+  reason: ArtistMissReason;
+  appliedPoints: number;
+  totalScore: number;
+}
+
 export class ScoreManager {
   private score = 0;
   private lastEvent: ScoreEvent | null = null;
+  private lastPenaltyEvent: PenaltyEvent | null = null;
 
   get totalScore(): number {
     return this.score;
@@ -23,6 +31,10 @@ export class ScoreManager {
 
   get latestEvent(): ScoreEvent | null {
     return this.lastEvent;
+  }
+
+  get latestPenaltyEvent(): PenaltyEvent | null {
+    return this.lastPenaltyEvent;
   }
 
   registerDelivery(
@@ -46,5 +58,18 @@ export class ScoreManager {
       totalScore: this.score
     };
     return this.lastEvent;
+  }
+
+  applyMissPenalty(reason: ArtistMissReason): PenaltyEvent {
+    const penalty = MISS_PENALTIES[reason];
+    const appliedPoints = Math.max(0, Math.min(this.score, penalty));
+    this.score = Math.max(0, this.score - penalty);
+    const event: PenaltyEvent = {
+      reason,
+      appliedPoints,
+      totalScore: this.score
+    };
+    this.lastPenaltyEvent = event;
+    return event;
   }
 }

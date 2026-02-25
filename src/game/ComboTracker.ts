@@ -76,4 +76,8 @@ export class ComboTracker {
       return entry.multiplier > best.multiplier ? entry : best;
     });
   }
+
+  breakAllChains(): void {
+    this.stageStates.clear();
+  }
 }

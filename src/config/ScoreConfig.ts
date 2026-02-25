@@ -20,6 +20,11 @@ export const SCORE_MATRIX: Record<ArtistTier, Record<StageSize, number>> = {
 
 export const COMBO_WINDOW_MS = 5000;
 export const COMBO_MULTIPLIERS = [1, 1.5, 2, 3] as const;
+export const MISS_PENALTIES = {
+  timeout: 60,
+  bounds: 90,
+  manual: 0
+} as const;
 
 export function getComboMultiplier(chainLength: number): number {
   if (chainLength <= 1) {

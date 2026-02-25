@@ -129,6 +129,15 @@ describe("MapLoader", () => {
     );
   });
 
+  it("preserves data/blob asset URLs", () => {
+    expect(resolveAssetPath("data:image/png;base64,AAAA")).toBe(
+      "data:image/png;base64,AAAA"
+    );
+    expect(resolveAssetPath("blob:https://example.com/abc")).toBe(
+      "blob:https://example.com/abc"
+    );
+  });
+
   it("validates full Gov Ball config structure from disk", () => {
     const file = resolve(process.cwd(), "public/assets/maps/govball/config.json");
     const parsed = JSON.parse(readFileSync(file, "utf-8")) as unknown;

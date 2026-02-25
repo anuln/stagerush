@@ -75,4 +75,92 @@ describe("AudioManager", () => {
 
     expect(player.volume).toBe(0);
   });
+
+  it("applies independent music and sfx mix volumes", async () => {
+    const players: FakeAudioPlayer[] = [];
+    const manager = new AudioManager(
+      {
+        bg_chill: "audio/chill.mp3",
+        chat: "audio/chat.mp3"
+      },
+      {
+        createPlayer: () => {
+          const player = makeFakePlayer();
+          players.push(player);
+          return player;
+        }
+      }
+    );
+    manager.setMix({
+      masterVolume: 0.8,
+      musicVolume: 0.5,
+      sfxVolume: 0.25,
+      musicFadeMs: 0
+    });
+
+    await manager.playMusic("bg_chill");
+    await manager.playSfx("chat");
+
+    expect(players[0].volume).toBeCloseTo(0.4, 5);
+    expect(players[1].volume).toBeCloseTo(0.2, 5);
+  });
+
+  it("fades out previous music player when switching cues", async () => {
+    vi.useFakeTimers();
+    const players: FakeAudioPlayer[] = [];
+    const manager = new AudioManager(
+      { chill: "audio/chill.mp3", energy: "audio/energy.mp3" },
+      {
+        createPlayer: () => {
+          const player = makeFakePlayer();
+          players.push(player);
+          return player;
+        }
+      }
+    );
+    manager.setMix({
+      masterVolume: 1,
+      musicVolume: 1,
+      sfxVolume: 1,
+      musicFadeMs: 150
+    });
+
+    await manager.playMusic("chill");
+    await manager.playMusic("energy");
+
+    expect(players[0].pauseSpy).toHaveBeenCalledTimes(0);
+    await vi.runAllTimersAsync();
+    expect(players[0].pauseSpy).toHaveBeenCalledTimes(1);
+    expect(players[0].currentTime).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it("throttles repeated hero cues during cooldown window", async () => {
+    let nowMs = 1000;
+    const player = makeFakePlayer();
+    const createPlayer = vi.fn(() => player);
+    const manager = new AudioManager(
+      { level_complete: "audio/level_complete.mp3" },
+      { createPlayer, nowMs: () => nowMs }
+    );
+
+    await manager.playSfx("level_complete", { category: "hero", cooldownMs: 500 });
+    await manager.playSfx("level_complete", { category: "hero", cooldownMs: 500 });
+    nowMs += 550;
+    await manager.playSfx("level_complete", { category: "hero", cooldownMs: 500 });
+
+    expect(createPlayer).toHaveBeenCalledTimes(2);
+  });
+
+  it("applies mix profile presets to currently playing music", async () => {
+    const player = makeFakePlayer();
+    const manager = new AudioManager(
+      { bg_chill: "audio/chill.mp3" },
+      { createPlayer: () => player }
+    );
+
+    manager.setMixProfile("festival_soft");
+    await manager.playMusic("bg_chill");
+    expect(player.volume).toBeCloseTo(0.72, 5);
+  });
 });

@@ -24,6 +24,7 @@ export interface ArtistBounds {
 export interface ArtistConfig {
   id: string;
   tier: ArtistTier;
+  spriteProfileId?: string;
   position: Vector2;
   velocity: Vector2;
   timerSeconds: number;

@@ -77,11 +77,11 @@ export class BundleManager {
       return false;
     }
 
-    await this.loader.load(pendingAssets);
-    for (const assetPath of pendingAssets) {
+    const loadedAssets = await this.loadAssetsWithFallback(bundleId, pendingAssets);
+    for (const assetPath of loadedAssets) {
       this.warmedAssets.add(assetPath);
     }
-    return true;
+    return loadedAssets.length > 0;
   }
 
   async loadBundle(bundleId: string): Promise<boolean> {
@@ -97,15 +97,21 @@ export class BundleManager {
     );
 
     if (pendingAssets.length > 0) {
-      await this.loader.load(pendingAssets);
-      for (const assetPath of pendingAssets) {
+      const loadedAssets = await this.loadAssetsWithFallback(bundleId, pendingAssets);
+      for (const assetPath of loadedAssets) {
         this.warmedAssets.add(assetPath);
       }
     }
 
     for (const assetPath of manifest.assets) {
       const count = this.assetRefCounts.get(assetPath) ?? 0;
-      this.assetRefCounts.set(assetPath, count + 1);
+      if (count > 0) {
+        this.assetRefCounts.set(assetPath, count + 1);
+        continue;
+      }
+      if (this.warmedAssets.has(assetPath)) {
+        this.assetRefCounts.set(assetPath, 1);
+      }
     }
     this.activeBundles.add(bundleId);
     return true;
@@ -124,7 +130,11 @@ export class BundleManager {
     const unloadableAssets: string[] = [];
 
     for (const assetPath of manifest.assets) {
-      const nextCount = (this.assetRefCounts.get(assetPath) ?? 0) - 1;
+      const currentCount = this.assetRefCounts.get(assetPath) ?? 0;
+      if (currentCount <= 0) {
+        continue;
+      }
+      const nextCount = currentCount - 1;
       if (nextCount > 0) {
         this.assetRefCounts.set(assetPath, nextCount);
         continue;
@@ -146,5 +156,50 @@ export class BundleManager {
       throw new Error(`Unknown asset bundle: ${bundleId}`);
     }
     return manifest;
+  }
+
+  private async loadAssetsWithFallback(
+    bundleId: string,
+    assetPaths: string[]
+  ): Promise<string[]> {
+    if (assetPaths.length === 0) {
+      return [];
+    }
+
+    try {
+      await this.loader.load(assetPaths);
+      return [...assetPaths];
+    } catch (error) {
+      console.warn(
+        `Asset bundle "${bundleId}" failed batch load; retrying per asset.`,
+        error
+      );
+    }
+
+    const settled = await Promise.all(
+      assetPaths.map(async (assetPath) => {
+        try {
+          await this.loader.load([assetPath]);
+          return { assetPath, loaded: true as const };
+        } catch {
+          return { assetPath, loaded: false as const };
+        }
+      })
+    );
+
+    const loadedAssets = settled
+      .filter((result) => result.loaded)
+      .map((result) => result.assetPath);
+    const missingAssets = settled
+      .filter((result) => !result.loaded)
+      .map((result) => result.assetPath);
+    if (missingAssets.length > 0) {
+      console.warn(
+        `Asset bundle "${bundleId}" skipped ${missingAssets.length} missing assets.`,
+        missingAssets
+      );
+    }
+
+    return loadedAssets;
   }
 }

@@ -1,0 +1,8 @@
+Create a portrait top-down festival ground map background for a mobile game.
+Requirements:
+- Final dimensions 1080x1920 after resize.
+- Scene: urban NYC park vibe with grass patches, concrete paths, decorative tents, banners, sparse trees.
+- Keep center lanes readable for gameplay path drawing.
+- Palette should stay muted green/gray so bright gameplay sprites stand out.
+- No text, no UI, no giant focal object.
+- Clean illustrated style with subtle texture.

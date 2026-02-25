@@ -1,0 +1,350 @@
+{
+  "id": "govball2026",
+  "name": "Gov Ball 2026",
+  "description": "Urban festival routing map for Stage Call",
+  "totalLevels": 10,
+  "background": "assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
+  "stages": [
+    {
+      "id": "main-stage",
+      "size": "large",
+      "position": { "x": 0.2, "y": 0.25 },
+      "snapRadius": 0.06,
+      "sprite": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "color": "#FF6B35"
+    },
+    {
+      "id": "side-stage",
+      "size": "medium",
+      "position": { "x": 0.75, "y": 0.5 },
+      "snapRadius": 0.055,
+      "sprite": "assets/maps/govball/generated/stages/stage_side_v1.png",
+      "color": "#00D4FF"
+    },
+    {
+      "id": "acoustic-stage",
+      "size": "small",
+      "position": { "x": 0.35, "y": 0.78 },
+      "snapRadius": 0.05,
+      "sprite": "assets/maps/govball/generated/stages/stage_acoustic_v1.png",
+      "color": "#7BFF00"
+    }
+  ],
+  "spawnPoints": [
+    {
+      "id": "north",
+      "position": { "x": 0.5, "y": 0.0 },
+      "driftAngle": 180
+    },
+    {
+      "id": "east",
+      "position": { "x": 1.0, "y": 0.4 },
+      "driftAngle": 250
+    },
+    {
+      "id": "south",
+      "position": { "x": 0.6, "y": 1.0 },
+      "driftAngle": 350
+    },
+    {
+      "id": "west",
+      "position": { "x": 0.0, "y": 0.65 },
+      "driftAngle": 80
+    }
+  ],
+  "distractions": [
+    {
+      "id": "merch1",
+      "type": "merch_stand",
+      "position": { "x": 0.5, "y": 0.42 },
+      "radius": 0.07,
+      "delay": 2,
+      "appearsAtLevel": 4,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_merch_v1.png"
+    },
+    {
+      "id": "burger1",
+      "type": "burger_shack",
+      "position": { "x": 0.3, "y": 0.55 },
+      "radius": 0.06,
+      "delay": 2,
+      "appearsAtLevel": 4,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_burger_v1.png"
+    },
+    {
+      "id": "paparazzi1",
+      "type": "paparazzi",
+      "position": { "x": 0.65, "y": 0.35 },
+      "radius": 0.06,
+      "delay": 3,
+      "appearsAtLevel": 6,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png"
+    },
+    {
+      "id": "fans1",
+      "type": "fan_crowd",
+      "position": { "x": 0.45, "y": 0.68 },
+      "radius": 0.08,
+      "delay": 3,
+      "appearsAtLevel": 7,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_fans_v1.png"
+    },
+    {
+      "id": "burger2",
+      "type": "burger_shack",
+      "position": { "x": 0.72, "y": 0.72 },
+      "radius": 0.06,
+      "delay": 2,
+      "appearsAtLevel": 8,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_burger_v1.png"
+    },
+    {
+      "id": "merch2",
+      "type": "merch_stand",
+      "position": { "x": 0.18, "y": 0.48 },
+      "radius": 0.07,
+      "delay": 2,
+      "appearsAtLevel": 9,
+      "sprite": "assets/maps/govball/generated/distractions/distraction_merch_v1.png"
+    }
+  ],
+  "levels": [
+    {
+      "levelNumber": 1,
+      "totalArtists": 12,
+      "maxSimultaneous": 2,
+      "timerRange": [18, 24],
+      "tierWeights": { "headliner": 0.2, "midtier": 0.4, "newcomer": 0.4 },
+      "activeDistractions": [],
+      "spawnInterval": [1400, 2200]
+    },
+    {
+      "levelNumber": 2,
+      "totalArtists": 14,
+      "maxSimultaneous": 2,
+      "timerRange": [17, 23],
+      "tierWeights": { "headliner": 0.22, "midtier": 0.4, "newcomer": 0.38 },
+      "activeDistractions": [],
+      "spawnInterval": [1300, 2100]
+    },
+    {
+      "levelNumber": 3,
+      "totalArtists": 16,
+      "maxSimultaneous": 3,
+      "timerRange": [15, 21],
+      "tierWeights": { "headliner": 0.24, "midtier": 0.4, "newcomer": 0.36 },
+      "activeDistractions": [],
+      "spawnInterval": [1200, 2000]
+    },
+    {
+      "levelNumber": 4,
+      "totalArtists": 18,
+      "maxSimultaneous": 3,
+      "timerRange": [14, 20],
+      "tierWeights": { "headliner": 0.25, "midtier": 0.4, "newcomer": 0.35 },
+      "activeDistractions": ["merch1", "burger1"],
+      "spawnInterval": [1100, 1900]
+    },
+    {
+      "levelNumber": 5,
+      "totalArtists": 20,
+      "maxSimultaneous": 3,
+      "timerRange": [13, 19],
+      "tierWeights": { "headliner": 0.27, "midtier": 0.4, "newcomer": 0.33 },
+      "activeDistractions": ["merch1", "burger1"],
+      "spawnInterval": [1000, 1800]
+    },
+    {
+      "levelNumber": 6,
+      "totalArtists": 22,
+      "maxSimultaneous": 4,
+      "timerRange": [12, 18],
+      "tierWeights": { "headliner": 0.29, "midtier": 0.4, "newcomer": 0.31 },
+      "activeDistractions": ["merch1", "burger1", "paparazzi1"],
+      "spawnInterval": [900, 1700]
+    },
+    {
+      "levelNumber": 7,
+      "totalArtists": 24,
+      "maxSimultaneous": 4,
+      "timerRange": [11, 17],
+      "tierWeights": { "headliner": 0.31, "midtier": 0.39, "newcomer": 0.3 },
+      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1"],
+      "spawnInterval": [850, 1600]
+    },
+    {
+      "levelNumber": 8,
+      "totalArtists": 26,
+      "maxSimultaneous": 4,
+      "timerRange": [10, 16],
+      "tierWeights": { "headliner": 0.33, "midtier": 0.38, "newcomer": 0.29 },
+      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2"],
+      "spawnInterval": [800, 1500]
+    },
+    {
+      "levelNumber": 9,
+      "totalArtists": 28,
+      "maxSimultaneous": 5,
+      "timerRange": [9, 14],
+      "tierWeights": { "headliner": 0.35, "midtier": 0.37, "newcomer": 0.28 },
+      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2", "merch2"],
+      "spawnInterval": [750, 1400]
+    },
+    {
+      "levelNumber": 10,
+      "totalArtists": 30,
+      "maxSimultaneous": 5,
+      "timerRange": [8, 13],
+      "tierWeights": { "headliner": 0.37, "midtier": 0.36, "newcomer": 0.27 },
+      "activeDistractions": ["merch1", "burger1", "paparazzi1", "fans1", "burger2", "merch2"],
+      "spawnInterval": [700, 1300]
+    }
+  ],
+  "assets": {
+    "artists": [
+      {
+        "id": "headliner-a",
+        "name": "Vanta",
+        "tier": "headliner",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_headliner_a_walk1.png",
+            "assets/maps/govball/artists/artist_headliner_a_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_headliner_a_idle.png",
+          "performing": "assets/maps/govball/artists/artist_headliner_a_perform.png"
+        }
+      },
+      {
+        "id": "headliner-b",
+        "name": "Neon Ritual",
+        "tier": "headliner",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_headliner_b_walk1.png",
+            "assets/maps/govball/artists/artist_headliner_b_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_headliner_b_idle.png",
+          "performing": "assets/maps/govball/artists/artist_headliner_b_perform.png"
+        }
+      },
+      {
+        "id": "headliner-c",
+        "name": "Skyline Echo",
+        "tier": "headliner",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_headliner_c_walk1.png",
+            "assets/maps/govball/artists/artist_headliner_c_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_headliner_c_idle.png",
+          "performing": "assets/maps/govball/artists/artist_headliner_c_perform.png"
+        }
+      },
+      {
+        "id": "mid-a",
+        "name": "Eastbound Lights",
+        "tier": "midtier",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_mid_a_walk1.png",
+            "assets/maps/govball/artists/artist_mid_a_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_mid_a_idle.png",
+          "performing": "assets/maps/govball/artists/artist_mid_a_perform.png"
+        }
+      },
+      {
+        "id": "mid-b",
+        "name": "Concrete Pulse",
+        "tier": "midtier",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_mid_b_walk1.png",
+            "assets/maps/govball/artists/artist_mid_b_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_mid_b_idle.png",
+          "performing": "assets/maps/govball/artists/artist_mid_b_perform.png"
+        }
+      },
+      {
+        "id": "mid-c",
+        "name": "Riverside Wire",
+        "tier": "midtier",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_mid_c_walk1.png",
+            "assets/maps/govball/artists/artist_mid_c_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_mid_c_idle.png",
+          "performing": "assets/maps/govball/artists/artist_mid_c_perform.png"
+        }
+      },
+      {
+        "id": "new-a",
+        "name": "Pocket Amp",
+        "tier": "newcomer",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_new_a_walk1.png",
+            "assets/maps/govball/artists/artist_new_a_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_new_a_idle.png",
+          "performing": "assets/maps/govball/artists/artist_new_a_perform.png"
+        }
+      },
+      {
+        "id": "new-b",
+        "name": "Parkline",
+        "tier": "newcomer",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_new_b_walk1.png",
+            "assets/maps/govball/artists/artist_new_b_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_new_b_idle.png",
+          "performing": "assets/maps/govball/artists/artist_new_b_perform.png"
+        }
+      },
+      {
+        "id": "new-c",
+        "name": "Greenroom Static",
+        "tier": "newcomer",
+        "sprites": {
+          "walk": [
+            "assets/maps/govball/artists/artist_new_c_walk1.png",
+            "assets/maps/govball/artists/artist_new_c_walk2.png"
+          ],
+          "idle": "assets/maps/govball/artists/artist_new_c_idle.png",
+          "performing": "assets/maps/govball/artists/artist_new_c_perform.png"
+        }
+      }
+    ],
+    "stageSprites": {
+      "main-stage": "assets/maps/govball/generated/stages/stage_main_v1.png",
+      "side-stage": "assets/maps/govball/generated/stages/stage_side_v1.png",
+      "acoustic-stage": "assets/maps/govball/generated/stages/stage_acoustic_v1.png"
+    },
+    "distractionSprites": {
+      "merch_stand": "assets/maps/govball/generated/distractions/distraction_merch_v1.png",
+      "burger_shack": "assets/maps/govball/generated/distractions/distraction_burger_v1.png",
+      "paparazzi": "assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png",
+      "fan_crowd": "assets/maps/govball/generated/distractions/distraction_fans_v1.png"
+    },
+    "audio": {
+      "bg_chill": "assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
+      "bg_energy": "assets/audio/govball/generated/music/audio_bg_energy_v1.mp3",
+      "bg_peak": "assets/audio/govball/generated/music/audio_bg_peak_v1.mp3",
+      "spawn": "assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "path_draw": "assets/audio/govball/generated/sfx/sfx_path_draw_v1.mp3",
+      "deliver": "assets/audio/govball/generated/sfx/sfx_deliver_v1.mp3",
+      "deliver_combo": "assets/audio/govball/generated/sfx/sfx_deliver_combo_v1.mp3",
+      "miss": "assets/audio/govball/generated/sfx/sfx_miss_v1.mp3",
+      "chat": "assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
+      "distraction": "assets/audio/govball/generated/sfx/sfx_distraction_v1.mp3",
+      "level_complete": "assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
+      "level_failed": "assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
+      "timer_warning": "assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3"
+    }
+  }
+}

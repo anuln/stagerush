@@ -44,6 +44,19 @@ function normalizeTierWeights(weights: RuntimeLevelConfig["tierWeights"]): Runti
   };
 }
 
+function estimateTimedSpawnBudget(
+  durationSeconds: number,
+  spawnIntervalMs: [number, number],
+  maxSimultaneous: number
+): number {
+  const averageIntervalMs = Math.max(
+    200,
+    (spawnIntervalMs[0] + spawnIntervalMs[1]) / 2
+  );
+  const waves = Math.ceil((durationSeconds * 1000) / averageIntervalMs);
+  return Math.max(1, waves * Math.max(1, maxSimultaneous));
+}
+
 function pickDistractionSubset(
   map: FestivalMap,
   levelNumber: number,
@@ -101,6 +114,7 @@ function applyDifficultyCurve(
   return {
     ...base,
     totalArtists: base.totalArtists + step * 2,
+    sessionTargetSets: base.sessionTargetSets + Math.floor(step * 0.8),
     maxSimultaneous: Math.min(5, base.maxSimultaneous + Math.floor((step + 1) / 2)),
     timerRangeSeconds: [timerMin, timerMax],
     spawnIntervalMs: [spawnMin, spawnMax],
@@ -156,13 +170,25 @@ export function resolveLevelRuntimeConfig(
     0,
     24
   );
+  const tunedDriftSpeedPxPerSecond = clamp(
+    base.driftSpeedPxPerSecond - 10 + (boundedLevel - 1) * 1.5,
+    60,
+    95
+  );
+  const timedSpawnBudget = estimateTimedSpawnBudget(
+    base.levelDurationSeconds,
+    spawnRange,
+    base.maxSimultaneous
+  );
 
   return {
     ...base,
     levelNumber: boundedLevel,
+    totalArtists: Math.max(base.totalArtists, timedSpawnBudget),
     timerRangeSeconds: timerRange,
     spawnIntervalMs: spawnRange,
     tierWeights,
+    driftSpeedPxPerSecond: tunedDriftSpeedPxPerSecond,
     driftAngleVarianceDegrees,
     activeDistractionIds: pickDistractionSubset(
       map,

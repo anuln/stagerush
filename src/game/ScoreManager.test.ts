@@ -93,4 +93,27 @@ describe("ScoreManager", () => {
     expect(comboEvent.awardedPoints).toBe(450);
     expect(comboEvent.totalScore).toBe(450);
   });
+
+  it("applies timeout and bounds miss penalties without dropping below zero", () => {
+    const manager = new ScoreManager();
+    manager.registerDelivery({
+      artistId: "a1",
+      artistTier: "headliner",
+      stageId: "main-stage",
+      stageSize: "large",
+      stageColor: "#FF6B35",
+      stagePosition: { x: 300, y: 120 },
+      completedAtMs: 100
+    });
+
+    const timeoutPenalty = manager.applyMissPenalty("timeout");
+    const boundsPenalty = manager.applyMissPenalty("bounds");
+    const overPenalty = manager.applyMissPenalty("bounds");
+
+    expect(timeoutPenalty.appliedPoints).toBe(60);
+    expect(boundsPenalty.appliedPoints).toBe(90);
+    expect(overPenalty.appliedPoints).toBe(90);
+    expect(manager.totalScore).toBe(60);
+    expect(manager.latestPenaltyEvent).toEqual(overPenalty);
+  });
 });

@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-02-24T18:46:22.821Z",
+  "manifest": "/Users/anubhav.mehrotra/Documents/codex/Stage Call/assets/audio/generated/manifest.json",
+  "outputFormat": "mp3_44100_128",
+  "entries": [
+    {
+      "id": "bg_chill_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
+      "bytes": 1121011,
+      "durationMs": 18255
+    },
+    {
+      "id": "sfx_spawn_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "bytes": 18434,
+      "durationMs": 4162
+    },
+    {
+      "id": "sfx_chat_v1",
+      "status": "ok",
+      "out": "public/assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
+      "bytes": 17180,
+      "durationMs": 3168
+    }
+  ]
+}

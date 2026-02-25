@@ -11,9 +11,19 @@ class FakeRuntime implements RuntimeController {
   constructor(levelNumber: number) {
     this.status = {
       levelNumber,
+      dayNumber: Math.ceil(levelNumber / 3),
+      sessionName: "Morning",
+      sessionIndexInDay: 1,
+      totalFestivalDays: 1,
+      sessionTargetSets: 8,
+      paceDeltaSets: 0,
       levelScore: 0,
       outcome: "ACTIVE",
+      performanceTier: null,
+      deliveredArtists: 0,
+      missedArtists: 0,
       remainingLives: 3,
+      remainingTimeSeconds: 60,
       totalArtists: 10,
       spawnedArtists: 0,
       resolvedArtists: 0

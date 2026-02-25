@@ -1,0 +1,8 @@
+Create a distraction sprite for a merch stand in a top-down festival game.
+Requirements:
+- Transparent background.
+- Size target 96x96 after resize.
+- Small booth/tent with hanging shirts and folded merch table.
+- Color accents: orange, cyan, navy; keep high contrast against grass.
+- Flat illustrated style, crisp outline, no tiny unreadable details.
+- No text labels.

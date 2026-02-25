@@ -67,4 +67,22 @@ describe("DistractionSystem", () => {
     expect(resolved.started).toHaveLength(0);
     expect(artist.state).toBe("DRIFTING");
   });
+
+  it("prevents retriggering until distraction cooldown window elapses", () => {
+    const artist = makeArtist("a1", 110, 100, "DRIFTING");
+    const system = new DistractionSystem(
+      [makeDistraction("d1", 100)],
+      ["d1"],
+      1500
+    );
+
+    system.update([artist], 0);
+    const resolved = system.update([artist], 2001);
+    const blockedByCooldown = system.update([artist], 2600);
+    const retriggered = system.update([artist], 3600);
+
+    expect(resolved.resolved).toHaveLength(1);
+    expect(blockedByCooldown.started).toHaveLength(0);
+    expect(retriggered.started).toHaveLength(1);
+  });
 });

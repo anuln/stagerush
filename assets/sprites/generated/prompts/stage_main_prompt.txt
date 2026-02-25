@@ -1,0 +1,8 @@
+Create a top-down festival main stage sprite for a mobile game.
+Requirements:
+- Transparent background.
+- Size target 160x120 after resize.
+- Bold orange identity (#FF6B35), large truss arch, visible front entrance lip.
+- Stylized flat illustration with subtle shading and dark clean outlines.
+- Readable silhouette at small scale.
+- No text, no logos, no UI.

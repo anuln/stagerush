@@ -41,6 +41,8 @@ export interface ArtistSpriteConfig {
   id: string;
   name: string;
   tier: ArtistTier;
+  debutLevel?: number;
+  rotationWeight?: number;
   sprites: {
     walk: AssetPath[];
     idle: AssetPath;
@@ -51,6 +53,7 @@ export interface ArtistSpriteConfig {
 export interface LevelConfig {
   levelNumber: number;
   totalArtists: number;
+  targetSets?: number;
   maxSimultaneous: number;
   timerRange: [number, number];
   tierWeights: {
@@ -60,6 +63,12 @@ export interface LevelConfig {
   };
   activeDistractions: string[];
   spawnInterval: [number, number];
+}
+
+export interface FestivalScheduleConfig {
+  days?: number;
+  sessionsPerDay?: number;
+  sessionNames?: string[];
 }
 
 export interface FestivalAssets {
@@ -73,6 +82,8 @@ export interface FestivalMap {
   id: string;
   name: string;
   description: string;
+  themeId?: string;
+  schedule?: FestivalScheduleConfig;
   totalLevels: number;
   background: AssetPath;
   stages: StageConfig[];

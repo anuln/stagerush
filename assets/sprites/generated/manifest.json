@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "promptsRoot": "assets/sprites/generated/prompts",
+  "outputsRoot": "public/assets/maps/govball/generated",
+  "styleSuffix": "Top-down festival game asset, clean silhouette, readable at small size, transparent background unless explicitly asking for map background. Keep perspective consistent across all assets.",
+  "entries": [
+    {
+      "id": "stage_main_v1",
+      "category": "stage",
+      "promptFile": "stage_main_prompt.txt",
+      "out": "stages/stage_main_v1.png",
+      "width": 160,
+      "height": 120
+    },
+    {
+      "id": "distraction_merch_v1",
+      "category": "distraction",
+      "promptFile": "distraction_merch_prompt.txt",
+      "out": "distractions/distraction_merch_v1.png",
+      "width": 96,
+      "height": 96
+    },
+    {
+      "id": "artist_headliner_a_idle_v1",
+      "category": "artist",
+      "promptFile": "artist_headliner_a_idle_prompt.txt",
+      "out": "artists/artist_headliner_a_idle_v1.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "id": "stage_side_v1",
+      "category": "stage",
+      "promptFile": "stage_side_prompt.txt",
+      "out": "stages/stage_side_v1.png",
+      "width": 120,
+      "height": 96
+    },
+    {
+      "id": "stage_acoustic_v1",
+      "category": "stage",
+      "promptFile": "stage_acoustic_prompt.txt",
+      "out": "stages/stage_acoustic_v1.png",
+      "width": 96,
+      "height": 80
+    },
+    {
+      "id": "distraction_burger_v1",
+      "category": "distraction",
+      "promptFile": "distraction_burger_prompt.txt",
+      "out": "distractions/distraction_burger_v1.png",
+      "width": 96,
+      "height": 96
+    },
+    {
+      "id": "distraction_paparazzi_v1",
+      "category": "distraction",
+      "promptFile": "distraction_paparazzi_prompt.txt",
+      "out": "distractions/distraction_paparazzi_v1.png",
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "distraction_fans_v1",
+      "category": "distraction",
+      "promptFile": "distraction_fans_prompt.txt",
+      "out": "distractions/distraction_fans_v1.png",
+      "width": 112,
+      "height": 80
+    },
+    {
+      "id": "govball_background_v1",
+      "category": "background",
+      "promptFile": "govball_background_prompt.txt",
+      "out": "backgrounds/govball_bg_v1.png",
+      "width": 1080,
+      "height": 1920
+    }
+  ]
+}

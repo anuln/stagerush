@@ -13,10 +13,14 @@ export class LivesState {
     return this.lives === 0;
   }
 
-  recordMiss(): void {
-    if (this.lives === 0) {
+  recordIncident(count = 1): void {
+    if (this.lives === 0 || count <= 0) {
       return;
     }
-    this.lives -= 1;
+    this.lives = Math.max(0, this.lives - Math.floor(count));
+  }
+
+  recordMiss(): void {
+    this.recordIncident(1);
   }
 }

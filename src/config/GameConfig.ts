@@ -22,9 +22,9 @@ export interface QualityRollInput {
 export const GAME_CONFIG = {
   stage: {
     sizeFactors: {
-      large: 0.2,
-      medium: 0.15,
-      small: 0.11
+      large: 0.24,
+      medium: 0.18,
+      small: 0.135
     } as Record<StageSize, number>,
     aspectRatio: 4 / 3,
     performanceDurationMs: 2500
@@ -38,7 +38,22 @@ export const GAME_CONFIG = {
   },
   hazards: {
     collisionRadiusPx: 40,
-    chatDurationMs: 3000
+    chatDurationMs: 2000,
+    maxEncounterStrikes: 12,
+    immunityCooldownMs: 1200
+  },
+  round: {
+    levelDurationSeconds: 60,
+    performanceTiers: {
+      gold: {
+        minScore: 1800,
+        minDeliveries: 12
+      },
+      silver: {
+        minScore: 900,
+        minDeliveries: 7
+      }
+    }
   },
   performance: {
     qualityPresets: {
@@ -54,7 +69,7 @@ export const GAME_CONFIG = {
     }
   },
   debug: {
-    showSpawnPoints: true
+    showSpawnPoints: false
   }
 } as const;
 

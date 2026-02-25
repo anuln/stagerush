@@ -1,0 +1,7 @@
+Create a fan crowd distraction sprite for a top-down festival game.
+Requirements:
+- Transparent background.
+- Size target 112x80 after resize.
+- Group of 3-4 fans as a compact cluster, energetic body language.
+- Distinct shape from stages and food/merch distractions.
+- Flat style, bold outline, no tiny details, no text.

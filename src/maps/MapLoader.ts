@@ -85,6 +85,37 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
   requireString(parsed.id, "id");
   requireString(parsed.name, "name");
   requireString(parsed.description, "description");
+  if (parsed.themeId !== undefined) {
+    requireString(parsed.themeId, "themeId");
+  }
+  if (parsed.schedule !== undefined) {
+    if (!isObject(parsed.schedule)) {
+      throw new Error("schedule must be an object");
+    }
+    const schedule = parsed.schedule as Record<string, unknown>;
+    if (schedule.days !== undefined) {
+      assertIntegerInRange(schedule.days as number, 1, 999, "schedule.days");
+    }
+    if (schedule.sessionsPerDay !== undefined) {
+      assertIntegerInRange(
+        schedule.sessionsPerDay as number,
+        1,
+        12,
+        "schedule.sessionsPerDay"
+      );
+    }
+    if (schedule.sessionNames !== undefined) {
+      if (
+        !Array.isArray(schedule.sessionNames) ||
+        schedule.sessionNames.length === 0
+      ) {
+        throw new Error("schedule.sessionNames must be a non-empty string array");
+      }
+      for (const [index, name] of schedule.sessionNames.entries()) {
+        requireString(name, `schedule.sessionNames[${index}]`);
+      }
+    }
+  }
   requireString(parsed.background, "background");
   assertIntegerInRange(parsed.totalLevels, 1, 999, "totalLevels");
 
@@ -165,6 +196,12 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
     }
     levels.add(level.levelNumber);
     assertIntegerInRange(level.totalArtists, 1, 500, `levels[${index}].totalArtists`);
+    if (level.targetSets !== undefined) {
+      assertIntegerInRange(level.targetSets, 1, 500, `levels[${index}].targetSets`);
+      if (level.targetSets > level.totalArtists) {
+        throw new Error(`levels[${index}].targetSets cannot exceed totalArtists`);
+      }
+    }
     assertIntegerInRange(
       level.maxSimultaneous,
       1,
@@ -207,6 +244,18 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
   parsed.assets.artists.forEach((artist, index) => {
     requireString(artist.id, `assets.artists[${index}].id`);
     requireString(artist.name, `assets.artists[${index}].name`);
+    if (
+      artist.debutLevel !== undefined &&
+      (!Number.isInteger(artist.debutLevel) || artist.debutLevel < 1)
+    ) {
+      throw new Error(`assets.artists[${index}].debutLevel must be an integer >= 1`);
+    }
+    if (
+      artist.rotationWeight !== undefined &&
+      (!Number.isFinite(artist.rotationWeight) || artist.rotationWeight <= 0)
+    ) {
+      throw new Error(`assets.artists[${index}].rotationWeight must be > 0`);
+    }
     if (!Array.isArray(artist.sprites.walk) || artist.sprites.walk.length < 2) {
       throw new Error(`assets.artists[${index}].sprites.walk must contain at least 2 frames`);
     }
@@ -271,7 +320,13 @@ export function normalizedToScreen(
 }
 
 export function resolveAssetPath(path: string): string {
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) {
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:") ||
+    path.startsWith("/")
+  ) {
     return path;
   }
   return `/${path}`;

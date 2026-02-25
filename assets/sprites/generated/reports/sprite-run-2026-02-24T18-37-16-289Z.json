@@ -1,0 +1,70 @@
+{
+  "generatedAt": "2026-02-24T18:37:16.439Z",
+  "model": "nano-banana-pro-preview",
+  "manifest": "/Users/anubhav.mehrotra/Documents/codex/Stage Call/assets/sprites/generated/manifest.json",
+  "entries": [
+    {
+      "id": "stage_main_v1",
+      "promptFile": "stage_main_prompt.txt",
+      "out": "public/assets/maps/govball/generated/stages/stage_main_v1.png",
+      "status": "ok",
+      "durationMs": 19647
+    },
+    {
+      "id": "distraction_merch_v1",
+      "promptFile": "distraction_merch_prompt.txt",
+      "out": "public/assets/maps/govball/generated/distractions/distraction_merch_v1.png",
+      "status": "ok",
+      "durationMs": 18395
+    },
+    {
+      "id": "artist_headliner_a_idle_v1",
+      "promptFile": "artist_headliner_a_idle_prompt.txt",
+      "out": "public/assets/maps/govball/generated/artists/artist_headliner_a_idle_v1.png",
+      "status": "ok",
+      "durationMs": 16167
+    },
+    {
+      "id": "stage_side_v1",
+      "promptFile": "stage_side_prompt.txt",
+      "out": "public/assets/maps/govball/generated/stages/stage_side_v1.png",
+      "status": "ok",
+      "durationMs": 18150
+    },
+    {
+      "id": "stage_acoustic_v1",
+      "promptFile": "stage_acoustic_prompt.txt",
+      "out": "public/assets/maps/govball/generated/stages/stage_acoustic_v1.png",
+      "status": "ok",
+      "durationMs": 18489
+    },
+    {
+      "id": "distraction_burger_v1",
+      "promptFile": "distraction_burger_prompt.txt",
+      "out": "public/assets/maps/govball/generated/distractions/distraction_burger_v1.png",
+      "status": "ok",
+      "durationMs": 17294
+    },
+    {
+      "id": "distraction_paparazzi_v1",
+      "promptFile": "distraction_paparazzi_prompt.txt",
+      "out": "public/assets/maps/govball/generated/distractions/distraction_paparazzi_v1.png",
+      "status": "ok",
+      "durationMs": 16961
+    },
+    {
+      "id": "distraction_fans_v1",
+      "promptFile": "distraction_fans_prompt.txt",
+      "out": "public/assets/maps/govball/generated/distractions/distraction_fans_v1.png",
+      "status": "ok",
+      "durationMs": 16293
+    },
+    {
+      "id": "govball_background_v1",
+      "promptFile": "govball_background_prompt.txt",
+      "out": "public/assets/maps/govball/generated/backgrounds/govball_bg_v1.png",
+      "status": "ok",
+      "durationMs": 22016
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+Original prompt: I can't seem to click Start Festival on mobile. Check why and set up Playwright for iterative testing.
+
+## 2026-02-24
+- Initialized debugging log.
+- Loaded and applied `systematic-debugging`, `playwright`, and `develop-web-game` workflows.
+- Located start overlay implementation in `src/ui/ScreenOverlayController.ts` and base styles in `src/styles.css`.
+- Reproduced start failure with Playwright client:
+  - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url http://127.0.0.1:4273 --click-selector ".screen-action.primary" ...`
+  - Evidence: `output/web-game/start-click-desktop/errors-0.json` showed `Failed to run screen action` caused by missing `assets/maps/govball/govball_bg.png`.
+- Root cause: click worked, but `BundleManager.loadBundle` threw on missing Gov Ball art assets and blocked `START_FESTIVAL`.
+- Implemented resilient bundle loading in `src/assets/BundleManager.ts`:
+  - Batch load failure now falls back to per-asset loads.
+  - Missing assets are skipped with warnings.
+  - Bundle activation continues with successfully loaded assets.
+  - Unload now ignores assets that never loaded (prevents invalid unload attempts).
+- Optimized fallback retries to run in parallel and emit one compact missing-assets warning per bundle (faster startup when many assets are absent).
+- Added regression test in `src/assets/BundleManager.test.ts` for partial load failures and verified:
+  - `npm test -- src/assets/BundleManager.test.ts` passes.
+- Added local iterative Playwright command:
+  - `npm run qa:pw:start`
+  - Wrapper: `scripts/playwright/run-start-check.mjs`
+  - Action payload: `scripts/playwright/start-actions.json`
+  - Output: `output/web-game/start-check/shot-0.png`
+- Re-ran Playwright checks post-fix:
+  - `output/web-game/start-click-desktop-postfix/` contains screenshot and no `errors-0.json`.
+  - `npm run qa:pw:start` completes with screenshot and no `errors-0.json`.
+- Full project verification after fix:
+  - `npm run build` passes.
+  - `npm test` passes (30 files / 92 tests).
+- Gameplay tuning pass (timed rounds + usability adjustments):
+  - Runtime now uses timed level completion (`levelDurationSeconds`) instead of ending due to artist misses.
+  - Missed artists (timeout/out-of-bounds) still generate feedback but no longer decrement fail budget.
+  - Fail budget now decrements on hazard encounters:
+    - artist-artist chat collisions
+    - distraction captures
+  - Encounter budget raised from 3-style strictness to 12 (`maxEncounterStrikes`), shown in HUD as `Encounters Left`.
+  - HUD now shows `Time: Ns` countdown for timed rounds.
+  - Collision chat stall reduced from 3000ms to 2000ms.
+  - Early-level drift speed tuned down (level 1 reduced, then ramps with level).
+  - Runtime-level artist budget now scales with timed duration so rounds don’t run out too early.
+- Updated tests to match new behavior:
+  - `GameRuntime`, `LivesState`, `HudRenderer`, `SpawnSystem`, `GameManager`, `LevelProgression`, `ScreenViewModels`.
+  - Full suite now passes: `npm test` (30 files / 93 tests).
+  - Build passes: `npm run build`.
+- Re-ran Playwright start smoke:
+  - `npm run qa:pw:start` passes and refreshes `output/web-game/start-check/shot-0.png`.
+- Deferred by request:
+  - Path retrace/late movement feel after path draw is not addressed in this pass.
+- 2026-02-24 follow-up adjustments:
+  - Root-cause confirmed for unsnapped path behavior: `GameRuntime.commitPlannedPath` only assigned when `planned.isValid && planned.targetStageId`.
+  - Added failing tests first for desired behavior:
+    - `PathFollower` now expected to follow non-stage guide paths.
+    - `GameRuntime` now expected to keep active path telemetry for a drawn non-stage path.
+  - Updated `PathFollower` to accept any 2+ point path, including unsnapped paths (`targetStageId: null`).
+  - On non-stage path completion, artist now returns to `DRIFTING` with forward velocity derived from the last path segment.
+  - Updated `GameRuntime` path commit to treat assigned/queued non-stage paths as active (instead of invalid-fading), and only trigger stage arrivals when `targetStageId` exists.
+  - Added lightweight kiosk controls for browser fullscreen sessions:
+    - `Pin Screen` button enters fullscreen + wake lock when available.
+    - `Hold Home` button (hold-to-confirm) exits pinned mode and routes back to menu.
+  - Added mobile-friendly meta tags (`viewport-fit=cover`, `theme-color`, Apple web app capability) for better fullscreen presentation.
+- Verification:
+  - `npm test -- src/systems/PathFollower.test.ts src/game/GameRuntime.test.ts` passed after implementation.
+  - `npm test` full suite passed (31 files / 105 tests).
+  - `npm run build` passed.
+  - `npm run qa:pw:start` passed; start flow still reaches PLAYING state.
+- Added ideation-only thematic overhaul blueprint:
+  - `docs/ideation/2026-02-24-stage-call-thematic-upgrade-blueprint.md`
+  - Focus: brand crux, invariant scaffold vs festival expression system, multi-festival archetypes, UI/audio/map direction, creative ops governance.
+- Added execution-ready plan doc for UI overhaul + admin asset preview:
+  - `docs/plans/2026-02-24-stage-call-ui-overhaul-and-admin-preview.md`
+  - Includes TDD-first task breakdown, exact files/commands, and admin sprite/audio preview workstream.
+- 2026-02-25 admin overhaul start (phase A foundation):
+  - Added multi-festival registry model and parsing:
+    - `src/config/FestivalRegistry.ts`
+    - `src/config/FestivalRegistry.test.ts`
+    - `public/assets/maps/index.json`
+  - Boot flow now reads festival registry + resolves active festival from query/localStorage/default.
+  - Bundle manifest creation is now generic per festival id (`createFestivalBundleManifest`), with boot bundle preloading the registry file.
+  - Admin overrides are now per-festival and backward-compatible with legacy storage shape.
+  - Added stage position overrides in admin override schema and apply pipeline.
+  - Admin panel upgrades:
+    - Festival selector (switches active festival in admin mode)
+    - Map Stage Markers section (click-to-place stage markers on background map)
+    - Live preview hook for override changes (including marker updates) applied to running game without reload.
+  - Added admin map marker styling in `src/styles.css`.
+  - Updated tests:
+    - `src/admin/AdminAssetOverrides.test.ts`
+    - `src/assets/BundleManager.test.ts`
+  - Verification:
+    - `npm test -- src/config/FestivalRegistry.test.ts src/admin/AdminAssetOverrides.test.ts`
+    - `npm test` (35 files / 121 tests)
+    - `npm run build`
+    - `npm run qa:pw:start`
+- HUD + stage visual pass (latest iteration):
+  - Removed pill-style HUD composition and replaced with overlay layout:
+    - top-left compact stat panel (`HYPE`, `STRIKES`)
+    - top-right circular timer dial with progress ring
+    - per-stage set counters in a dedicated strip (`SETS` by stage id)
+    - bottom-centered `DAY · SESSION` and `SETS/TARGET · PACE`
+    - `HEAT` remains as contextual bottom overlay when combo is active
+  - Added safe-area-aware HUD offsets for fullscreen mobile:
+    - CSS variables for `safe-area-inset-top/bottom`
+    - runtime plumbing from `main.ts` to `GameRuntime` and `HudRenderer`
+  - Added stage-level set tracking in runtime and surfaced it to HUD renderer.
+  - Stage visual tuning:
+    - Increased stage sprite scales in `GAME_CONFIG.stage.sizeFactors`
+    - Repositioned Gov Ball stage anchors in map config to better fit the background composition
+    - Stage positions remain static (no round/session movement logic)
+- Verification:
+  - `npm test` passes (34 files / 117 tests).
+  - `npm run build` passes.
+  - `npm run qa:pw:start` passes against local dev server on `127.0.0.1:4273`.
+  - Note: screenshot artifact remains black in this sandboxed environment despite passing Playwright flow/state check.

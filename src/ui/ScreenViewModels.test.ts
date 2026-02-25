@@ -18,11 +18,13 @@ describe("buildScreenViewModel", () => {
         highestUnlockedLevel: 3,
         bestFestivalScore: 2200,
         bestLevelScore: null
-      }
+      },
+      runtime: null
     });
 
     expect(model?.screen).toBe("MENU");
     expect(model?.actions[0].id).toBe("START_FESTIVAL");
+    expect(model?.actions[0].label).toBe("Open Gates");
   });
 
   it("builds failed-level summary with retry and menu actions", () => {
@@ -41,11 +43,12 @@ describe("buildScreenViewModel", () => {
         highestUnlockedLevel: 4,
         bestFestivalScore: 2600,
         bestLevelScore: 220
-      }
+      },
+      runtime: null
     });
 
     expect(model?.title).toContain("Level 3 / 10 Failed");
-    expect(model?.summaryRows.find((row) => row.label === "Attempt score")?.value).toBe(
+    expect(model?.summaryRows.find((row) => row.label === "Set score")?.value).toBe(
       "180 pts"
     );
     expect(model?.actions.map((action) => action.id)).toEqual([
@@ -70,7 +73,8 @@ describe("buildScreenViewModel", () => {
         highestUnlockedLevel: 4,
         bestFestivalScore: 3100,
         bestLevelScore: 600
-      }
+      },
+      runtime: null
     });
     const festivalComplete = buildScreenViewModel({
       screen: "FESTIVAL_COMPLETE",
@@ -87,13 +91,16 @@ describe("buildScreenViewModel", () => {
         highestUnlockedLevel: 4,
         bestFestivalScore: 3200,
         bestLevelScore: 920
-      }
+      },
+      runtime: null
     });
 
     expect(levelComplete?.actions.map((action) => action.id)).toEqual([
       "NEXT_LEVEL",
       "RETURN_TO_MENU"
     ]);
+    expect(levelComplete?.summaryRows.some((row) => row.label === "Performance")).toBe(true);
+    expect(festivalComplete?.summaryRows.some((row) => row.label === "Final rating")).toBe(true);
     expect(festivalComplete?.actions.map((action) => action.id)).toEqual([
       "START_FESTIVAL",
       "RETURN_TO_MENU"

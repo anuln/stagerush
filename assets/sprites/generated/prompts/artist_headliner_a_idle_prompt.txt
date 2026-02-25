@@ -1,0 +1,9 @@
+Create a headliner artist idle sprite for a top-down festival routing game.
+Requirements:
+- Transparent background.
+- Size target 64x64 after resize.
+- Character style: confident performer, standout outfit, sunglasses, iconic silhouette.
+- Top-down / slight isometric angle consistent with game map assets.
+- Idle stance only, centered in frame.
+- Flat illustration with clean outlines and limited color palette.
+- No text, no background scene.
