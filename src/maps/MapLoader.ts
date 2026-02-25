@@ -92,6 +92,37 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
   if (parsed.introScreen !== undefined) {
     requireString(parsed.introScreen, "introScreen");
   }
+  if (parsed.introPresentation !== undefined) {
+    if (!isObject(parsed.introPresentation)) {
+      throw new Error("introPresentation must be an object");
+    }
+    const introPresentation = parsed.introPresentation as Record<string, unknown>;
+    if (introPresentation.fitMode !== undefined) {
+      const fitMode = requireString(introPresentation.fitMode, "introPresentation.fitMode");
+      if (fitMode !== "cover" && fitMode !== "contain") {
+        throw new Error("introPresentation.fitMode must be 'cover' or 'contain'");
+      }
+    }
+    if (introPresentation.focusX !== undefined) {
+      assertIntegerInRange(
+        Math.round(introPresentation.focusX as number),
+        0,
+        100,
+        "introPresentation.focusX"
+      );
+    }
+    if (introPresentation.focusY !== undefined) {
+      assertIntegerInRange(
+        Math.round(introPresentation.focusY as number),
+        0,
+        100,
+        "introPresentation.focusY"
+      );
+    }
+    if (introPresentation.zoom !== undefined) {
+      assertPositiveFinite(introPresentation.zoom as number, "introPresentation.zoom");
+    }
+  }
   if (parsed.schedule !== undefined) {
     if (!isObject(parsed.schedule)) {
       throw new Error("schedule must be an object");
@@ -381,9 +412,16 @@ export function resolveAssetPath(path: string): string {
 
 export function collectMapAssetPaths(map: FestivalMap): string[] {
   const paths = new Set<string>();
+  const isVideoAssetPath = (path: string): boolean => {
+    const normalized = path.trim().toLowerCase();
+    if (normalized.startsWith("data:video/")) {
+      return true;
+    }
+    return /\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/.test(normalized);
+  };
 
   paths.add(map.background);
-  if (map.introScreen) {
+  if (map.introScreen && !isVideoAssetPath(map.introScreen)) {
     paths.add(map.introScreen);
   }
   for (const stage of map.stages) {

@@ -88,6 +88,13 @@ export interface FestivalScheduleConfig {
   sessionNames?: string[];
 }
 
+export interface IntroPresentationConfig {
+  fitMode?: "cover" | "contain";
+  focusX?: number;
+  focusY?: number;
+  zoom?: number;
+}
+
 export interface FestivalAssets {
   artists: ArtistSpriteConfig[];
   stageSprites: Record<string, AssetPath>;
@@ -104,6 +111,7 @@ export interface FestivalMap {
   totalLevels: number;
   background: AssetPath;
   introScreen?: AssetPath;
+  introPresentation?: IntroPresentationConfig;
   stages: StageConfig[];
   spawnPoints: SpawnPointConfig[];
   distractions: DistractionConfig[];

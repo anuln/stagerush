@@ -29,7 +29,7 @@ export function buildScreenViewModel(
       screen: "MENU",
       title: "STAGE RUSH",
       subtitle:
-        "Build the cleanest festival flow. Draw artist routes, dodge distractions, and keep the hype climbing.",
+        "Guide artists to stages by drawing routes. Avoid distractions and collisions to keep festival hype rising.",
       summaryRows: [
         { label: "Festival Days", value: `${level.totalLevels}` },
         { label: "Unlocked", value: `Up to Day ${snapshot.profile.highestUnlockedLevel}` },

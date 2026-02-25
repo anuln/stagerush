@@ -92,6 +92,9 @@ describe("AdminAssetOverrides", () => {
   it("detects when override payload contains at least one override", () => {
     expect(hasAdminAssetOverrides({ background: "assets/maps/bg.png" })).toBe(true);
     expect(hasAdminAssetOverrides({ introScreen: "assets/ui/intro_v2.png" })).toBe(true);
+    expect(
+      hasAdminAssetOverrides({ introPresentation: { fitMode: "contain", focusX: 44 } })
+    ).toBe(true);
     expect(hasAdminAssetOverrides({ stageSprites: { main: "assets/maps/stage.png" } })).toBe(
       true
     );
@@ -111,6 +114,12 @@ describe("AdminAssetOverrides", () => {
     const updated = applyAdminAssetOverrides(map, {
       background: "assets/maps/generated/bg_v2.png",
       introScreen: "assets/ui/intro_v2.png",
+      introPresentation: {
+        fitMode: "contain",
+        focusX: 40,
+        focusY: 70,
+        zoom: 1.25
+      },
       stagePositions: { main: { x: 0.34, y: 0.28 } },
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
       distractionSprites: {
@@ -131,6 +140,12 @@ describe("AdminAssetOverrides", () => {
 
     expect(updated.background).toBe("assets/maps/generated/bg_v2.png");
     expect(updated.introScreen).toBe("assets/ui/intro_v2.png");
+    expect(updated.introPresentation).toMatchObject({
+      fitMode: "contain",
+      focusX: 40,
+      focusY: 70,
+      zoom: 1.25
+    });
     expect(updated.stages[0].position).toEqual({ x: 0.34, y: 0.28 });
     expect(updated.stages[0].sprite).toBe("assets/maps/generated/stage_main_v2.png");
     expect(updated.distractions[0].sprite).toBe(

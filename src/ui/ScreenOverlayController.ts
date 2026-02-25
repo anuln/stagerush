@@ -1,13 +1,41 @@
 import type { ScreenActionId, ScreenViewModel } from "./ScreenState";
 
+export interface MenuMediaConfig {
+  path: string;
+  mediaType: "image" | "video";
+  fitMode: "cover" | "contain";
+  focusX: number;
+  focusY: number;
+  zoom: number;
+}
+
 export class ScreenOverlayController {
   private readonly root: HTMLDivElement;
   private lastKey = "";
+  private menuMedia: MenuMediaConfig = {
+    path: "/assets/ui/stage-rush-intro-mobile.png",
+    mediaType: "image",
+    fitMode: "cover",
+    focusX: 50,
+    focusY: 50,
+    zoom: 1
+  };
 
   constructor() {
     this.root = document.createElement("div");
     this.root.className = "screen-overlay is-hidden";
     document.body.appendChild(this.root);
+  }
+
+  setMenuMedia(next: MenuMediaConfig): void {
+    this.menuMedia = {
+      ...next,
+      fitMode: next.fitMode === "contain" ? "contain" : "cover",
+      focusX: Math.max(0, Math.min(100, next.focusX)),
+      focusY: Math.max(0, Math.min(100, next.focusY)),
+      zoom: Math.max(0.7, Math.min(2.5, next.zoom))
+    };
+    this.lastKey = "";
   }
 
   render(
@@ -33,6 +61,34 @@ export class ScreenOverlayController {
 
     const panel = document.createElement("section");
     panel.className = "screen-panel";
+    if (model.screen === "MENU") {
+      panel.style.setProperty("--intro-fit-mode", this.menuMedia.fitMode);
+      panel.style.setProperty("--intro-focus-x", `${this.menuMedia.focusX}%`);
+      panel.style.setProperty("--intro-focus-y", `${this.menuMedia.focusY}%`);
+      panel.style.setProperty("--intro-zoom", String(this.menuMedia.zoom));
+      if (this.menuMedia.mediaType === "video") {
+        const media = document.createElement("video");
+        media.className = "screen-menu-media";
+        media.src = this.menuMedia.path;
+        media.autoplay = true;
+        media.loop = true;
+        media.muted = true;
+        media.playsInline = true;
+        media.preload = "auto";
+        media.setAttribute("aria-hidden", "true");
+        panel.appendChild(media);
+        void media.play().catch(() => {
+          // Safari may defer muted autoplay until first interaction.
+        });
+      } else {
+        const media = document.createElement("img");
+        media.className = "screen-menu-media";
+        media.src = this.menuMedia.path;
+        media.alt = "";
+        media.setAttribute("aria-hidden", "true");
+        panel.appendChild(media);
+      }
+    }
 
     const title = document.createElement("h1");
     title.textContent = model.title;

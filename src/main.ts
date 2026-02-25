@@ -149,13 +149,32 @@ function parseCssPixels(value: string | null): number {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
-function applyIntroScreenAsset(path?: string): void {
-  const resolved = resolveAssetPath(path?.trim() || "assets/ui/stage-rush-intro-mobile.png");
-  const escaped = resolved.replace(/"/g, '\\"');
-  document.documentElement.style.setProperty(
-    "--intro-screen-image",
-    `url("${escaped}")`
-  );
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function isVideoPath(path: string): boolean {
+  const normalized = path.trim().toLowerCase();
+  if (normalized.startsWith("data:video/")) {
+    return true;
+  }
+  return /\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/.test(normalized);
+}
+
+function applyIntroScreenMedia(
+  controller: ScreenOverlayController,
+  map: FestivalMap
+): void {
+  const assetPath = map.introScreen?.trim() || "assets/ui/stage-rush-intro-mobile.png";
+  const resolvedPath = resolveAssetPath(assetPath);
+  controller.setMenuMedia({
+    path: resolvedPath,
+    mediaType: isVideoPath(assetPath) ? "video" : "image",
+    fitMode: map.introPresentation?.fitMode === "contain" ? "contain" : "cover",
+    focusX: clamp(map.introPresentation?.focusX ?? 50, 0, 100),
+    focusY: clamp(map.introPresentation?.focusY ?? 50, 0, 100),
+    zoom: clamp(map.introPresentation?.zoom ?? 1, 0.7, 2.5)
+  });
 }
 
 function readSafeAreaInsets(): { top: number; bottom: number } {
@@ -295,7 +314,7 @@ async function bootstrap(): Promise<void> {
     const previewMap = hasAdminAssetOverrides(nextOverrides)
       ? applyAdminAssetOverrides(sourceMap, nextOverrides)
       : sourceMap;
-    applyIntroScreenAsset(previewMap.introScreen);
+    applyIntroScreenMedia(screenOverlay, previewMap);
     bundleManager.registerManifest(
       createFestivalBundleManifest(previewMap, activeBundleId)
     );
@@ -326,7 +345,7 @@ async function bootstrap(): Promise<void> {
     const map = hasAdminAssetOverrides(initialOverrides)
       ? applyAdminAssetOverrides(sourceMap, initialOverrides)
       : sourceMap;
-    applyIntroScreenAsset(map.introScreen);
+    applyIntroScreenMedia(screenOverlay, map);
     bundleManager.registerManifest(
       createFestivalBundleManifest(map, activeBundleId)
     );

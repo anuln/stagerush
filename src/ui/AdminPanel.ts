@@ -1,7 +1,11 @@
-import type { FestivalMap } from "../config/FestivalConfig";
+import type {
+  FestivalMap,
+  IntroPresentationConfig
+} from "../config/FestivalConfig";
 import {
   applyAdminAssetOverrides,
   hasAdminAssetOverrides,
+  saveAdminAssetOverrides,
   type AdminAssetOverrides
 } from "../admin/AdminAssetOverrides";
 import { toResolvedPath } from "../admin/AdminPreviewModel";
@@ -326,6 +330,22 @@ function hasInlineAssetPath(path: string): boolean {
   return path.startsWith("data:") || path.startsWith("blob:");
 }
 
+function isVideoAssetPath(path: string): boolean {
+  const normalized = path.trim().toLowerCase();
+  if (normalized.startsWith("data:video/")) {
+    return true;
+  }
+  return /\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/.test(normalized);
+}
+
+function isImageDataUrl(path: string): boolean {
+  return path.trim().toLowerCase().startsWith("data:image/");
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
 export function parseInlineDataAsset(
   value: string
 ): { mimeType: string; base64: string } | null {
@@ -361,6 +381,14 @@ function extensionForMimeType(mimeType: string): string {
       return "ogg";
     case "audio/mp4":
       return "m4a";
+    case "video/mp4":
+      return "mp4";
+    case "video/webm":
+      return "webm";
+    case "video/quicktime":
+      return "mov";
+    case "video/ogg":
+      return "ogv";
     default:
       return "bin";
   }
@@ -1000,6 +1028,182 @@ export class AdminPanel {
     return Array.from(new Set(labels));
   }
 
+  private getIntroPresentationDraft(): Required<IntroPresentationConfig> {
+    const base = this.map.introPresentation ?? {};
+    const draft = this.draftOverrides.introPresentation ?? {};
+    return {
+      fitMode: draft.fitMode ?? base.fitMode ?? "cover",
+      focusX: clamp(draft.focusX ?? base.focusX ?? 50, 0, 100),
+      focusY: clamp(draft.focusY ?? base.focusY ?? 50, 0, 100),
+      zoom: clamp(draft.zoom ?? base.zoom ?? 1, 0.7, 2.5)
+    };
+  }
+
+  private setIntroPresentation(partial: Partial<IntroPresentationConfig>): void {
+    const current = this.getIntroPresentationDraft();
+    const nextValue: IntroPresentationConfig = {
+      fitMode:
+        partial.fitMode ?? current.fitMode ?? "cover",
+      focusX:
+        partial.focusX !== undefined ? clamp(partial.focusX, 0, 100) : current.focusX,
+      focusY:
+        partial.focusY !== undefined ? clamp(partial.focusY, 0, 100) : current.focusY,
+      zoom:
+        partial.zoom !== undefined ? clamp(partial.zoom, 0.7, 2.5) : current.zoom
+    };
+    this.draftOverrides = {
+      ...this.draftOverrides,
+      introPresentation: nextValue
+    };
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private resetIntroPresentation(): void {
+    const next = structuredClone(this.draftOverrides);
+    delete next.introPresentation;
+    this.draftOverrides = next;
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private buildIntroFramingControls(): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = "admin-filter-card";
+
+    const heading = document.createElement("p");
+    heading.className = "admin-preview-meta";
+    heading.textContent = "Intro framing";
+    wrapper.appendChild(heading);
+
+    const intro = this.getIntroPresentationDraft();
+
+    const fitField = document.createElement("label");
+    fitField.className = "admin-field";
+    fitField.innerHTML = "<span>Fit</span>";
+    const fitSelect = document.createElement("select");
+    fitSelect.className = "admin-select";
+    fitSelect.innerHTML =
+      "<option value=\"cover\">Cover</option><option value=\"contain\">Contain</option>";
+    fitSelect.value = intro.fitMode;
+    fitSelect.addEventListener("change", () => {
+      this.setIntroPresentation({
+        fitMode: fitSelect.value === "contain" ? "contain" : "cover"
+      });
+    });
+    fitField.appendChild(fitSelect);
+    wrapper.appendChild(fitField);
+
+    const focusXField = document.createElement("label");
+    focusXField.className = "admin-field";
+    focusXField.innerHTML = "<span>Focus X</span>";
+    const focusXInput = document.createElement("input");
+    focusXInput.type = "range";
+    focusXInput.className = "admin-input";
+    focusXInput.min = "0";
+    focusXInput.max = "100";
+    focusXInput.step = "1";
+    focusXInput.value = String(Math.round(intro.focusX));
+    const focusXValue = document.createElement("small");
+    focusXValue.className = "admin-preview-meta";
+    focusXValue.textContent = `${Math.round(intro.focusX)}%`;
+    focusXInput.addEventListener("input", () => {
+      const value = Number.parseFloat(focusXInput.value);
+      focusXValue.textContent = `${Math.round(value)}%`;
+      this.setIntroPresentation({ focusX: value });
+    });
+    focusXField.append(focusXInput, focusXValue);
+    wrapper.appendChild(focusXField);
+
+    const focusYField = document.createElement("label");
+    focusYField.className = "admin-field";
+    focusYField.innerHTML = "<span>Focus Y</span>";
+    const focusYInput = document.createElement("input");
+    focusYInput.type = "range";
+    focusYInput.className = "admin-input";
+    focusYInput.min = "0";
+    focusYInput.max = "100";
+    focusYInput.step = "1";
+    focusYInput.value = String(Math.round(intro.focusY));
+    const focusYValue = document.createElement("small");
+    focusYValue.className = "admin-preview-meta";
+    focusYValue.textContent = `${Math.round(intro.focusY)}%`;
+    focusYInput.addEventListener("input", () => {
+      const value = Number.parseFloat(focusYInput.value);
+      focusYValue.textContent = `${Math.round(value)}%`;
+      this.setIntroPresentation({ focusY: value });
+    });
+    focusYField.append(focusYInput, focusYValue);
+    wrapper.appendChild(focusYField);
+
+    const zoomField = document.createElement("label");
+    zoomField.className = "admin-field";
+    zoomField.innerHTML = "<span>Zoom</span>";
+    const zoomInput = document.createElement("input");
+    zoomInput.type = "range";
+    zoomInput.className = "admin-input";
+    zoomInput.min = "70";
+    zoomInput.max = "250";
+    zoomInput.step = "1";
+    zoomInput.value = String(Math.round(intro.zoom * 100));
+    const zoomValue = document.createElement("small");
+    zoomValue.className = "admin-preview-meta";
+    zoomValue.textContent = `${Math.round(intro.zoom * 100)}%`;
+    zoomInput.addEventListener("input", () => {
+      const value = Number.parseFloat(zoomInput.value) / 100;
+      zoomValue.textContent = `${Math.round(value * 100)}%`;
+      this.setIntroPresentation({ zoom: value });
+    });
+    zoomField.append(zoomInput, zoomValue);
+    wrapper.appendChild(zoomField);
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "admin-btn";
+    reset.textContent = "Reset Framing";
+    reset.disabled = !this.draftOverrides.introPresentation;
+    reset.addEventListener("click", () => {
+      this.resetIntroPresentation();
+    });
+    wrapper.appendChild(reset);
+
+    return wrapper;
+  }
+
+  private appendMediaPreview(container: HTMLElement, slot: AssetSlot, path: string): void {
+    const normalizedPath = path.trim();
+    if (normalizedPath.length === 0) {
+      return;
+    }
+    const showVideo =
+      slot.meta.kind === "introScreen" && isVideoAssetPath(normalizedPath);
+    if (showVideo) {
+      const video = document.createElement("video");
+      video.className = "admin-preview-video";
+      video.src = toResolvedPath(normalizedPath);
+      video.controls = true;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      container.appendChild(video);
+      return;
+    }
+    if (slot.mediaType === "image") {
+      const image = document.createElement("img");
+      image.className = "admin-preview-image";
+      image.src = toResolvedPath(normalizedPath);
+      image.alt = slot.label;
+      container.appendChild(image);
+      return;
+    }
+    const audio = document.createElement("audio");
+    audio.className = "admin-preview-audio";
+    audio.controls = true;
+    audio.preload = "none";
+    audio.src = toResolvedPath(normalizedPath);
+    container.appendChild(audio);
+  }
+
   private render(): void {
     this.panel.classList.toggle("is-hidden", !this.isOpen);
     this.fab.classList.toggle("is-visible", !this.isOpen);
@@ -1625,22 +1829,7 @@ export class AdminPanel {
     }
 
     const activePath = slot.overridePath ?? slot.defaultPath;
-    if (slot.mediaType === "image") {
-      if (activePath.trim().length > 0) {
-        const image = document.createElement("img");
-        image.className = "admin-preview-image";
-        image.src = toResolvedPath(activePath);
-        image.alt = slot.label;
-        card.appendChild(image);
-      }
-    } else if (activePath.trim().length > 0) {
-      const audio = document.createElement("audio");
-      audio.className = "admin-preview-audio";
-      audio.controls = true;
-      audio.preload = "none";
-      audio.src = toResolvedPath(activePath);
-      card.appendChild(audio);
-    }
+    this.appendMediaPreview(card, slot, activePath);
 
     const pathField = document.createElement("label");
     pathField.className = "admin-field";
@@ -1691,11 +1880,22 @@ export class AdminPanel {
 
     const uploadField = document.createElement("label");
     uploadField.className = "admin-field";
-    uploadField.innerHTML = `<span>Upload ${slot.mediaType === "image" ? "Image" : "Audio"}</span>`;
+    uploadField.innerHTML = `<span>Upload ${
+      slot.meta.kind === "introScreen"
+        ? "Image or Video"
+        : slot.mediaType === "image"
+          ? "Image"
+          : "Audio"
+    }</span>`;
     const uploadInput = document.createElement("input");
     uploadInput.type = "file";
     uploadInput.className = "admin-file";
-    uploadInput.accept = slot.mediaType === "image" ? "image/*" : "audio/*";
+    uploadInput.accept =
+      slot.meta.kind === "introScreen"
+        ? "image/*,video/*"
+        : slot.mediaType === "image"
+          ? "image/*"
+          : "audio/*";
     uploadInput.addEventListener("change", async () => {
       const file = uploadInput.files?.[0];
       if (!file) {
@@ -1786,7 +1986,10 @@ export class AdminPanel {
       removeBg.type = "button";
       removeBg.className = "admin-btn";
       removeBg.textContent = "Remove BG";
-      removeBg.disabled = !this.slotCandidates.has(slot.id);
+      removeBg.disabled =
+        !this.slotCandidates.has(slot.id) ||
+        (slot.meta.kind === "introScreen" &&
+          !isImageDataUrl(this.slotCandidates.get(slot.id) ?? ""));
       removeBg.addEventListener("click", async () => {
         const candidate = this.slotCandidates.get(slot.id);
         if (!candidate) {
@@ -1823,20 +2026,7 @@ export class AdminPanel {
       candidateLabel.className = "admin-preview-meta";
       candidateLabel.textContent = "Candidate Preview";
       card.appendChild(candidateLabel);
-      if (slot.mediaType === "image") {
-        const candidateImage = document.createElement("img");
-        candidateImage.className = "admin-preview-image";
-        candidateImage.src = candidate;
-        candidateImage.alt = `${slot.label} candidate`;
-        card.appendChild(candidateImage);
-      } else {
-        const candidateAudio = document.createElement("audio");
-        candidateAudio.className = "admin-preview-audio";
-        candidateAudio.controls = true;
-        candidateAudio.preload = "none";
-        candidateAudio.src = candidate;
-        card.appendChild(candidateAudio);
-      }
+      this.appendMediaPreview(card, slot, candidate);
     }
 
     return card;
@@ -1898,7 +2088,8 @@ export class AdminPanel {
       this.pathDraftBySlot.get(selectedSlot.id) ??
       selectedSlot.overridePath ??
       selectedSlot.defaultPath;
-    pathInput.placeholder = "assets/maps/... or https://... or data:image/...";
+    pathInput.placeholder =
+      "assets/... or https://... or data:image/... or data:video/...";
     pathInput.addEventListener("input", () => {
       this.pathDraftBySlot.set(selectedSlot.id, pathInput.value);
     });
@@ -1944,11 +2135,21 @@ export class AdminPanel {
     const uploadField = document.createElement("label");
     uploadField.className = "admin-field";
     const uploadLabel = document.createElement("span");
-    uploadLabel.textContent = selectedSlot.mediaType === "image" ? "Upload image" : "Upload audio";
+    uploadLabel.textContent =
+      selectedSlot.meta.kind === "introScreen"
+        ? "Upload image or video"
+        : selectedSlot.mediaType === "image"
+          ? "Upload image"
+          : "Upload audio";
     const uploadInput = document.createElement("input");
     uploadInput.type = "file";
     uploadInput.className = "admin-file";
-    uploadInput.accept = selectedSlot.mediaType === "image" ? "image/*" : "audio/*";
+    uploadInput.accept =
+      selectedSlot.meta.kind === "introScreen"
+        ? "image/*,video/*"
+        : selectedSlot.mediaType === "image"
+          ? "image/*"
+          : "audio/*";
     uploadInput.addEventListener("change", async () => {
       const file = uploadInput.files?.[0];
       if (!file) {
@@ -2000,7 +2201,10 @@ export class AdminPanel {
       removeBg.type = "button";
       removeBg.className = "admin-btn";
       removeBg.textContent = "Remove BG";
-      removeBg.disabled = !this.slotCandidates.has(selectedSlot.id);
+      removeBg.disabled =
+        !this.slotCandidates.has(selectedSlot.id) ||
+        (selectedSlot.meta.kind === "introScreen" &&
+          !isImageDataUrl(this.slotCandidates.get(selectedSlot.id) ?? ""));
       removeBg.addEventListener("click", async () => {
         const candidate = this.slotCandidates.get(selectedSlot.id);
         if (!candidate) {
@@ -2040,6 +2244,10 @@ export class AdminPanel {
       this.render();
     });
     section.appendChild(openGenerate);
+
+    if (selectedSlot.meta.kind === "introScreen") {
+      section.appendChild(this.buildIntroFramingControls());
+    }
 
     if (this.generateStatus) {
       const status = document.createElement("p");
@@ -2685,20 +2893,7 @@ export class AdminPanel {
     slotLabel.textContent = `${selectedSlot.label} · Active (in-game)`;
     card.appendChild(slotLabel);
 
-    if (selectedSlot.mediaType === "image") {
-      const image = document.createElement("img");
-      image.className = "admin-preview-image";
-      image.src = selectedSlot.resolvedPath;
-      image.alt = selectedSlot.label;
-      card.appendChild(image);
-    } else {
-      const audio = document.createElement("audio");
-      audio.className = "admin-preview-audio";
-      audio.controls = true;
-      audio.preload = "none";
-      audio.src = selectedSlot.resolvedPath;
-      card.appendChild(audio);
-    }
+    this.appendMediaPreview(card, selectedSlot, selectedSlot.resolvedPath);
 
     const path = document.createElement("code");
     path.className = "admin-preview-path";
@@ -2720,20 +2915,7 @@ export class AdminPanel {
       candidateLabel.className = "admin-preview-meta";
       candidateLabel.textContent = "Candidate (not active until applied)";
       card.appendChild(candidateLabel);
-      if (selectedSlot.mediaType === "image") {
-        const candidateImage = document.createElement("img");
-        candidateImage.className = "admin-preview-image";
-        candidateImage.src = candidate;
-        candidateImage.alt = `${selectedSlot.label} candidate`;
-        card.appendChild(candidateImage);
-      } else {
-        const candidateAudio = document.createElement("audio");
-        candidateAudio.className = "admin-preview-audio";
-        candidateAudio.controls = true;
-        candidateAudio.preload = "none";
-        candidateAudio.src = candidate;
-        card.appendChild(candidateAudio);
-      }
+      this.appendMediaPreview(card, selectedSlot, candidate);
     }
 
     if (selectedSlot.promptText) {
@@ -3204,6 +3386,7 @@ export class AdminPanel {
           ? ` Uploaded ${uploadedInlineAssets} inline assets.`
           : "";
       this.publishStatus = `${commitLine}${fileLine}${uploadLine}`;
+      this.syncOverridesAfterCommit(mapToCommit);
       this.persistGithubSettings();
     } catch (error) {
       this.publishStatus = String(error);
@@ -3215,6 +3398,99 @@ export class AdminPanel {
 
   private notifyPreviewChange(): void {
     this.onPreviewChange(structuredClone(this.draftOverrides));
+  }
+
+  private syncOverridesAfterCommit(committedMap: FestivalMap): void {
+    const nextOverrides = structuredClone(this.draftOverrides);
+
+    if (nextOverrides.background) {
+      nextOverrides.background = committedMap.background;
+    }
+    if (nextOverrides.introScreen && committedMap.introScreen) {
+      nextOverrides.introScreen = committedMap.introScreen;
+    }
+    if (nextOverrides.introPresentation && committedMap.introPresentation) {
+      nextOverrides.introPresentation = {
+        ...committedMap.introPresentation
+      };
+    }
+
+    if (nextOverrides.stageSprites) {
+      for (const stageId of Object.keys(nextOverrides.stageSprites)) {
+        const stageFromMap = committedMap.stages.find((stage) => stage.id === stageId);
+        const stageFromAssets = committedMap.assets.stageSprites[stageId];
+        const resolved = stageFromMap?.sprite ?? stageFromAssets;
+        if (resolved) {
+          nextOverrides.stageSprites[stageId] = resolved;
+        }
+      }
+    }
+
+    if (nextOverrides.distractionSprites) {
+      for (const distractionType of Object.keys(nextOverrides.distractionSprites)) {
+        const distractionFromMap = committedMap.distractions.find(
+          (entry) => entry.type === distractionType
+        );
+        const distractionFromAssets =
+          committedMap.assets.distractionSprites[distractionType];
+        const resolved = distractionFromMap?.sprite ?? distractionFromAssets;
+        if (resolved) {
+          nextOverrides.distractionSprites[distractionType] = resolved;
+        }
+      }
+    }
+
+    if (nextOverrides.audioCues) {
+      for (const cueId of Object.keys(nextOverrides.audioCues)) {
+        const resolved = committedMap.assets.audio[cueId];
+        if (resolved) {
+          nextOverrides.audioCues[cueId] = resolved;
+        }
+      }
+    }
+
+    if (nextOverrides.artistSprites) {
+      for (const [artistId, artistOverride] of Object.entries(
+        nextOverrides.artistSprites
+      )) {
+        const committedArtist = committedMap.assets.artists.find(
+          (artist) => artist.id === artistId
+        );
+        if (!committedArtist) {
+          continue;
+        }
+        if (artistOverride.walk1) {
+          artistOverride.walk1 = committedArtist.sprites.walk[0] ?? artistOverride.walk1;
+        }
+        if (artistOverride.walk2) {
+          artistOverride.walk2 = committedArtist.sprites.walk[1] ?? artistOverride.walk2;
+        }
+        if (artistOverride.walk3) {
+          artistOverride.walk3 = committedArtist.sprites.walk[2] ?? artistOverride.walk3;
+        }
+        if (artistOverride.idle && committedArtist.sprites.idle) {
+          artistOverride.idle = committedArtist.sprites.idle;
+        }
+        if (artistOverride.distracted && committedArtist.sprites.distracted) {
+          artistOverride.distracted = committedArtist.sprites.distracted;
+        }
+        if (artistOverride.performing) {
+          artistOverride.performing = committedArtist.sprites.performing;
+        }
+        if (
+          artistOverride.performanceAudioClip &&
+          committedArtist.performanceAudio?.clip
+        ) {
+          artistOverride.performanceAudioClip = committedArtist.performanceAudio.clip;
+        }
+      }
+    }
+
+    this.draftOverrides = nextOverrides;
+    this.slotCandidates.clear();
+    this.pathDraftBySlot.clear();
+    saveAdminAssetOverrides(this.activeFestivalId, this.draftOverrides);
+    this.notifyPreviewChange();
   }
 
   private async normalizeCandidateForApply(

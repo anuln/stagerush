@@ -1,4 +1,8 @@
-import type { FestivalMap, NormalizedPoint } from "../config/FestivalConfig";
+import type {
+  FestivalMap,
+  IntroPresentationConfig,
+  NormalizedPoint
+} from "../config/FestivalConfig";
 
 export const ADMIN_OVERRIDES_STORAGE_KEY = "stagecall:admin-asset-overrides:v1";
 
@@ -23,6 +27,7 @@ export interface ArtistAssetOverride {
 export interface AdminAssetOverrides {
   background?: string;
   introScreen?: string;
+  introPresentation?: IntroPresentationConfig;
   stageSprites?: Record<string, string>;
   stagePositions?: Record<string, NormalizedPoint>;
   distractionSprites?: Record<string, string>;
@@ -115,6 +120,28 @@ function sanitizeStagePositions(
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
+function sanitizeIntroPresentation(
+  introPresentation?: IntroPresentationConfig
+): IntroPresentationConfig | undefined {
+  if (!introPresentation) {
+    return undefined;
+  }
+  const next: IntroPresentationConfig = {};
+  if (introPresentation.fitMode === "cover" || introPresentation.fitMode === "contain") {
+    next.fitMode = introPresentation.fitMode;
+  }
+  if (Number.isFinite(introPresentation.focusX)) {
+    next.focusX = Math.max(0, Math.min(100, Number(introPresentation.focusX)));
+  }
+  if (Number.isFinite(introPresentation.focusY)) {
+    next.focusY = Math.max(0, Math.min(100, Number(introPresentation.focusY)));
+  }
+  if (Number.isFinite(introPresentation.zoom)) {
+    next.zoom = Math.max(0.5, Math.min(3, Number(introPresentation.zoom)));
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
 export function loadAdminAssetOverrides(festivalId: string): AdminAssetOverrides {
   const store = readStore();
   const direct = store.byFestival[festivalId];
@@ -135,6 +162,7 @@ export function saveAdminAssetOverrides(
   const store = readStore();
   const normalized: AdminAssetOverrides = {
     ...cloneOverrides(overrides),
+    introPresentation: sanitizeIntroPresentation(overrides.introPresentation),
     stagePositions: sanitizeStagePositions(overrides.stagePositions)
   };
 
@@ -170,6 +198,12 @@ export function hasAdminAssetOverrides(overrides: AdminAssetOverrides): boolean 
     return true;
   }
   if (typeof overrides.introScreen === "string" && overrides.introScreen.length > 0) {
+    return true;
+  }
+  if (
+    overrides.introPresentation &&
+    Object.keys(overrides.introPresentation).length > 0
+  ) {
     return true;
   }
   if (overrides.stageSprites && Object.keys(overrides.stageSprites).length > 0) {
@@ -219,6 +253,12 @@ export function applyAdminAssetOverrides(
   }
   if (overrides.introScreen) {
     cloned.introScreen = overrides.introScreen;
+  }
+  if (overrides.introPresentation) {
+    cloned.introPresentation = {
+      ...(cloned.introPresentation ?? {}),
+      ...sanitizeIntroPresentation(overrides.introPresentation)
+    };
   }
 
   if (overrides.stagePositions) {
