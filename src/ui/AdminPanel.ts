@@ -461,7 +461,6 @@ export class AdminPanel {
   private githubRepo = "stagerush";
   private githubBranch = "main";
   private githubTargetPath = "";
-  private githubSnapshotPath = "";
   private githubCommitMessage = "";
   private publishStatus = "";
   private isPublishing = false;
@@ -492,7 +491,6 @@ export class AdminPanel {
       this.rememberElevenLabsKey = true;
     }
     this.githubTargetPath = toRepoPathFromPublicUrl(this.mapConfigPath);
-    this.githubSnapshotPath = `public/assets/admin/snapshots/${this.activeFestivalId}.overrides.json`;
     this.githubCommitMessage = `chore(admin): update ${this.activeFestivalId} festival config`;
 
     const rememberedGithubToken = window.localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY);
@@ -508,7 +506,6 @@ export class AdminPanel {
           repo?: string;
           branch?: string;
           targetPath?: string;
-          snapshotPath?: string;
           remember?: boolean;
         };
         if (typeof parsed.owner === "string" && parsed.owner.trim().length > 0) {
@@ -522,12 +519,6 @@ export class AdminPanel {
         }
         if (typeof parsed.targetPath === "string" && parsed.targetPath.trim().length > 0) {
           this.githubTargetPath = parsed.targetPath.trim();
-        }
-        if (
-          typeof parsed.snapshotPath === "string" &&
-          parsed.snapshotPath.trim().length > 0
-        ) {
-          this.githubSnapshotPath = parsed.snapshotPath.trim();
         }
         this.rememberGithubSettings = parsed.remember !== false;
       } catch {
@@ -2467,7 +2458,7 @@ export class AdminPanel {
     const copy = document.createElement("p");
     copy.className = "admin-copy";
     copy.textContent =
-      "Commits festival map/override snapshots directly via GitHub Contents API. PAT is optional to remember and stored only in this browser.";
+      "Commits the resolved festival map (including all currently applied overrides) directly via GitHub Contents API. PAT is optional to remember and stored only in this browser.";
     card.appendChild(copy);
 
     const tokenField = document.createElement("label");
@@ -2564,20 +2555,6 @@ export class AdminPanel {
     targetPathField.appendChild(targetPathInput);
     card.appendChild(targetPathField);
 
-    const snapshotPathField = document.createElement("label");
-    snapshotPathField.className = "admin-field";
-    snapshotPathField.innerHTML = "<span>Overrides Snapshot Path</span>";
-    const snapshotPathInput = document.createElement("input");
-    snapshotPathInput.type = "text";
-    snapshotPathInput.className = "admin-input";
-    snapshotPathInput.value = this.githubSnapshotPath;
-    snapshotPathInput.addEventListener("input", () => {
-      this.githubSnapshotPath = snapshotPathInput.value.trim();
-      this.persistGithubSettings();
-    });
-    snapshotPathField.appendChild(snapshotPathInput);
-    card.appendChild(snapshotPathField);
-
     const messageField = document.createElement("label");
     messageField.className = "admin-field";
     messageField.innerHTML = "<span>Commit Message</span>";
@@ -2612,24 +2589,13 @@ export class AdminPanel {
     commitMapButton.className = "admin-btn primary";
     commitMapButton.textContent = this.isPublishing
       ? "Committing..."
-      : "Commit Festival Map";
+      : "Commit to Git";
     commitMapButton.disabled = this.isPublishing;
     commitMapButton.addEventListener("click", () => {
       void this.commitFestivalMapToGitHub();
     });
     actions.appendChild(commitMapButton);
 
-    const commitSnapshotButton = document.createElement("button");
-    commitSnapshotButton.type = "button";
-    commitSnapshotButton.className = "admin-btn";
-    commitSnapshotButton.textContent = this.isPublishing
-      ? "Committing..."
-      : "Commit Overrides Snapshot";
-    commitSnapshotButton.disabled = this.isPublishing;
-    commitSnapshotButton.addEventListener("click", () => {
-      void this.commitOverridesSnapshotToGitHub();
-    });
-    actions.appendChild(commitSnapshotButton);
     card.appendChild(actions);
 
     if (this.publishStatus) {
@@ -2661,7 +2627,7 @@ export class AdminPanel {
 
     const slotLabel = document.createElement("p");
     slotLabel.className = "admin-preview-meta";
-    slotLabel.textContent = selectedSlot.label;
+    slotLabel.textContent = `${selectedSlot.label} · Active (in-game)`;
     card.appendChild(slotLabel);
 
     if (selectedSlot.mediaType === "image") {
@@ -2697,7 +2663,7 @@ export class AdminPanel {
     if (candidate) {
       const candidateLabel = document.createElement("p");
       candidateLabel.className = "admin-preview-meta";
-      candidateLabel.textContent = "Candidate";
+      candidateLabel.textContent = "Candidate (not active until applied)";
       card.appendChild(candidateLabel);
       if (selectedSlot.mediaType === "image") {
         const candidateImage = document.createElement("img");
@@ -2975,7 +2941,6 @@ export class AdminPanel {
           repo: this.githubRepo,
           branch: this.githubBranch,
           targetPath: this.githubTargetPath,
-          snapshotPath: this.githubSnapshotPath,
           remember: this.rememberGithubSettings
         },
         null,
@@ -3058,43 +3023,6 @@ export class AdminPanel {
           ? this.githubCommitMessage.trim()
           : `chore(admin): update ${this.activeFestivalId} festival config`,
         content
-      });
-      const commitLine = result.commitUrl ? `Commit: ${result.commitUrl}` : "Commit pushed.";
-      const fileLine = result.fileUrl ? ` File: ${result.fileUrl}` : "";
-      this.publishStatus = `${commitLine}${fileLine}`;
-      this.persistGithubSettings();
-    } catch (error) {
-      this.publishStatus = String(error);
-    } finally {
-      this.isPublishing = false;
-      this.render();
-    }
-  }
-
-  private async commitOverridesSnapshotToGitHub(): Promise<void> {
-    if (this.isPublishing) {
-      return;
-    }
-    this.isPublishing = true;
-    this.publishStatus = "Committing overrides snapshot to GitHub...";
-    this.render();
-    try {
-      const payload = {
-        festivalId: this.activeFestivalId,
-        exportedAt: new Date().toISOString(),
-        mapConfigPath: this.mapConfigPath,
-        overrides: this.draftOverrides
-      };
-      const result = await putFileToGitHub({
-        token: this.githubToken,
-        owner: this.githubOwner,
-        repo: this.githubRepo,
-        branch: this.githubBranch,
-        path: this.githubSnapshotPath,
-        message: this.githubCommitMessage.trim().length
-          ? `${this.githubCommitMessage.trim()} (snapshot)`
-          : `chore(admin): snapshot overrides for ${this.activeFestivalId}`,
-        content: `${JSON.stringify(payload, null, 2)}\n`
       });
       const commitLine = result.commitUrl ? `Commit: ${result.commitUrl}` : "Commit pushed.";
       const fileLine = result.fileUrl ? ` File: ${result.fileUrl}` : "";

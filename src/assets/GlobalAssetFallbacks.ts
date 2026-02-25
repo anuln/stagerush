@@ -11,16 +11,11 @@ export function getAssetCandidatePaths(
   kind: FallbackAssetKind,
   requestedPath: string
 ): string[] {
-  const candidates: string[] = [];
   const trimmed = requestedPath.trim();
   if (trimmed.length > 0) {
-    candidates.push(trimmed);
+    return [trimmed];
   }
-  const fallback = GLOBAL_FALLBACK_ASSET_PATHS[kind];
-  if (!candidates.includes(fallback)) {
-    candidates.push(fallback);
-  }
-  return candidates;
+  return [GLOBAL_FALLBACK_ASSET_PATHS[kind]];
 }
 
 export function getAllGlobalFallbackAssetPaths(): string[] {

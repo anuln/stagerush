@@ -11,10 +11,9 @@ describe("GlobalAssetFallbacks", () => {
     ]);
   });
 
-  it("prepends explicit path and appends fallback path", () => {
+  it("uses explicit path as-is when provided", () => {
     expect(getAssetCandidatePaths("stage", "assets/custom/stage.png")).toEqual([
-      "assets/custom/stage.png",
-      GLOBAL_FALLBACK_ASSET_PATHS.stage
+      "assets/custom/stage.png"
     ]);
   });
 });
