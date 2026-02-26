@@ -23,6 +23,7 @@ class FakeRuntime implements RuntimeController {
       deliveredArtists: 0,
       incorrectStageArtists: 0,
       missedArtists: 0,
+      maxEncounterStrikes: 12,
       remainingLives: 3,
       remainingTimeSeconds: 60,
       totalArtists: 10,
@@ -175,6 +176,33 @@ describe("GameManager", () => {
     manager.update(0.016, { width: 1000, height: 2000 }, 4200);
     expect(manager.snapshot.screen).toBe("LEVEL_COMPLETE");
     expect(manager.snapshot.level.cumulativeScore).toBe(300);
+  });
+
+  it("promotes failed outcome to completion when session minimum is already met", () => {
+    const runtimes: FakeRuntime[] = [];
+    const manager = new GameManager({
+      layout: makeLayout(1),
+      createRuntime: (levelNumber) => {
+        const runtime = new FakeRuntime(levelNumber);
+        runtime.status.sessionIndexInDay = 3;
+        runtime.status.sessionName = "Evening";
+        runtimes.push(runtime);
+        return runtime;
+      }
+    });
+
+    manager.startFestival();
+    runtimes[0].status.levelScore = 980;
+    runtimes[0].status.deliveredArtists = 8;
+    runtimes[0].status.sessionTargetSets = 8;
+    runtimes[0].status.outcome = "FAILED";
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 100);
+    expect(manager.snapshot.screen).toBe("PLAYING");
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 4300);
+    expect(manager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
+    expect(manager.snapshot.level.cumulativeScore).toBe(980);
   });
 
   it("uses screen actions for menu start and menu return", () => {

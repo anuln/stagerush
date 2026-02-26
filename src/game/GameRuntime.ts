@@ -11,7 +11,7 @@ import type { ArtistMissReason } from "../entities/ArtistState";
 import type { HazardBlockedArtistSnapshot } from "../entities/HazardState";
 import type { InProgressPathPreview, PathState } from "../entities/PathState";
 import { PathDrawingInput } from "../input/PathDrawingInput";
-import type { ResolvedFestivalLayout } from "../maps/MapLoader";
+import type { ResolvedDistraction, ResolvedFestivalLayout } from "../maps/MapLoader";
 import type { LayerSet } from "../maps/layers";
 import { ArtistRenderer } from "../rendering/ArtistRenderer";
 import { ComboFeedbackRenderer } from "../rendering/ComboFeedbackRenderer";
@@ -70,6 +70,7 @@ export interface RuntimeStatus {
   deliveredArtists: number;
   incorrectStageArtists: number;
   missedArtists: number;
+  maxEncounterStrikes: number;
   remainingLives: number;
   remainingTimeSeconds: number;
   totalArtists: number;
@@ -95,14 +96,20 @@ export interface GameRuntimeOptions {
   getEffectsDensity?: () => number;
 }
 
+// Map-wide FTUX guide events (shown once per map across sessions).
 type FtuxEventKey =
   | "first_spawn_unrouted"
+  | "first_stage_bonus_hint"
   | "first_collision"
   | "first_distraction"
+  | "first_distraction_zone_intro"
   | "first_successful_stage_arrival"
   | "first_timeout_miss";
 
 const FTUX_EVENTS_BY_MAP = new Map<string, Set<FtuxEventKey>>();
+const STAGE_BONUS_HINT_DELAY_MS = 16_000;
+const STAGE_BONUS_HINT_MIN_VISIBLE_MS = 5_000;
+const STAGE_BONUS_HINT_MAX_VISIBLE_MS = 14_000;
 
 function getOrCreateFtuxEventSet(mapId: string): Set<FtuxEventKey> {
   const existing = FTUX_EVENTS_BY_MAP.get(mapId);
@@ -167,6 +174,10 @@ export class GameRuntime {
   private shownFtuxEvents: Set<FtuxEventKey>;
   private ftuxMapId: string;
   private firstSpawnArtistId: string | null = null;
+  private firstSpawnRoutedArtistId: string | null = null;
+  private stageBonusHintDueAtMs: number | null = null;
+  private stageBonusHintShownAtMs: number | null = null;
+  private stageBonusHintArtistId: string | null = null;
 
   constructor(
     layout: ResolvedFestivalLayout,
@@ -203,7 +214,9 @@ export class GameRuntime {
     this.collisionSystem = new CollisionSystem(
       GAME_CONFIG.hazards.collisionRadiusPx,
       GAME_CONFIG.hazards.chatDurationMs,
-      GAME_CONFIG.hazards.immunityCooldownMs
+      GAME_CONFIG.hazards.immunityCooldownMs,
+      GAME_CONFIG.hazards.chatDurationIncrementMs,
+      GAME_CONFIG.hazards.chatDurationMaxMs
     );
     this.distractionSystem = new DistractionSystem(
       layout.distractions,
@@ -267,6 +280,10 @@ export class GameRuntime {
       this.ftuxMapId = nextMapId;
       this.shownFtuxEvents = getOrCreateFtuxEventSet(nextMapId);
       this.firstSpawnArtistId = null;
+      this.firstSpawnRoutedArtistId = null;
+      this.stageBonusHintDueAtMs = null;
+      this.stageBonusHintShownAtMs = null;
+      this.stageBonusHintArtistId = null;
     }
     this.layout = nextLayout;
     this.spawnSystem.setSpawnPoints(nextLayout.spawnPoints);
@@ -347,11 +364,14 @@ export class GameRuntime {
         this.playSfx("spawn");
       }
     }
+    const artistById = new Map<string, Artist>(
+      this.artists.map((artist) => [artist.id, artist])
+    );
 
     const followUpdates = this.pathFollower.update(this.artists, deltaSeconds);
     const arrivals = this.applyPathFollowUpdates(followUpdates);
     for (const arrival of arrivals) {
-      const artist = this.artists.find((entry) => entry.id === arrival.artistId);
+      const artist = artistById.get(arrival.artistId);
       if (!artist) {
         continue;
       }
@@ -363,8 +383,8 @@ export class GameRuntime {
       this.pathFollower.blockArtist(started.artistAId, "chat");
       this.pathFollower.blockArtist(started.artistBId, "chat");
       this.livesState.recordIncident();
-      const artistA = this.artists.find((entry) => entry.id === started.artistAId);
-      const artistB = this.artists.find((entry) => entry.id === started.artistBId);
+      const artistA = artistById.get(started.artistAId);
+      const artistB = artistById.get(started.artistBId);
       const center =
         artistA && artistB
           ? {
@@ -372,26 +392,19 @@ export class GameRuntime {
               y: (artistA.position.y + artistB.position.y) / 2
             }
           : null;
-      if (center) {
-        hazardEvents.push({
-          id: started.sessionId,
-          type: "chat",
+      if (center && !this.shownFtuxEvents.has("first_collision")) {
+        this.shownFtuxEvents.add("first_collision");
+        guidanceEvents.push({
+          id: "first_collision",
+          text: "Chit chat ...",
           position: center
         });
-        if (!this.shownFtuxEvents.has("first_collision")) {
-          this.shownFtuxEvents.add("first_collision");
-          guidanceEvents.push({
-            id: "first_collision",
-            text: "Chit chat ...",
-            position: center
-          });
-        }
       }
       this.playSfx("chat");
     }
     for (const resolved of collisionUpdate.resolved) {
-      const artistA = this.artists.find((entry) => entry.id === resolved.artistAId);
-      const artistB = this.artists.find((entry) => entry.id === resolved.artistBId);
+      const artistA = artistById.get(resolved.artistAId);
+      const artistB = artistById.get(resolved.artistBId);
       if (artistA) {
         this.pathFollower.unblockArtist(artistA, "chat");
       }
@@ -404,7 +417,7 @@ export class GameRuntime {
     for (const started of distractionUpdate.started) {
       this.pathFollower.blockArtist(started.artistId, "distraction");
       this.livesState.recordIncident();
-      const artist = this.artists.find((entry) => entry.id === started.artistId);
+      const artist = artistById.get(started.artistId);
       if (artist) {
         hazardEvents.push({
           id: `${started.artistId}-${started.distractionId}`,
@@ -424,7 +437,7 @@ export class GameRuntime {
       this.playSfx("distraction");
     }
     for (const resolved of distractionUpdate.resolved) {
-      const artist = this.artists.find((entry) => entry.id === resolved.artistId);
+      const artist = artistById.get(resolved.artistId);
       if (!artist) {
         continue;
       }
@@ -457,7 +470,7 @@ export class GameRuntime {
 
     const timeoutEvents = this.timerSystem.update(this.artists, deltaSeconds);
     for (const event of timeoutEvents) {
-      const artist = this.artists.find((entry) => entry.id === event.artistId);
+      const artist = artistById.get(event.artistId);
       if (artist) {
         this.missedArtists += 1;
         this.comboTracker.breakAllChains();
@@ -481,9 +494,7 @@ export class GameRuntime {
 
     const stageUpdate = this.stageSystem.update(this.nowMs);
     for (const delivery of stageUpdate.completedDeliveries) {
-      const deliveredArtist = this.artists.find(
-        (entry) => entry.id === delivery.artistId
-      );
+      const deliveredArtist = artistById.get(delivery.artistId);
       const isCorrectStage =
         !deliveredArtist?.assignedStageId ||
         deliveredArtist.assignedStageId === delivery.stageId;
@@ -536,6 +547,7 @@ export class GameRuntime {
     const effectsDensity = clampEffectsDensity(this.getEffectsDensity?.() ?? 1);
     const preview = this.buildPreview();
     const activeDistractions = this.distractionSystem.getActiveDistractions();
+    this.queueDistractionZoneIntroBubbles(activeDistractions, guidanceEvents);
     this.distractionRenderer.render(activeDistractions);
     this.pathRenderer.render(this.pathStates, preview.path);
     this.hazardOverlayRenderer.render(
@@ -559,6 +571,10 @@ export class GameRuntime {
     const stickySpawnBubble = this.resolveStickySpawnBubble();
     if (stickySpawnBubble) {
       guidanceEvents.push(stickySpawnBubble);
+    }
+    const stageBonusHintBubble = this.resolveStageBonusHintBubble();
+    if (stageBonusHintBubble) {
+      guidanceEvents.push(stageBonusHintBubble);
     }
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
@@ -632,6 +648,7 @@ export class GameRuntime {
       deliveredArtists: this.deliveredArtists,
       incorrectStageArtists: this.incorrectStageArtists,
       missedArtists: this.missedArtists,
+      maxEncounterStrikes: this.runtimeLevel.maxEncounterStrikes,
       remainingLives: this.livesState.remainingLives,
       remainingTimeSeconds: this.remainingLevelTimeSeconds,
       totalArtists: this.spawnSystem.totalArtists,
@@ -742,6 +759,8 @@ export class GameRuntime {
     );
     if (assignment === "assigned" || assignment === "queued") {
       if (this.firstSpawnArtistId === artist.id) {
+        this.firstSpawnRoutedArtistId = artist.id;
+        this.stageBonusHintDueAtMs = this.resolveStageBonusHintDueAtMs();
         this.firstSpawnArtistId = null;
       }
       this.pathStates.push({
@@ -836,6 +855,106 @@ export class GameRuntime {
     };
   }
 
+  private resolveStageBonusHintDueAtMs(): number | null {
+    if (this.shownFtuxEvents.has("first_stage_bonus_hint")) {
+      return null;
+    }
+    if (!this.isDayOneMorningSession()) {
+      return null;
+    }
+    // Delay to later in the opening flow so it doesn't compete with first-touch FTUX.
+    return this.nowMs + STAGE_BONUS_HINT_DELAY_MS;
+  }
+
+  private isDayOneMorningSession(): boolean {
+    return (
+      this.runtimeLevel.sessionDayNumber === 1 &&
+      this.runtimeLevel.sessionIndexInDay === 1
+    );
+  }
+
+  private resolveStageBonusHintBubble(): GuidanceFeedbackEvent | null {
+    if (this.stageBonusHintShownAtMs === null) {
+      if (this.stageBonusHintDueAtMs === null || this.nowMs < this.stageBonusHintDueAtMs) {
+        return null;
+      }
+      if (this.shownFtuxEvents.has("first_stage_bonus_hint")) {
+        this.stageBonusHintDueAtMs = null;
+        return null;
+      }
+      const seededArtist = this.pickStageBonusHintArtist();
+      if (!seededArtist) {
+        return null;
+      }
+      this.shownFtuxEvents.add("first_stage_bonus_hint");
+      this.stageBonusHintDueAtMs = null;
+      this.stageBonusHintShownAtMs = this.nowMs;
+      this.stageBonusHintArtistId = seededArtist.id;
+    }
+
+    if (this.stageBonusHintShownAtMs === null) {
+      return null;
+    }
+    let targetArtist = this.artists.find(
+      (artist) => artist.id === this.stageBonusHintArtistId && artist.isActive()
+    );
+    const elapsedMs = this.nowMs - this.stageBonusHintShownAtMs;
+    const minimumDurationMet = elapsedMs >= STAGE_BONUS_HINT_MIN_VISIBLE_MS;
+
+    if (!targetArtist && !minimumDurationMet) {
+      targetArtist = this.pickStageBonusHintArtist();
+      if (targetArtist) {
+        this.stageBonusHintArtistId = targetArtist.id;
+      }
+    }
+
+    if (!targetArtist && minimumDurationMet) {
+      this.clearStageBonusHint();
+      return null;
+    }
+
+    if (!targetArtist) {
+      return null;
+    }
+
+    const contextualExitState =
+      targetArtist.state === "ARRIVING" ||
+      targetArtist.state === "COMPLETED" ||
+      targetArtist.state === "MISSED";
+    const hardTimeout = elapsedMs >= STAGE_BONUS_HINT_MAX_VISIBLE_MS;
+    if (minimumDurationMet && (contextualExitState || hardTimeout)) {
+      this.clearStageBonusHint();
+      return null;
+    }
+
+    return {
+      id: "first_stage_bonus_hint",
+      text: "I can perform on any stage!\nBut the correct stage gets a bonus :)",
+      position: { ...targetArtist.position },
+      sticky: true
+    };
+  }
+
+  private pickStageBonusHintArtist(): Artist | undefined {
+    const preferred = this.artists.find(
+      (artist) =>
+        artist.isActive() &&
+        artist.id !== this.firstSpawnRoutedArtistId &&
+        (artist.state === "DRIFTING" || artist.state === "FOLLOWING")
+    );
+    if (preferred) {
+      return preferred;
+    }
+    return this.artists.find(
+      (artist) => artist.isActive() && artist.id !== this.firstSpawnRoutedArtistId
+    );
+  }
+
+  private clearStageBonusHint(): void {
+    this.stageBonusHintShownAtMs = null;
+    this.stageBonusHintArtistId = null;
+  }
+
   private resolveDistractionLabel(distractionId: string): string {
     const distraction = this.layout.distractions.find((entry) => entry.id === distractionId);
     switch (distraction?.type) {
@@ -850,6 +969,31 @@ export class GameRuntime {
       default:
         return "Distraction";
     }
+  }
+
+  private queueDistractionZoneIntroBubbles(
+    activeDistractions: ResolvedDistraction[],
+    guidanceEvents: GuidanceFeedbackEvent[]
+  ): void {
+    if (this.shownFtuxEvents.has("first_distraction_zone_intro")) {
+      return;
+    }
+    const distraction = activeDistractions[0];
+    if (!distraction) {
+      return;
+    }
+    this.shownFtuxEvents.add("first_distraction_zone_intro");
+    guidanceEvents.push({
+      id: "first_distraction_zone_intro",
+      text: "Distraction zone",
+      position: {
+        x: distraction.screenPosition.x,
+        y: distraction.screenPosition.y - Math.max(10, distraction.pixelRadius * 0.2)
+      },
+      tone: "warning",
+      durationMs: 4500,
+      opacity: 0.72
+    });
   }
 
   private cleanupPathStatesForResolvedArtists(): void {
@@ -1030,10 +1174,11 @@ export class GameRuntime {
 }
 
 function resolveMusicCue(levelNumber: number): string {
-  if (levelNumber <= 4) {
+  // 3-day festival: levels 1-3 (day 1), 4-6 (day 2), 7-9 (day 3).
+  if (levelNumber <= 3) {
     return "bg_chill";
   }
-  if (levelNumber <= 8) {
+  if (levelNumber <= 6) {
     return "bg_energy";
   }
   return "bg_peak";

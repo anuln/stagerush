@@ -195,4 +195,62 @@ describe("AudioManager", () => {
     expect(played).toBe(false);
     expect(createPlayer).not.toHaveBeenCalled();
   });
+
+  it("updates cue table and restarts active music when cue path changes", async () => {
+    const players: FakeAudioPlayer[] = [];
+    const manager = new AudioManager(
+      { bg_chill: "audio/chill_v1.mp3" },
+      {
+        createPlayer: () => {
+          const player = makeFakePlayer();
+          players.push(player);
+          return player;
+        }
+      }
+    );
+
+    await manager.playMusic("bg_chill");
+    expect(players).toHaveLength(1);
+    expect(players[0].src).toContain("audio/chill_v1.mp3");
+
+    manager.setCues({ bg_chill: "audio/chill_v2.mp3" });
+    await Promise.resolve();
+
+    expect(players).toHaveLength(2);
+    expect(players[0].pauseSpy).toHaveBeenCalledTimes(1);
+    expect(players[1].src).toContain("audio/chill_v2.mp3");
+    expect(players[1].playSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies cue-specific attenuation to interstitial hero sounds", async () => {
+    const players: FakeAudioPlayer[] = [];
+    const manager = new AudioManager(
+      {
+        level_complete: "audio/level_complete.mp3",
+        fireworks: "audio/fireworks.mp3",
+        deliver: "audio/deliver.mp3"
+      },
+      {
+        createPlayer: () => {
+          const player = makeFakePlayer();
+          players.push(player);
+          return player;
+        }
+      }
+    );
+    manager.setMix({
+      masterVolume: 1,
+      musicVolume: 1,
+      sfxVolume: 1,
+      musicFadeMs: 0
+    });
+
+    await manager.playSfx("level_complete", { category: "hero" });
+    await manager.playSfx("fireworks", { category: "hero" });
+    await manager.playSfx("deliver", { category: "hero" });
+
+    expect(players[0].volume).toBeCloseTo(1 * 1 * 1.12 * 0.82, 5);
+    expect(players[1].volume).toBeCloseTo(1, 5);
+    expect(players[2].volume).toBeCloseTo(1, 5);
+  });
 });

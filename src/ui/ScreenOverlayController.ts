@@ -68,6 +68,9 @@ export class ScreenOverlayController {
       String(wrap.sessionScore),
       String(wrap.runTotalScore),
       metrics,
+      (wrap.festivalTotals ?? [])
+        .map((entry) => `${entry.id}:${entry.value}`)
+        .join("|"),
       wrap.progress.nextLabel
     ].join("~");
   }
@@ -150,7 +153,7 @@ export class ScreenOverlayController {
     fxLayer.className = "screen-session-fx";
     const sparkleCount =
       sessionWrap.outcome === "festival_complete"
-        ? 11
+        ? 18
         : sessionWrap.outcome === "complete"
           ? 7
           : 4;
@@ -158,6 +161,17 @@ export class ScreenOverlayController {
       const spark = document.createElement("span");
       spark.className = "screen-session-spark";
       spark.style.setProperty("--spark-index", String(index));
+      const leftPct = 4 + ((index * 37) % 90);
+      const topPct = 12 + ((index * 23) % 70);
+      const sizePx = sessionWrap.outcome === "festival_complete" ? 6 + (index % 4) : 6 + (index % 3);
+      const durationMs =
+        sessionWrap.outcome === "festival_complete"
+          ? 1400 + ((index * 113) % 900)
+          : 1500 + ((index * 97) % 500);
+      spark.style.setProperty("--spark-left", `${leftPct}%`);
+      spark.style.setProperty("--spark-top", `${topPct}%`);
+      spark.style.setProperty("--spark-size", `${sizePx}px`);
+      spark.style.setProperty("--spark-duration", `${durationMs}ms`);
       fxLayer.appendChild(spark);
     }
     panel.appendChild(fxLayer);
@@ -187,6 +201,43 @@ export class ScreenOverlayController {
 
     header.append(titleBlock, tierBadge);
     panel.appendChild(header);
+
+    if (sessionWrap.helpOutline) {
+      const helpButton = document.createElement("button");
+      helpButton.type = "button";
+      helpButton.className = "screen-session-help";
+      helpButton.textContent = "?";
+      helpButton.setAttribute("aria-label", "How to play");
+      this.root.appendChild(helpButton);
+
+      const helpModal = document.createElement("aside");
+      helpModal.className = "screen-session-help-modal is-hidden";
+      helpModal.setAttribute("role", "dialog");
+      helpModal.setAttribute("aria-modal", "false");
+      const helpTitle = document.createElement("h3");
+      helpTitle.textContent = sessionWrap.helpOutline.title;
+      const helpList = document.createElement("ul");
+      sessionWrap.helpOutline.lines.forEach((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        helpList.appendChild(item);
+      });
+      const closeHelp = document.createElement("button");
+      closeHelp.type = "button";
+      closeHelp.className = "screen-session-help-close";
+      closeHelp.textContent = "Got it";
+      helpModal.append(helpTitle, helpList, closeHelp);
+      this.root.appendChild(helpModal);
+
+      const toggleHelp = (open: boolean): void => {
+        helpModal.classList.toggle("is-hidden", !open);
+        helpButton.classList.toggle("is-open", open);
+      };
+      helpButton.addEventListener("click", () => {
+        toggleHelp(helpModal.classList.contains("is-hidden"));
+      });
+      closeHelp.addEventListener("click", () => toggleHelp(false));
+    }
 
     const scoreStrip = document.createElement("section");
     scoreStrip.className = "screen-session-score-strip";
@@ -235,6 +286,28 @@ export class ScreenOverlayController {
       metrics.appendChild(card);
     });
     panel.appendChild(metrics);
+
+    if (sessionWrap.festivalTotals && sessionWrap.festivalTotals.length > 0) {
+      const totals = document.createElement("section");
+      totals.className = "screen-session-festival-totals";
+      const heading = document.createElement("p");
+      heading.className = "screen-session-festival-heading";
+      heading.textContent = "Full Festival Stats";
+      totals.appendChild(heading);
+      sessionWrap.festivalTotals.forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "screen-session-festival-row";
+        const label = document.createElement("span");
+        label.className = "screen-session-festival-label";
+        label.textContent = entry.label;
+        const value = document.createElement("strong");
+        value.className = "screen-session-festival-value";
+        value.textContent = entry.value;
+        row.append(label, value);
+        totals.appendChild(row);
+      });
+      panel.appendChild(totals);
+    }
 
     const progress = document.createElement("section");
     progress.className = "screen-session-progress";

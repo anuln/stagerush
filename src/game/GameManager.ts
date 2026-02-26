@@ -174,7 +174,17 @@ export class GameManager {
 
     this.runtime.update(deltaSeconds, viewport, nowMs);
     const status = this.runtime.getStatus();
+    const now = Number.isFinite(nowMs) ? (nowMs as number) : Date.now();
     if (status.outcome === "FAILED") {
+      const minimumMet = status.deliveredArtists >= status.sessionTargetSets;
+      if (minimumMet) {
+        if (this.shouldDelayEveningCompletion(status, now)) {
+          return;
+        }
+        this.clearCompletionDelay();
+        this.completeLevel(status);
+        return;
+      }
       this.clearCompletionDelay();
       this.levelManager.markLevelFailed(status.levelScore);
       this.setScreen("LEVEL_FAILED");
@@ -182,24 +192,11 @@ export class GameManager {
     }
 
     if (status.outcome === "COMPLETED") {
-      const now = Number.isFinite(nowMs) ? (nowMs as number) : Date.now();
       if (this.shouldDelayEveningCompletion(status, now)) {
         return;
       }
       this.clearCompletionDelay();
-      this.levelManager.markLevelCompleted(status.levelScore);
-      this.persistence?.recordLevelCompletion({
-        levelNumber: this.levelManager.snapshot.currentLevel,
-        totalLevels: this.levelManager.snapshot.totalLevels,
-        levelScore: status.levelScore,
-        cumulativeScore: this.levelManager.snapshot.cumulativeScore,
-        festivalCompleted: this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
-      });
-      this.setScreen(
-        this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
-          ? "FESTIVAL_COMPLETE"
-          : "LEVEL_COMPLETE"
-      );
+      this.completeLevel(status);
       return;
     }
 
@@ -254,6 +251,31 @@ export class GameManager {
   private clearCompletionDelay(): void {
     this.eveningCompletionDelayUntilMs = null;
     this.eveningCompletionDelayKey = null;
+  }
+
+  private completeLevel(status: RuntimeStatus): void {
+    const encounterStrikesUsed = Math.max(
+      0,
+      Math.floor(status.maxEncounterStrikes - status.remainingLives)
+    );
+    this.levelManager.markLevelCompleted(status.levelScore, {
+      deliveredArtists: status.deliveredArtists,
+      missedArtists: status.missedArtists,
+      incorrectStageArtists: status.incorrectStageArtists,
+      encounterStrikesUsed
+    });
+    this.persistence?.recordLevelCompletion({
+      levelNumber: this.levelManager.snapshot.currentLevel,
+      totalLevels: this.levelManager.snapshot.totalLevels,
+      levelScore: status.levelScore,
+      cumulativeScore: this.levelManager.snapshot.cumulativeScore,
+      festivalCompleted: this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
+    });
+    this.setScreen(
+      this.levelManager.snapshot.state === "FESTIVAL_COMPLETE"
+        ? "FESTIVAL_COMPLETE"
+        : "LEVEL_COMPLETE"
+    );
   }
 
   private getPersistenceSnapshot(): PersistenceSnapshot {

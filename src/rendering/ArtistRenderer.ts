@@ -125,6 +125,7 @@ export function resolveArtistSpritePath(
 export class ArtistRenderer {
   private readonly layer: Container;
   private readonly artistSprites: ArtistSpriteConfig[];
+  private readonly visuals = new Map<string, ArtistVisual>();
 
   constructor(layer: Container, artistSprites: ArtistSpriteConfig[] = []) {
     this.layer = layer;
@@ -132,18 +133,19 @@ export class ArtistRenderer {
   }
 
   render(artists: Artist[], nowMs = 0): void {
-    this.layer.removeChildren();
+    const seenArtistIds = new Set<string>();
 
     for (const artist of artists) {
       if (artist.state === "COMPLETED") {
         continue;
       }
+      seenArtistIds.add(artist.id);
 
       const style = TIER_STYLE[artist.tier];
       const renderScale = GAME_CONFIG.artist.renderScale;
       const spriteSize = Math.round(style.spriteSize * renderScale);
-      const container = new Container();
-      container.position.set(artist.position.x, artist.position.y);
+      const visual = this.getOrCreateVisual(artist.id);
+      visual.container.position.set(artist.position.x, artist.position.y);
 
       const bounceOffset = isPerformingState(artist.state)
         ? Math.sin(
@@ -151,57 +153,59 @@ export class ArtistRenderer {
           ) * GAME_CONFIG.artist.performBouncePx
         : 0;
 
-      const shadow = new Graphics();
-      shadow.ellipse(
-        0,
-        GAME_CONFIG.artist.shadowOffsetY,
-        Math.max(10, spriteSize * 0.4),
-        Math.max(4, spriteSize * 0.18)
-      );
-      shadow.fill({
-        color: 0x07090f,
-        alpha: GAME_CONFIG.artist.shadowAlpha
-      });
-      container.addChild(shadow);
+      if (visual.spriteSize !== spriteSize) {
+        this.redrawShadow(visual.shadow, spriteSize);
+        visual.spriteSize = spriteSize;
+      }
 
       const spritePath = resolveArtistSpritePath(artist, this.artistSprites, nowMs);
       const texture = spritePath ? this.getTexture(spritePath) : null;
       if (texture) {
-        const outlineSprite = new Sprite(texture);
-        outlineSprite.anchor.set(0.5);
-        outlineSprite.width = spriteSize * 1.08;
-        outlineSprite.height = spriteSize * 1.08;
-        outlineSprite.y = -bounceOffset + 1;
-        outlineSprite.tint = 0x090f1c;
-        outlineSprite.alpha = 0.36;
-        container.addChild(outlineSprite);
-
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5);
-        sprite.width = spriteSize;
-        sprite.height = spriteSize;
-        sprite.y = -bounceOffset;
-        if (artist.state === "MISSED") {
-          sprite.tint = 0x7a7a7a;
-          sprite.alpha = 0.7;
+        visual.outlineSprite.visible = true;
+        visual.sprite.visible = true;
+        visual.fallback.visible = false;
+        if (visual.texturePath !== spritePath) {
+          visual.outlineSprite.texture = texture;
+          visual.sprite.texture = texture;
+          visual.texturePath = spritePath;
         }
-        container.addChild(sprite);
+        visual.outlineSprite.width = spriteSize * 1.08;
+        visual.outlineSprite.height = spriteSize * 1.08;
+        visual.outlineSprite.y = -bounceOffset + 1;
+        visual.outlineSprite.tint = 0x090f1c;
+        visual.outlineSprite.alpha = 0.36;
+
+        visual.sprite.width = spriteSize;
+        visual.sprite.height = spriteSize;
+        visual.sprite.y = -bounceOffset;
+        if (artist.state === "MISSED") {
+          visual.sprite.tint = 0x7a7a7a;
+          visual.sprite.alpha = 0.7;
+        } else {
+          visual.sprite.tint = 0xffffff;
+          visual.sprite.alpha = 1;
+        }
       } else {
+        visual.outlineSprite.visible = false;
+        visual.sprite.visible = false;
+        visual.texturePath = null;
+        visual.fallback.visible = true;
         const fallbackSize = style.radius * renderScale * 1.35;
-        const fallback = new Graphics();
-        fallback.roundRect(
+        visual.fallback.clear();
+        visual.fallback.roundRect(
           -fallbackSize / 2,
           -bounceOffset - fallbackSize / 2,
           fallbackSize,
           fallbackSize,
           Math.max(6, fallbackSize * 0.22)
         );
-        fallback.fill(artist.state === "MISSED" ? 0x4a4a4a : style.fill);
-        fallback.stroke({ color: 0x0a0f1c, width: 2.4, alpha: 0.88 });
-        container.addChild(fallback);
+        visual.fallback.fill(artist.state === "MISSED" ? 0x4a4a4a : style.fill);
+        visual.fallback.stroke({ color: 0x0a0f1c, width: 2.4, alpha: 0.88 });
       }
 
       if (shouldRenderTimerBar(artist.state)) {
+        visual.barTrack.visible = true;
+        visual.barFill.visible = true;
         const timerProgress = artist.initialTimerSeconds
           ? artist.timerRemainingSeconds / artist.initialTimerSeconds
           : 0;
@@ -214,19 +218,31 @@ export class ArtistRenderer {
         const fillLeft = fillRight - fillWidth;
         const stageColor = parseHexColor(artist.assignedStageColor, style.ring);
 
-        const barTrack = new Graphics();
-        barTrack.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
-        barTrack.fill({ color: 0x0d1220, alpha: 0.62 });
-        barTrack.stroke({ color: 0x101726, width: 1, alpha: 0.5 });
-        container.addChild(barTrack);
+        if (visual.barWidth !== barWidth || visual.barY !== barY) {
+          visual.barTrack.clear();
+          visual.barTrack.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+          visual.barTrack.fill({ color: 0x0d1220, alpha: 0.62 });
+          visual.barTrack.stroke({ color: 0x101726, width: 1, alpha: 0.5 });
+          visual.barWidth = barWidth;
+          visual.barY = barY;
+        }
 
-        const barFill = new Graphics();
-        barFill.roundRect(fillLeft, barY, fillWidth, barHeight, 2);
-        barFill.fill({ color: stageColor, alpha: 0.82 });
-        container.addChild(barFill);
+        visual.barFill.clear();
+        visual.barFill.roundRect(fillLeft, barY, fillWidth, barHeight, 2);
+        visual.barFill.fill({ color: stageColor, alpha: 0.82 });
+      } else {
+        visual.barTrack.visible = false;
+        visual.barFill.visible = false;
       }
+    }
 
-      this.layer.addChild(container);
+    for (const [artistId, visual] of this.visuals) {
+      if (seenArtistIds.has(artistId)) {
+        continue;
+      }
+      visual.container.removeFromParent();
+      visual.container.destroy({ children: true });
+      this.visuals.delete(artistId);
     }
   }
 
@@ -246,4 +262,75 @@ export class ArtistRenderer {
 
     return null;
   }
+
+  private getOrCreateVisual(artistId: string): ArtistVisual {
+    const existing = this.visuals.get(artistId);
+    if (existing) {
+      return existing;
+    }
+
+    const container = new Container();
+    const shadow = new Graphics();
+    const outlineSprite = new Sprite(Texture.EMPTY);
+    outlineSprite.anchor.set(0.5);
+    const sprite = new Sprite(Texture.EMPTY);
+    sprite.anchor.set(0.5);
+    const fallback = new Graphics();
+    const barTrack = new Graphics();
+    const barFill = new Graphics();
+
+    container.addChild(
+      shadow,
+      outlineSprite,
+      sprite,
+      fallback,
+      barTrack,
+      barFill
+    );
+    this.layer.addChild(container);
+
+    const visual: ArtistVisual = {
+      container,
+      shadow,
+      outlineSprite,
+      sprite,
+      fallback,
+      barTrack,
+      barFill,
+      texturePath: null,
+      spriteSize: -1,
+      barWidth: -1,
+      barY: -1
+    };
+    this.visuals.set(artistId, visual);
+    return visual;
+  }
+
+  private redrawShadow(shadow: Graphics, spriteSize: number): void {
+    shadow.clear();
+    shadow.ellipse(
+      0,
+      GAME_CONFIG.artist.shadowOffsetY,
+      Math.max(10, spriteSize * 0.4),
+      Math.max(4, spriteSize * 0.18)
+    );
+    shadow.fill({
+      color: 0x07090f,
+      alpha: GAME_CONFIG.artist.shadowAlpha
+    });
+  }
+}
+
+interface ArtistVisual {
+  container: Container;
+  shadow: Graphics;
+  outlineSprite: Sprite;
+  sprite: Sprite;
+  fallback: Graphics;
+  barTrack: Graphics;
+  barFill: Graphics;
+  texturePath: string | null;
+  spriteSize: number;
+  barWidth: number;
+  barY: number;
 }

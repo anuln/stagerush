@@ -9,6 +9,8 @@ export interface CollisionSession {
   artistBId: string;
   priorArtistAState: ArtistState;
   priorArtistBState: ArtistState;
+  priorArtistAVelocity: Vector2;
+  priorArtistBVelocity: Vector2;
   endsAtMs: number;
 }
 

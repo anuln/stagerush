@@ -3,6 +3,10 @@ import { getAssetCandidatePaths } from "../assets/GlobalAssetFallbacks";
 import type { ResolvedDistraction } from "../maps/MapLoader";
 import { resolveAssetPath } from "../maps/MapLoader";
 
+const DISTRACTION_ZONE_TINT = 0xff9ab1;
+const DISTRACTION_ZONE_FILL_ALPHA = 0.025;
+const DISTRACTION_ZONE_STROKE_ALPHA = 0.085;
+
 function colorForType(type: ResolvedDistraction["type"]): number {
   switch (type) {
     case "merch_stand":
@@ -20,49 +24,77 @@ function colorForType(type: ResolvedDistraction["type"]): number {
 
 export class DistractionRenderer {
   private readonly layer: Container;
+  private readonly visuals = new Map<string, DistractionVisual>();
 
   constructor(layer: Container) {
     this.layer = layer;
   }
 
   render(distractions: ResolvedDistraction[]): void {
-    this.layer.removeChildren();
+    const seenIds = new Set<string>();
 
     for (const distraction of distractions) {
+      seenIds.add(distraction.id);
       const color = colorForType(distraction.type);
+      const visual = this.getOrCreateVisual(distraction.id);
 
-      const zone = new Graphics();
-      zone.circle(
+      visual.zone.clear();
+      visual.zone.circle(
         distraction.screenPosition.x,
         distraction.screenPosition.y,
         distraction.pixelRadius
       );
-      zone.fill({ color, alpha: 0.04 });
-      zone.stroke({ color, width: 2, alpha: 0.18 });
-      this.layer.addChild(zone);
-
-      const marker = new Graphics();
+      visual.zone.fill({
+        color: DISTRACTION_ZONE_TINT,
+        alpha: DISTRACTION_ZONE_FILL_ALPHA
+      });
+      visual.zone.stroke({
+        color: DISTRACTION_ZONE_TINT,
+        width: 2,
+        alpha: DISTRACTION_ZONE_STROKE_ALPHA
+      });
       const texture = this.getTexture(distraction.sprite);
       if (texture) {
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5);
-        sprite.position.set(
+        if (!visual.sprite) {
+          visual.sprite = new Sprite(texture);
+          visual.sprite.anchor.set(0.5);
+          visual.container.addChild(visual.sprite);
+        } else if (visual.texturePath !== distraction.sprite) {
+          visual.sprite.texture = texture;
+        }
+        visual.texturePath = distraction.sprite;
+        visual.sprite.visible = true;
+        visual.sprite.position.set(
           distraction.screenPosition.x,
           distraction.screenPosition.y
         );
-        sprite.width = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
-        sprite.height = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
-        this.layer.addChild(sprite);
+        visual.sprite.width = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
+        visual.sprite.height = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
+        visual.marker.visible = false;
       } else {
-        marker.circle(
+        visual.texturePath = null;
+        if (visual.sprite) {
+          visual.sprite.visible = false;
+        }
+        visual.marker.visible = true;
+        visual.marker.clear();
+        visual.marker.circle(
           distraction.screenPosition.x,
           distraction.screenPosition.y,
           8
         );
-        marker.fill({ color, alpha: 0.9 });
-        marker.stroke({ color: 0x111111, width: 2, alpha: 0.8 });
-        this.layer.addChild(marker);
+        visual.marker.fill({ color, alpha: 0.9 });
+        visual.marker.stroke({ color: 0x111111, width: 2, alpha: 0.8 });
       }
+    }
+
+    for (const [id, visual] of this.visuals) {
+      if (seenIds.has(id)) {
+        continue;
+      }
+      visual.container.removeFromParent();
+      visual.container.destroy({ children: true });
+      this.visuals.delete(id);
     }
   }
 
@@ -81,4 +113,35 @@ export class DistractionRenderer {
     }
     return null;
   }
+
+  private getOrCreateVisual(distractionId: string): DistractionVisual {
+    const existing = this.visuals.get(distractionId);
+    if (existing) {
+      return existing;
+    }
+
+    const container = new Container();
+    const zone = new Graphics();
+    const marker = new Graphics();
+    container.addChild(zone, marker);
+    this.layer.addChild(container);
+
+    const visual: DistractionVisual = {
+      container,
+      zone,
+      marker,
+      sprite: null,
+      texturePath: null
+    };
+    this.visuals.set(distractionId, visual);
+    return visual;
+  }
+}
+
+interface DistractionVisual {
+  container: Container;
+  zone: Graphics;
+  marker: Graphics;
+  sprite: Sprite | null;
+  texturePath: string | null;
 }

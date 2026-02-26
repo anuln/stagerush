@@ -29,7 +29,7 @@ interface SfxPlayOptions {
 }
 
 export class AudioManager {
-  private readonly cues: Record<string, string>;
+  private cues: Record<string, string>;
   private readonly createPlayer: () => AudioPlayer | null;
   private readonly schedule: AudioManagerOptions["schedule"];
   private readonly cancelSchedule: AudioManagerOptions["cancelSchedule"];
@@ -52,10 +52,14 @@ export class AudioManager {
     momentum: 1.06,
     hero: 1.12
   } as const;
+  private readonly cueSpecificGain: Record<string, number> = {
+    level_complete: 0.82,
+    fireworks: 0.9
+  };
   private readonly cueCooldownUntil = new Map<string, number>();
 
   constructor(cues: Record<string, string>, options: AudioManagerOptions = {}) {
-    this.cues = cues;
+    this.cues = { ...cues };
     this.createPlayer = options.createPlayer ?? defaultCreatePlayer;
     this.schedule = options.schedule ?? ((callback, delayMs) => setTimeout(callback, delayMs));
     this.cancelSchedule = options.cancelSchedule ?? ((handle) => clearTimeout(handle));
@@ -124,6 +128,29 @@ export class AudioManager {
       return;
     }
     this.setMix({ musicVolume: 0.85, sfxVolume: 0.95 });
+  }
+
+  setCues(nextCues: Record<string, string>): void {
+    const previousCue = this.activeMusicCue;
+    const previousPath = previousCue ? this.cues[previousCue] : null;
+    this.cues = { ...nextCues };
+    if (!previousCue) {
+      return;
+    }
+    const nextPath = this.cues[previousCue] ?? null;
+    if (!nextPath) {
+      this.stopMusic();
+      return;
+    }
+    if (previousPath !== nextPath) {
+      if (this.activeMusicPlayer) {
+        this.activeMusicPlayer.pause();
+        this.activeMusicPlayer.currentTime = 0;
+      }
+      this.activeMusicCue = null;
+      this.activeMusicPlayer = null;
+      void this.playMusic(previousCue);
+    }
   }
 
   async playSfx(cueId: string, options: SfxPlayOptions = {}): Promise<boolean> {
@@ -265,11 +292,13 @@ export class AudioManager {
     category: SfxPlayOptions["category"] = "tactical"
   ): number {
     const pressureBoost = cueId === "timer_warning" ? 1.08 : 1;
+    const cueGain = this.cueSpecificGain[cueId] ?? 1;
     return clamp01(
       this.mix.masterVolume *
         this.mix.sfxVolume *
         pressureBoost *
-        this.cueCategoryGain[category]
+        this.cueCategoryGain[category] *
+        cueGain
     );
   }
 

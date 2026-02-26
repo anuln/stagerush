@@ -12,7 +12,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 0,
         attemptKey: "1:0",
         cumulativeScore: 0,
-        lastLevelScore: null
+        lastLevelScore: null,
+        festivalRoutedArtists: 0,
+        festivalMissedArtists: 0,
+        festivalIncorrectStageArtists: 0,
+        festivalEncounterStrikes: 0
       },
       profile: {
         highestUnlockedLevel: 3,
@@ -38,7 +42,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 2,
         attemptKey: "3:2",
         cumulativeScore: 950,
-        lastLevelScore: 180
+        lastLevelScore: 180,
+        festivalRoutedArtists: 7,
+        festivalMissedArtists: 3,
+        festivalIncorrectStageArtists: 1,
+        festivalEncounterStrikes: 2
       },
       profile: {
         highestUnlockedLevel: 4,
@@ -60,6 +68,7 @@ describe("buildScreenViewModel", () => {
         incorrectStageArtists: 1,
         missedArtists: 4,
         remainingLives: 0,
+        maxEncounterStrikes: 12,
         remainingTimeSeconds: 0,
         totalArtists: 14,
         spawnedArtists: 12,
@@ -72,7 +81,7 @@ describe("buildScreenViewModel", () => {
       "180 pts"
     );
     expect(model?.sessionWrap?.outcome).toBe("failed");
-    expect(model?.sessionWrap?.resultLabel).toBe("Session Turbulence");
+    expect(model?.sessionWrap?.resultLabel).toBe("Regroup Fast");
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
     ).toMatchObject({ label: "Artists Routed", value: "3", tone: "critical" });
@@ -84,6 +93,8 @@ describe("buildScreenViewModel", () => {
     ).toMatchObject({ label: "Incorrect Stage", value: "1", tone: "warning" });
     expect(model?.sessionWrap?.metrics).toHaveLength(3);
     expect(model?.sessionWrap?.progress.nextLabel).toBe("Session minimums not met");
+    expect(model?.sessionWrap?.helpOutline?.title).toBe("How to play");
+    expect(model?.sessionWrap?.helpOutline?.lines.length).toBeGreaterThan(0);
     expect(model?.actions.map((action) => action.id)).toEqual(["RETRY_LEVEL"]);
   });
 
@@ -97,7 +108,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 1,
         attemptKey: "2:1",
         cumulativeScore: 1220,
-        lastLevelScore: 520
+        lastLevelScore: 520,
+        festivalRoutedArtists: 11,
+        festivalMissedArtists: 2,
+        festivalIncorrectStageArtists: 0,
+        festivalEncounterStrikes: 3
       },
       profile: {
         highestUnlockedLevel: 4,
@@ -119,6 +134,7 @@ describe("buildScreenViewModel", () => {
         incorrectStageArtists: 0,
         missedArtists: 1,
         remainingLives: 2,
+        maxEncounterStrikes: 12,
         remainingTimeSeconds: 0,
         totalArtists: 14,
         spawnedArtists: 14,
@@ -134,7 +150,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 1,
         attemptKey: "4:1",
         cumulativeScore: 3140,
-        lastLevelScore: 880
+        lastLevelScore: 880,
+        festivalRoutedArtists: 31,
+        festivalMissedArtists: 6,
+        festivalIncorrectStageArtists: 5,
+        festivalEncounterStrikes: 14
       },
       profile: {
         highestUnlockedLevel: 4,
@@ -156,6 +176,7 @@ describe("buildScreenViewModel", () => {
         incorrectStageArtists: 2,
         missedArtists: 2,
         remainingLives: 1,
+        maxEncounterStrikes: 12,
         remainingTimeSeconds: 0,
         totalArtists: 16,
         spawnedArtists: 16,
@@ -168,7 +189,7 @@ describe("buildScreenViewModel", () => {
     ]);
     expect(levelComplete?.actions[0].label).toBe("Next Session");
     expect(levelComplete?.sessionWrap?.outcome).toBe("complete");
-    expect(levelComplete?.sessionWrap?.resultLabel).toBe("Session Locked In");
+    expect(levelComplete?.sessionWrap?.resultLabel).toBe("Crowd Warmup");
     expect(
       levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
     ).toMatchObject({ value: "6", tone: "positive" });
@@ -178,12 +199,22 @@ describe("buildScreenViewModel", () => {
     expect(levelComplete?.sessionWrap?.tierIconPath).toBe("/assets/ui/trophies/gold.svg");
 
     expect(festivalComplete?.sessionWrap?.outcome).toBe("festival_complete");
-    expect(festivalComplete?.sessionWrap?.resultLabel).toBe("Festival Headliner Moment");
+    expect(festivalComplete?.sessionWrap?.resultLabel).toBe("Legendary Finish");
     expect(festivalComplete?.sessionWrap?.progress.nextLabel).toContain("Festival complete");
-    expect(festivalComplete?.actions[0].label).toBe("Run Festival Again");
+    expect(festivalComplete?.actions[0].label).toBe("Play Again");
     expect(festivalComplete?.sessionWrap?.tierIconPath).toBe("/assets/ui/trophies/gold.svg");
+    expect(festivalComplete?.sessionWrap?.festivalTotals).toEqual([
+      { id: "festival-routed", label: "Artists Routed", value: "31" },
+      { id: "festival-missed", label: "Artists Missed", value: "6" },
+      { id: "festival-incorrect-stage", label: "Incorrect Stage", value: "5" },
+      {
+        id: "festival-encounters",
+        label: "Total Collisions/Distractions",
+        value: "14"
+      }
+    ]);
     expect(festivalComplete?.actions.map((action) => action.id)).toEqual([
-      "START_FESTIVAL"
+      "RETURN_TO_MENU"
     ]);
   });
 
@@ -197,7 +228,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 1,
         attemptKey: "2:1",
         cumulativeScore: 820,
-        lastLevelScore: 220
+        lastLevelScore: 220,
+        festivalRoutedArtists: 9,
+        festivalMissedArtists: 4,
+        festivalIncorrectStageArtists: 2,
+        festivalEncounterStrikes: 5
       },
       profile: {
         highestUnlockedLevel: 4,
@@ -219,6 +254,7 @@ describe("buildScreenViewModel", () => {
         incorrectStageArtists: 0,
         missedArtists: 3,
         remainingLives: 2,
+        maxEncounterStrikes: 12,
         remainingTimeSeconds: 0,
         totalArtists: 14,
         spawnedArtists: 14,
@@ -235,7 +271,11 @@ describe("buildScreenViewModel", () => {
         attemptNumber: 1,
         attemptKey: "4:1",
         cumulativeScore: 1640,
-        lastLevelScore: 180
+        lastLevelScore: 180,
+        festivalRoutedArtists: 20,
+        festivalMissedArtists: 12,
+        festivalIncorrectStageArtists: 6,
+        festivalEncounterStrikes: 18
       },
       profile: {
         highestUnlockedLevel: 4,
@@ -257,6 +297,7 @@ describe("buildScreenViewModel", () => {
         incorrectStageArtists: 2,
         missedArtists: 4,
         remainingLives: 1,
+        maxEncounterStrikes: 12,
         remainingTimeSeconds: 0,
         totalArtists: 16,
         spawnedArtists: 16,
@@ -269,8 +310,7 @@ describe("buildScreenViewModel", () => {
       "RETRY_LEVEL"
     ]);
     expect(festivalCompleteWarning?.actions.map((action) => action.id)).toEqual([
-      "START_FESTIVAL",
-      "RETRY_LEVEL"
+      "RETURN_TO_MENU"
     ]);
   });
 });

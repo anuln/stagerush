@@ -45,39 +45,75 @@ export function advancePathLifecycles(
 
 export class PathRenderer {
   private readonly layer: Container;
+  private readonly pathGraphics = new Map<string, Graphics>();
+  private readonly previewGraphic = new Graphics();
 
   constructor(layer: Container) {
     this.layer = layer;
+    this.layer.addChild(this.previewGraphic);
   }
 
   render(paths: PathState[], inProgress: InProgressPathPreview | null): void {
-    this.layer.removeChildren();
+    const seen = new Set<string>();
 
     for (const path of paths) {
+      seen.add(path.id);
       const color = path.targetStageId ? parseColor(path.stageColor, 0xeeeeee) : 0x8b8b8b;
-      this.layer.addChild(this.createLine(path.smoothedPoints, color, path.alpha, 4));
+      const line = this.getOrCreatePathGraphic(path.id);
+      this.drawLine(line, path.smoothedPoints, color, path.alpha, 4);
+    }
+
+    for (const [id, graphic] of this.pathGraphics) {
+      if (seen.has(id)) {
+        continue;
+      }
+      graphic.removeFromParent();
+      graphic.destroy();
+      this.pathGraphics.delete(id);
     }
 
     if (inProgress) {
-      this.layer.addChild(this.createLine(inProgress.points, parseColor(inProgress.color, 0xffffff), 0.95, 3));
+      this.previewGraphic.visible = true;
+      this.drawLine(
+        this.previewGraphic,
+        inProgress.points,
+        parseColor(inProgress.color, 0xffffff),
+        0.95,
+        3
+      );
+      this.layer.addChild(this.previewGraphic);
+      return;
     }
+    this.previewGraphic.visible = false;
+    this.previewGraphic.clear();
   }
 
-  private createLine(
+  private drawLine(
+    line: Graphics,
     points: Array<{ x: number; y: number }>,
     color: number,
     alpha: number,
     width: number
-  ): Graphics {
-    const line = new Graphics();
+  ): void {
+    line.clear();
     if (points.length <= 1) {
-      return line;
+      return;
     }
     line.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i += 1) {
       line.lineTo(points[i].x, points[i].y);
     }
     line.stroke({ color, width, alpha, cap: "round", join: "round" });
-    return line;
+  }
+
+  private getOrCreatePathGraphic(pathId: string): Graphics {
+    const existing = this.pathGraphics.get(pathId);
+    if (existing) {
+      return existing;
+    }
+    const graphic = new Graphics();
+    this.layer.addChild(graphic);
+    this.pathGraphics.set(pathId, graphic);
+    return graphic;
   }
 }

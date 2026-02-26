@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-02-26",
   "current": {
-    "version": "v1.0.0",
+    "version": "v1.0.2",
     "defaults": {
       "atmosphere": {
         "overlayColor": "#8BBEFF",
@@ -95,19 +95,19 @@
         },
         "fireworks": {
           "enabled": true,
-          "burstCountMin": 3,
-          "burstCountMax": 5,
-          "particlesPerBurstMin": 16,
-          "particlesPerBurstMax": 24,
-          "launchIntervalMsMin": 150,
-          "launchIntervalMsMax": 280,
-          "durationMs": 2200,
-          "burstRadiusMin": 44,
-          "burstRadiusMax": 68,
-          "trailAlpha": 0.86,
+          "burstCountMin": 6,
+          "burstCountMax": 8,
+          "particlesPerBurstMin": 22,
+          "particlesPerBurstMax": 30,
+          "launchIntervalMsMin": 110,
+          "launchIntervalMsMax": 210,
+          "durationMs": 2800,
+          "burstRadiusMin": 48,
+          "burstRadiusMax": 74,
+          "trailAlpha": 0.9,
           "colors": ["#FFD166", "#FF8C5A", "#FF4E7A", "#6EE7D4"]
         },
-        "notes": "Day 1 evening wrap fireworks (lite)."
+        "notes": "Day 1 evening wrap fireworks (boosted)."
       },
       "4": {
         "levelNumber": 4,
@@ -176,19 +176,19 @@
         },
         "fireworks": {
           "enabled": true,
-          "burstCountMin": 6,
-          "burstCountMax": 9,
-          "particlesPerBurstMin": 20,
-          "particlesPerBurstMax": 30,
-          "launchIntervalMsMin": 110,
-          "launchIntervalMsMax": 220,
-          "durationMs": 2500,
-          "burstRadiusMin": 48,
-          "burstRadiusMax": 74,
-          "trailAlpha": 0.9,
+          "burstCountMin": 9,
+          "burstCountMax": 12,
+          "particlesPerBurstMin": 26,
+          "particlesPerBurstMax": 36,
+          "launchIntervalMsMin": 82,
+          "launchIntervalMsMax": 170,
+          "durationMs": 3100,
+          "burstRadiusMin": 52,
+          "burstRadiusMax": 80,
+          "trailAlpha": 0.94,
           "colors": ["#FFD166", "#FF8C5A", "#6EE7D4", "#5CC8FF", "#F973C2"]
         },
-        "notes": "Day 2 evening fireworks (mid)."
+        "notes": "Day 2 evening fireworks (boosted)."
       },
       "7": {
         "levelNumber": 7,
@@ -257,19 +257,19 @@
         },
         "fireworks": {
           "enabled": true,
-          "burstCountMin": 10,
-          "burstCountMax": 14,
-          "particlesPerBurstMin": 24,
-          "particlesPerBurstMax": 36,
-          "launchIntervalMsMin": 80,
-          "launchIntervalMsMax": 170,
-          "durationMs": 2900,
-          "burstRadiusMin": 52,
-          "burstRadiusMax": 82,
-          "trailAlpha": 0.94,
+          "burstCountMin": 14,
+          "burstCountMax": 18,
+          "particlesPerBurstMin": 30,
+          "particlesPerBurstMax": 44,
+          "launchIntervalMsMin": 55,
+          "launchIntervalMsMax": 125,
+          "durationMs": 3800,
+          "burstRadiusMin": 56,
+          "burstRadiusMax": 88,
+          "trailAlpha": 0.97,
           "colors": ["#FFD166", "#FF8C5A", "#6EE7D4", "#5CC8FF", "#F973C2", "#FFFFFF"]
         },
-        "notes": "Day 3 evening grand finale fireworks."
+        "notes": "Day 3 evening grand finale fireworks (intense)."
       }
     }
   },
@@ -279,6 +279,18 @@
       "updatedAt": "2026-02-26",
       "author": "codex",
       "summary": "Introduced session-level FX progression across all 9 sessions and evening wrap fireworks progression for levels 3/6/9."
+    },
+    {
+      "version": "v1.0.1",
+      "updatedAt": "2026-02-26",
+      "author": "codex",
+      "summary": "Increased evening fireworks intensity for all night sessions (levels 3/6/9) with denser bursts and longer celebration windows."
+    },
+    {
+      "version": "v1.0.2",
+      "updatedAt": "2026-02-26",
+      "author": "codex",
+      "summary": "Raised evening fireworks intensity again across all night sessions with higher burst density and longer finale duration."
     }
   ]
 }

@@ -25,18 +25,25 @@ function isCollisionEligibleState(state: ArtistState): boolean {
 export class CollisionSystem {
   private readonly collisionRadiusPx: number;
   private readonly chatDurationMs: number;
+  private readonly chatDurationIncrementMs: number;
+  private readonly chatDurationMaxMs: number;
   private readonly immunityCooldownMs: number;
   private readonly sessions = new Map<string, CollisionSession>();
   private readonly artistToSession = new Map<string, string>();
   private readonly artistCooldownUntilMs = new Map<string, number>();
+  private startedSessionCount = 0;
 
   constructor(
     collisionRadiusPx = 40,
     chatDurationMs = 3000,
-    immunityCooldownMs = 0
+    immunityCooldownMs = 0,
+    chatDurationIncrementMs = 0,
+    chatDurationMaxMs = chatDurationMs
   ) {
     this.collisionRadiusPx = collisionRadiusPx;
     this.chatDurationMs = chatDurationMs;
+    this.chatDurationIncrementMs = Math.max(0, chatDurationIncrementMs);
+    this.chatDurationMaxMs = Math.max(chatDurationMs, chatDurationMaxMs);
     this.immunityCooldownMs = Math.max(0, immunityCooldownMs);
   }
 
@@ -62,9 +69,15 @@ export class CollisionSystem {
 
       if (artistA && artistA.state === "CHATTING" && artistA.isActive()) {
         artistA.state = session.priorArtistAState;
+        if (session.priorArtistAState === "DRIFTING") {
+          artistA.velocity = { ...session.priorArtistAVelocity };
+        }
       }
       if (artistB && artistB.state === "CHATTING" && artistB.isActive()) {
         artistB.state = session.priorArtistBState;
+        if (session.priorArtistBState === "DRIFTING") {
+          artistB.velocity = { ...session.priorArtistBVelocity };
+        }
       }
 
       this.sessions.delete(sessionId);
@@ -117,13 +130,16 @@ export class CollisionSystem {
           continue;
         }
 
+        const collisionDurationMs = this.resolveChatDurationMs();
         this.sessions.set(sessionId, {
           id: sessionId,
           artistAId: artistA.id,
           artistBId: artistB.id,
           priorArtistAState: artistA.state,
           priorArtistBState: artistB.state,
-          endsAtMs: nowMs + this.chatDurationMs
+          priorArtistAVelocity: { ...artistA.velocity },
+          priorArtistBVelocity: { ...artistB.velocity },
+          endsAtMs: nowMs + collisionDurationMs
         });
         this.artistToSession.set(artistA.id, sessionId);
         this.artistToSession.set(artistB.id, sessionId);
@@ -138,6 +154,7 @@ export class CollisionSystem {
           artistAId: artistA.id,
           artistBId: artistB.id
         });
+        this.startedSessionCount += 1;
         break;
       }
     }
@@ -159,6 +176,12 @@ export class CollisionSystem {
     }
     this.artistCooldownUntilMs.delete(artistId);
     return false;
+  }
+
+  private resolveChatDurationMs(): number {
+    const scaledDuration =
+      this.chatDurationMs + this.chatDurationIncrementMs * this.startedSessionCount;
+    return Math.min(this.chatDurationMaxMs, scaledDuration);
   }
 
   private getActiveChats(

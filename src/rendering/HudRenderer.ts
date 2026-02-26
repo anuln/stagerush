@@ -44,14 +44,6 @@ function parseColor(hex: string, fallback = 0x7dd9f2): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function formatStageName(stageId: string): string {
-  return stageId
-    .replace(/[-_]/g, " ")
-    .replace(/\bstage\b/gi, "")
-    .trim()
-    .toUpperCase();
-}
-
 function formatScore(score: number): string {
   const whole = Math.max(0, Math.floor(score));
   return String(whole);
@@ -76,7 +68,6 @@ export function buildHudLabels(
     0,
     Math.floor(Math.max(0, state.maxLives) - Math.max(0, state.remainingLives))
   );
-  const maxStrikes = Math.max(1, Math.floor(state.maxLives));
   const safeTargetSets = Math.max(1, Math.floor(state.targetSets));
   const elapsedSeconds = Math.max(
     0,
@@ -109,80 +100,38 @@ export function buildHudLabels(
   };
 }
 
+interface StageBadgeVisual {
+  container: Container;
+  card: Graphics;
+  dot: Graphics;
+  label: Text;
+}
+
 export class HudRenderer {
   private readonly layer: Container;
+  private readonly root = new Container();
+  private readonly scoreLabel: Text;
+  private readonly daySessionLabel: Text;
+  private readonly timerDial = new Container();
+  private readonly timerRingBase = new Graphics();
+  private readonly timerRingProgress = new Graphics();
+  private readonly timerCore = new Graphics();
+  private readonly timerValue: Text;
+  private readonly timerCaption: Text;
+  private readonly stageBadgeLayer = new Container();
+  private readonly bottomSecondary: Text;
+  private readonly bottomHeat: Text;
+  private readonly stageBadges = new Map<string, StageBadgeVisual>();
 
   constructor(layer: Container) {
     this.layer = layer;
-  }
+    this.root.label = "hudRoot";
 
-  render(state: HudRenderState): void {
-    const labels = buildHudLabels(state);
-    this.layer.removeChildren();
-
-    const safeTop = clamp(state.safeAreaTopPx, 0, 72);
-    const safeBottom = clamp(state.safeAreaBottomPx, 0, 80);
-    const leftPadding = Math.max(10, Math.min(20, Math.round(state.viewportWidth * 0.03)));
-    const topY = safeTop + 8;
-    const timerRadius = state.viewportWidth < 400 ? 31 : 35;
-    const timerCenterX = state.viewportWidth - leftPadding - timerRadius;
-    const timerCenterY = topY + timerRadius;
-
-    this.layer.addChild(
-      this.createTopLeftScoreLabel({
-        x: leftPadding,
-        y: topY,
-        text: labels.festivalHype
-      })
-    );
-
-    this.layer.addChild(
-      this.createTimerDial({
-        x: timerCenterX,
-        y: timerCenterY,
-        radius: timerRadius,
-        remaining: state.remainingTimeSeconds,
-        duration: state.sessionDurationSeconds
-      })
-    );
-
-    this.layer.addChild(
-      this.createStageSetBadges(
-        state.stageProgress,
-        state.viewportWidth,
-        state.viewportHeight,
-        safeTop,
-        safeBottom
-      )
-    );
-
-    const bottomAnchorY = state.viewportHeight - safeBottom - 10;
-    const bottomPrimary = this.createBottomLabel(labels.daySession, 20);
-    bottomPrimary.position.set(state.viewportWidth / 2, bottomAnchorY - 26);
-    this.layer.addChild(bottomPrimary);
-
-    const secondary = this.createBottomLabel(`${labels.setsProgress} · ${labels.pace}`, 13);
-    secondary.position.set(state.viewportWidth / 2, bottomAnchorY - 6);
-    this.layer.addChild(secondary);
-
-    if (labels.stageHeat) {
-      const heat = this.createBottomLabel(labels.stageHeat, 12, 0xffde96);
-      heat.position.set(state.viewportWidth / 2, bottomAnchorY - 48);
-      this.layer.addChild(heat);
-    }
-  }
-
-  private createTopLeftScoreLabel(input: {
-    x: number;
-    y: number;
-    text: string;
-  }): Container {
-    const container = new Container();
-    const label = new Text({
-      text: input.text,
+    this.scoreLabel = new Text({
+      text: "",
       style: {
         fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "800",
         fill: 0xf4f8ff,
         letterSpacing: 0.2,
@@ -192,51 +141,30 @@ export class HudRenderer {
         }
       }
     });
-    label.position.set(input.x, input.y + 2);
-    label.alpha = 0.97;
-    container.addChild(label);
-    return container;
-  }
+    this.scoreLabel.alpha = 0.97;
 
-  private createTimerDial(input: {
-    x: number;
-    y: number;
-    radius: number;
-    remaining: number;
-    duration: number;
-  }): Container {
-    const dial = new Container();
-    const ratio =
-      input.duration > 0 ? clamp(input.remaining / input.duration, 0, 1) : 0;
-    const color =
-      input.remaining <= 10 ? 0xff7d55 : input.remaining <= 20 ? 0xffcb6a : 0x7df2d2;
-
-    const ringBase = new Graphics();
-    ringBase.circle(input.x, input.y, input.radius);
-    ringBase.stroke({ color: 0x30475d, width: 7, alpha: 0.72 });
-    dial.addChild(ringBase);
-
-    const ringProgress = new Graphics();
-    ringProgress.arc(
-      input.x,
-      input.y,
-      input.radius,
-      -Math.PI / 2,
-      -Math.PI / 2 + Math.PI * 2 * ratio
-    );
-    ringProgress.stroke({ color, width: 7, alpha: 0.95, cap: "round" });
-    dial.addChild(ringProgress);
-
-    const core = new Graphics();
-    core.circle(input.x, input.y, input.radius - 6);
-    core.fill({ color: 0x08111f, alpha: 0.8 });
-    dial.addChild(core);
-
-    const value = new Text({
-      text: String(Math.max(0, Math.ceil(input.remaining))),
+    this.daySessionLabel = new Text({
+      text: "",
       style: {
         fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-        fontSize: input.radius < 33 ? 19 : 22,
+        fontSize: 16,
+        fontWeight: "800",
+        fill: 0xf4f8ff,
+        letterSpacing: 0.2,
+        stroke: {
+          color: 0x05080f,
+          width: 2
+        }
+      }
+    });
+    this.daySessionLabel.anchor.set(0.5, 0);
+    this.daySessionLabel.alpha = 0.96;
+
+    this.timerValue = new Text({
+      text: "0",
+      style: {
+        fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
+        fontSize: 20,
         fontWeight: "800",
         fill: 0xf5f8ff,
         stroke: {
@@ -245,10 +173,9 @@ export class HudRenderer {
         }
       }
     });
-    value.anchor.set(0.5, 0.62);
-    value.position.set(input.x, input.y - 4);
+    this.timerValue.anchor.set(0.5, 0.62);
 
-    const label = new Text({
+    this.timerCaption = new Text({
       text: "TIME",
       style: {
         fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
@@ -258,39 +185,171 @@ export class HudRenderer {
         letterSpacing: 0.8
       }
     });
-    label.anchor.set(0.5, 0);
-    label.position.set(input.x, input.y + 10);
+    this.timerCaption.anchor.set(0.5, 0);
 
-    dial.addChild(value, label);
-    return dial;
+    this.timerDial.addChild(
+      this.timerRingBase,
+      this.timerRingProgress,
+      this.timerCore,
+      this.timerValue,
+      this.timerCaption
+    );
+
+    this.bottomSecondary = new Text({
+      text: "",
+      style: {
+        fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
+        fontSize: 13,
+        fontWeight: "bold",
+        fill: 0xf4f8ff,
+        letterSpacing: 0.35,
+        stroke: {
+          color: 0x05080f,
+          width: 2
+        }
+      }
+    });
+    this.bottomSecondary.anchor.set(0.5, 1);
+
+    this.bottomHeat = new Text({
+      text: "",
+      style: {
+        fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
+        fontSize: 12,
+        fontWeight: "bold",
+        fill: 0xffde96,
+        letterSpacing: 0.35,
+        stroke: {
+          color: 0x05080f,
+          width: 2
+        }
+      }
+    });
+    this.bottomHeat.anchor.set(0.5, 1);
+
+    this.root.addChild(
+      this.scoreLabel,
+      this.daySessionLabel,
+      this.timerDial,
+      this.stageBadgeLayer,
+      this.bottomSecondary,
+      this.bottomHeat
+    );
+    this.layer.addChild(this.root);
   }
 
-  private createStageSetBadges(
+  render(state: HudRenderState): void {
+    if (!this.root.parent) {
+      this.layer.addChild(this.root);
+    }
+
+    const labels = buildHudLabels(state);
+    const safeTop = clamp(state.safeAreaTopPx, 0, 72);
+    const hudSafeTop = Math.min(safeTop, 20);
+    const safeBottom = clamp(state.safeAreaBottomPx, 0, 80);
+    const leftPadding = Math.max(10, Math.min(20, Math.round(state.viewportWidth * 0.03)));
+    const topPadding = 4;
+    const topY = hudSafeTop + topPadding;
+    const topLineY = topY + 1;
+    const timerRadius = state.viewportWidth < 400 ? 27 : 30;
+    const timerCenterX = state.viewportWidth - leftPadding - timerRadius;
+    const timerCenterY = topY + timerRadius;
+
+    this.scoreLabel.text = labels.festivalHype;
+    this.scoreLabel.position.set(leftPadding, topLineY);
+
+    this.updateTimerDial({
+      x: timerCenterX,
+      y: timerCenterY,
+      radius: timerRadius,
+      remaining: state.remainingTimeSeconds,
+      duration: state.sessionDurationSeconds
+    });
+
+    const scoreBounds = this.scoreLabel.getBounds();
+    const availableLeft = scoreBounds.x + scoreBounds.width + 14;
+    const availableRight = timerCenterX - timerRadius - 12;
+    const topSessionCenterX =
+      availableRight - availableLeft > 70
+        ? (availableLeft + availableRight) / 2
+        : state.viewportWidth * 0.5;
+    this.daySessionLabel.text = labels.daySession;
+    this.daySessionLabel.position.set(topSessionCenterX, topLineY);
+
+    this.updateStageSetBadges(
+      state.stageProgress,
+      state.viewportWidth,
+      state.viewportHeight,
+      safeTop,
+      safeBottom
+    );
+
+    const bottomAnchorY = state.viewportHeight - safeBottom - 10;
+    this.bottomSecondary.text = `${labels.setsProgress} · ${labels.pace}`;
+    this.bottomSecondary.position.set(state.viewportWidth / 2, bottomAnchorY - 8);
+    this.bottomSecondary.visible = true;
+
+    if (labels.stageHeat) {
+      this.bottomHeat.text = labels.stageHeat;
+      this.bottomHeat.position.set(state.viewportWidth / 2, bottomAnchorY - 34);
+      this.bottomHeat.visible = true;
+    } else {
+      this.bottomHeat.visible = false;
+    }
+  }
+
+  private updateTimerDial(input: {
+    x: number;
+    y: number;
+    radius: number;
+    remaining: number;
+    duration: number;
+  }): void {
+    const ratio =
+      input.duration > 0 ? clamp(input.remaining / input.duration, 0, 1) : 0;
+    const color =
+      input.remaining <= 10 ? 0xff7d55 : input.remaining <= 20 ? 0xffcb6a : 0x7df2d2;
+
+    this.timerRingBase.clear();
+    this.timerRingBase.circle(input.x, input.y, input.radius);
+    this.timerRingBase.stroke({ color: 0x30475d, width: 7, alpha: 0.72 });
+
+    this.timerRingProgress.clear();
+    this.timerRingProgress.arc(
+      input.x,
+      input.y,
+      input.radius,
+      -Math.PI / 2,
+      -Math.PI / 2 + Math.PI * 2 * ratio
+    );
+    this.timerRingProgress.stroke({ color, width: 7, alpha: 0.95, cap: "round" });
+
+    this.timerCore.clear();
+    this.timerCore.circle(input.x, input.y, input.radius - 6);
+    this.timerCore.fill({ color: 0x08111f, alpha: 0.8 });
+
+    this.timerValue.text = String(Math.max(0, Math.ceil(input.remaining)));
+    this.timerValue.style.fontSize = input.radius < 33 ? 19 : 22;
+    this.timerValue.position.set(input.x, input.y - 4);
+    this.timerCaption.position.set(input.x, input.y + 10);
+  }
+
+  private updateStageSetBadges(
     stageProgress: HudRenderState["stageProgress"],
     viewportWidth: number,
     viewportHeight: number,
     safeTop: number,
     safeBottom: number
-  ): Container {
-    const strip = new Container();
-    if (stageProgress.length === 0) {
-      return strip;
-    }
+  ): void {
+    const seen = new Set<string>();
 
     for (const stage of stageProgress) {
+      seen.add(stage.stageId);
+      const badge = this.getOrCreateStageBadge(stage.stageId);
       const labelText = `SETS ${Math.max(0, Math.floor(stage.deliveredSets))}`;
-      const label = new Text({
-        text: labelText,
-        style: {
-          fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-          fontSize: 10,
-          fontWeight: "700",
-          fill: 0xe8f2ff,
-          letterSpacing: 0.25
-        }
-      });
+      badge.label.text = labelText;
       const horizontalPadding = 8;
-      const cardWidth = Math.max(52, Math.ceil(label.width + horizontalPadding * 2));
+      const cardWidth = Math.max(52, Math.ceil(badge.label.width + horizontalPadding * 2));
       const cardHeight = 18;
       const labelX = clamp(
         stage.position.x - cardWidth / 2,
@@ -302,45 +361,59 @@ export class HudRenderer {
         safeTop + 6,
         viewportHeight - safeBottom - cardHeight - 6
       );
-      const card = new Graphics();
-      card.roundRect(labelX, labelY, cardWidth, cardHeight, 7);
-      card.fill({ color: 0x0d1728, alpha: 0.48 });
-      card.stroke({
+
+      badge.card.clear();
+      badge.card.roundRect(labelX, labelY, cardWidth, cardHeight, 7);
+      badge.card.fill({ color: 0x0d1728, alpha: 0.48 });
+      badge.card.stroke({
         color: parseColor(stage.color, 0x75c7ff),
         width: 1,
         alpha: 0.52
       });
-      strip.addChild(card);
 
-      const dot = new Graphics();
-      dot.circle(labelX + 8, labelY + cardHeight / 2, 2.5);
-      dot.fill({ color: parseColor(stage.color, 0x75c7ff), alpha: 0.88 });
-      strip.addChild(dot);
+      badge.dot.clear();
+      badge.dot.circle(labelX + 8, labelY + cardHeight / 2, 2.5);
+      badge.dot.fill({ color: parseColor(stage.color, 0x75c7ff), alpha: 0.88 });
 
-      label.position.set(labelX + 14, labelY + 4);
-      label.alpha = 0.92;
-      strip.addChild(label);
+      badge.label.position.set(labelX + 14, labelY + 4);
+      badge.label.alpha = 0.92;
+      badge.container.visible = true;
     }
 
-    return strip;
+    for (const [stageId, badge] of this.stageBadges) {
+      if (seen.has(stageId)) {
+        continue;
+      }
+      badge.container.removeFromParent();
+      badge.container.destroy({ children: true });
+      this.stageBadges.delete(stageId);
+    }
   }
 
-  private createBottomLabel(text: string, fontSize: number, color = 0xf4f8ff): Text {
+  private getOrCreateStageBadge(stageId: string): StageBadgeVisual {
+    const existing = this.stageBadges.get(stageId);
+    if (existing) {
+      return existing;
+    }
+
+    const container = new Container();
+    const card = new Graphics();
+    const dot = new Graphics();
     const label = new Text({
-      text,
+      text: "",
       style: {
         fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-        fontSize,
-        fontWeight: "bold",
-        fill: color,
-        letterSpacing: 0.35,
-        stroke: {
-          color: 0x05080f,
-          width: 2
-        }
+        fontSize: 10,
+        fontWeight: "700",
+        fill: 0xe8f2ff,
+        letterSpacing: 0.25
       }
     });
-    label.anchor.set(0.5, 1);
-    return label;
+    container.addChild(card, dot, label);
+    this.stageBadgeLayer.addChild(container);
+
+    const badge = { container, card, dot, label };
+    this.stageBadges.set(stageId, badge);
+    return badge;
   }
 }

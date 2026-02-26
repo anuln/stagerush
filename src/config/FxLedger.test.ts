@@ -9,7 +9,7 @@ describe("FxLedger", () => {
 
     expect(level3.sessionPeriod).toBe("evening");
     expect(level3.fireworks.enabled).toBe(true);
-    expect(level3.fireworks.burstCountMin).toBe(3);
+    expect(level3.fireworks.burstCountMin).toBe(6);
     expect(level6.fireworks.burstCountMax).toBeGreaterThan(level3.fireworks.burstCountMax);
     expect(level9.fireworks.burstCountMin).toBeGreaterThan(level6.fireworks.burstCountMin);
   });

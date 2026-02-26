@@ -60,6 +60,7 @@ import { resolveGameFrameLayout } from "./ui/GameFrameLayout";
 import { KioskModeController } from "./ui/KioskModeController";
 import { runScreenActionWithAssets } from "./ui/ScreenActionRunner";
 import { ScreenOverlayController } from "./ui/ScreenOverlayController";
+import { buildPreviewSnapshot, parsePreviewScreen } from "./ui/ScreenPreview";
 import { buildScreenViewModel } from "./ui/ScreenViewModels";
 import { applyThemeToDocument, resolveThemePreset } from "./theme/ThemeResolver";
 import "./styles.css";
@@ -74,15 +75,24 @@ function isMobileUserAgent(): boolean {
   return /Mobi|Android/i.test(navigator.userAgent);
 }
 
-function parsePerformanceFlags(): {
+function parsePerformanceFlags(isMobile: boolean): {
   showOverlay: boolean;
   autoQuality: boolean;
   scoreDebug: boolean;
 } {
   const params = new URLSearchParams(window.location.search);
+  const qualityParam = (params.get("quality") ?? "").trim().toLowerCase();
+  const autoQuality =
+    qualityParam === "auto"
+      ? true
+      : qualityParam === "off" ||
+          qualityParam === "0" ||
+          qualityParam === "manual"
+        ? false
+        : isMobile;
   return {
     showOverlay: params.get("perf") === "1",
-    autoQuality: params.get("quality") === "auto",
+    autoQuality,
     scoreDebug: params.get("scoredebug") === "1"
   };
 }
@@ -113,6 +123,7 @@ function resolveAtmosphereSession(
 }
 
 const FESTIVAL_SELECTION_STORAGE_KEY = "stagecall:selected-festival-id";
+const MUSIC_VOLUME_ATTENUATION = 0.94;
 
 function resolveFestivalSelection(registry: FestivalRegistry): {
   selectedId: string;
@@ -229,11 +240,12 @@ function applyQualityResolution(
 async function bootstrap(): Promise<void> {
   const isMobile = isMobileUserAgent();
   const adminMode = isAdminModeEnabled();
-  const perfFlags = parsePerformanceFlags();
+  const perfFlags = parsePerformanceFlags(isMobile);
+  const previewScreen = parsePreviewScreen(window.location.search);
   const dpr = window.devicePixelRatio || 1;
   const baseResolution = isMobile ? Math.min(dpr, 1.5) : dpr;
   const baseViewport = { width: 432, height: 768 };
-  let qualityTier: QualityTier = "high";
+  let qualityTier: QualityTier = isMobile ? "medium" : "high";
   let lowFpsWindows = 0;
   let highFpsWindows = 0;
   const fpsSamples: number[] = [];
@@ -429,6 +441,7 @@ async function bootstrap(): Promise<void> {
       : sourceMap;
     previewSessionMode = resolveSessionPreviewMode(nextOverrides.sessionFxPreview);
     applyIntroScreenMedia(screenOverlay, previewMap);
+    audioManager?.setCues(previewMap.assets.audio);
     bundleManager.registerManifest(
       createFestivalBundleManifest(previewMap, activeBundleId)
     );
@@ -474,7 +487,7 @@ async function bootstrap(): Promise<void> {
     );
     const settings = runPersistence.getSnapshot().settings;
     audioManager.setMix({
-      musicVolume: settings.musicVolume,
+      musicVolume: Math.max(0, Math.min(1, settings.musicVolume * MUSIC_VOLUME_ATTENUATION)),
       sfxVolume: settings.sfxVolume,
       musicFadeMs: 220
     });
@@ -538,6 +551,10 @@ async function bootstrap(): Promise<void> {
           void applyPreviewOverrides(nextOverrides).catch((error) => {
             console.error("Failed to apply admin preview overrides", error);
           });
+        },
+        onBaseMapUpdate: (nextMap) => {
+          sourceMap = structuredClone(nextMap);
+          audioManager?.setCues(nextMap.assets.audio);
         },
         onApply: (nextOverrides) => {
           try {
@@ -729,11 +746,6 @@ async function bootstrap(): Promise<void> {
       previewSessionMode
     );
     atmosphereRenderer.setSession(atmosphereSession);
-    atmosphereRenderer.update(
-      ticker.deltaMS / 1000,
-      getQualityPreset(qualityTier).effectsDensity
-    );
-
     const runtimeTelemetry = latestRuntimeTelemetry ?? {
       frameDeltaMs: ticker.deltaMS,
       updateDurationMs: 0,
@@ -744,6 +756,26 @@ async function bootstrap(): Promise<void> {
       activePaths: 0,
       runtimeOutcome: "ACTIVE" as const
     };
+    const baseEffectsDensity = getQualityPreset(qualityTier).effectsDensity;
+    const sessionLoadFactor =
+      activeLevelNumber >= 7
+        ? 0.78
+        : activeLevelNumber >= 4
+          ? 0.88
+          : 1;
+    const crowdLoadFactor =
+      runtimeTelemetry.activeArtists >= 12
+        ? 0.78
+        : runtimeTelemetry.activeArtists >= 10
+          ? 0.86
+          : runtimeTelemetry.activeArtists >= 8
+            ? 0.92
+            : 1;
+    const fxDensity = Math.max(
+      0.32,
+      Math.min(1, baseEffectsDensity * sessionLoadFactor * crowdLoadFactor)
+    );
+    atmosphereRenderer.update(ticker.deltaMS / 1000, fxDensity);
     const overlayTelemetry: OverlayTelemetrySnapshot = {
       ...runtimeTelemetry,
       qualityTier,
@@ -752,14 +784,20 @@ async function bootstrap(): Promise<void> {
     };
     performanceOverlay.update(overlayTelemetry);
 
+    const effectiveSnapshot = previewScreen
+      ? buildPreviewSnapshot(previewScreen, snapshot)
+      : snapshot;
     const screenModel =
-      snapshot && snapshot.screen !== "PLAYING"
-        ? buildScreenViewModel(snapshot)
+      effectiveSnapshot && effectiveSnapshot.screen !== "PLAYING"
+        ? buildScreenViewModel(effectiveSnapshot)
         : null;
     screenOverlay.render(screenModel, (actionId) => {
+      if (previewScreen) {
+        return;
+      }
       void runScreenAction(actionId);
     });
-    scoreDebugOverlay.update(snapshot, screenModel);
+    scoreDebugOverlay.update(effectiveSnapshot, screenModel);
   });
 }
 

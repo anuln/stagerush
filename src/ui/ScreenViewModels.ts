@@ -29,7 +29,7 @@ function formatDaySession(snapshot: GameManagerSnapshot): string {
   if (!runtime) {
     return `Session ${snapshot.level.currentLevel} / ${snapshot.level.totalLevels}`;
   }
-  return `Day ${runtime.dayNumber} · ${runtime.sessionName}`;
+  return `Day ${runtime.dayNumber} · ${formatSessionName(runtime.sessionName)}`;
 }
 
 function formatSessionName(value: string | null | undefined): string {
@@ -102,12 +102,14 @@ function buildSessionWrap(
   const routedTone =
     deliveryRatio >= 1 ? "positive" : deliveryRatio >= 0.72 ? "warning" : "critical";
 
-  const resultLabel =
-    outcome === "festival_complete"
-      ? "Festival Headliner Moment"
-      : outcome === "failed"
-        ? "Session Turbulence"
-        : "Session Locked In";
+  const resultLabel = resolveResultLabel({
+    outcome,
+    tier,
+    routedTone,
+    dayNumber: runtime?.dayNumber ?? 1,
+    sessionIndexInDay: runtime?.sessionIndexInDay ?? 1,
+    totalFestivalDays: runtime?.totalFestivalDays ?? Math.max(1, level.totalLevels)
+  });
   const sessionScore = Math.max(
     0,
     Math.floor(runtime?.levelScore ?? level.lastLevelScore ?? 0)
@@ -116,6 +118,33 @@ function buildSessionWrap(
     0,
     Math.floor(level.cumulativeScore ?? 0)
   );
+  const festivalTotals =
+    outcome === "festival_complete"
+      ? [
+          {
+            id: "festival-routed",
+            label: "Artists Routed",
+            value: String(Math.max(0, Math.floor(level.festivalRoutedArtists ?? 0)))
+          },
+          {
+            id: "festival-missed",
+            label: "Artists Missed",
+            value: String(Math.max(0, Math.floor(level.festivalMissedArtists ?? 0)))
+          },
+          {
+            id: "festival-incorrect-stage",
+            label: "Incorrect Stage",
+            value: String(
+              Math.max(0, Math.floor(level.festivalIncorrectStageArtists ?? 0))
+            )
+          },
+          {
+            id: "festival-encounters",
+            label: "Total Collisions/Distractions",
+            value: String(Math.max(0, Math.floor(level.festivalEncounterStrikes ?? 0)))
+          }
+        ]
+      : undefined;
 
   return {
     outcome,
@@ -144,10 +173,91 @@ function buildSessionWrap(
         tone: incorrectStage > 0 ? "warning" : "neutral"
       }
     ],
+    festivalTotals,
     progress: {
       nextLabel
+    },
+    helpOutline: {
+      title: "How to play",
+      lines: [
+        "Draw routes to guide artists to stages.",
+        "Avoid collisions and distraction zones.",
+        "Any stage works, right stage boosts your run.",
+        "Keep routing fast before timers expire."
+      ]
     }
   };
+}
+
+function resolveResultLabel(input: {
+  outcome: SessionWrapModel["outcome"];
+  tier: string;
+  routedTone: "positive" | "warning" | "critical";
+  dayNumber: number;
+  sessionIndexInDay: number;
+  totalFestivalDays: number;
+}): string {
+  const { outcome, tier, routedTone, dayNumber, sessionIndexInDay, totalFestivalDays } = input;
+  if (outcome === "festival_complete") {
+    if (tier === "GOLD") {
+      return "Legendary Finish";
+    }
+    if (tier === "SILVER") {
+      return "Crowd Favorite";
+    }
+    return "Keep The Energy";
+  }
+  if (outcome === "failed") {
+    if (dayNumber >= totalFestivalDays) {
+      return "Last Chance";
+    }
+    return dayNumber >= 2 ? "Regroup Fast" : "Rough Start";
+  }
+
+  if (routedTone === "positive") {
+    if (dayNumber === 1) {
+      if (sessionIndexInDay === 1) {
+        return "Smooth Start";
+      }
+      if (sessionIndexInDay === 2) {
+        return "Crowd Warmup";
+      }
+      return "Night Lift";
+    }
+    if (dayNumber === 2) {
+      if (sessionIndexInDay === 1) {
+        return "Flow Building";
+      }
+      if (sessionIndexInDay === 2) {
+        return "Prime Rhythm";
+      }
+      return "Night Surge";
+    }
+    if (sessionIndexInDay === 1) {
+      return "Final Push";
+    }
+    if (sessionIndexInDay === 2) {
+      return "Peak Flow";
+    }
+    return "Finale Rising";
+  }
+
+  if (routedTone === "warning") {
+    if (dayNumber === 1) {
+      return "Keep It Tight";
+    }
+    if (dayNumber === 2) {
+      return "Steady Hands";
+    }
+    return "One More Push";
+  }
+  if (dayNumber === 1) {
+    return "Needs Recovery";
+  }
+  if (dayNumber === 2) {
+    return "Hold The Line";
+  }
+  return "Fight To Finish";
 }
 
 function shouldOfferRetryAction(sessionWrap: SessionWrapModel): boolean {
@@ -227,17 +337,12 @@ export function buildScreenViewModel(
 
   if (snapshot.screen === "FESTIVAL_COMPLETE") {
     const sessionWrap = buildSessionWrap(snapshot, "festival_complete");
-    const actions: ScreenActionModel[] = shouldOfferRetryAction(sessionWrap)
-      ? [
-          { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" },
-          { id: "RETRY_LEVEL", label: "Retry Session", emphasis: "secondary" }
-        ]
-      : [
-          { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" }
-        ];
+    const actions: ScreenActionModel[] = [
+      { id: "RETURN_TO_MENU", label: "Play Again", emphasis: "primary" }
+    ];
     return {
       screen: "FESTIVAL_COMPLETE",
-      title: "Festival Complete",
+      title: "Day 3 · Evening Session",
       subtitle: "",
       summaryRows: [
         { label: "Sessions Cleared", value: `${level.totalLevels}` },

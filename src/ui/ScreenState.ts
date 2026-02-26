@@ -34,7 +34,16 @@ export interface SessionWrapModel {
   sessionScore: number;
   runTotalScore: number;
   metrics: SessionWrapMetric[];
+  festivalTotals?: Array<{
+    id: string;
+    label: string;
+    value: string;
+  }>;
   progress: SessionWrapProgress;
+  helpOutline?: {
+    title: string;
+    lines: string[];
+  };
 }
 
 export interface ScreenViewModel {

@@ -48,6 +48,8 @@ export const GAME_CONFIG = {
   hazards: {
     collisionRadiusPx: 40,
     chatDurationMs: 2000,
+    chatDurationIncrementMs: 150,
+    chatDurationMaxMs: 3200,
     maxEncounterStrikes: 12,
     immunityCooldownMs: 1200
   },

@@ -255,6 +255,53 @@ describe("SpawnSystem", () => {
     expect(spawned[0].position.x).toBeLessThan(0);
   });
 
+  it("varies edge spawn positions along the selected map boundary", () => {
+    let index = 0;
+    const rng = () => (((index += 1) % 10) + 1) / 11;
+
+    const system = new SpawnSystem(
+      {
+        levelNumber: 1,
+        totalArtists: 2,
+        sessionTargetSets: 1,
+        sessionDayNumber: 1,
+        sessionIndexInDay: 1,
+        sessionName: "Morning",
+        sessionsPerDay: 3,
+        totalFestivalDays: 1,
+        maxSimultaneous: 1,
+        levelDurationSeconds: 60,
+        maxEncounterStrikes: 12,
+        timerRangeSeconds: [12, 12],
+        spawnIntervalMs: [0, 0],
+        tierWeights: { headliner: 0, midtier: 0, newcomer: 1 },
+        activeDistractionIds: [],
+        driftSpeedPxPerSecond: 80,
+        driftAngleVarianceDegrees: 0
+      },
+      [
+        {
+          id: "north",
+          position: { x: 0.5, y: 0 },
+          driftAngle: 180,
+          screenPosition: { x: 100, y: 0 },
+          directionVector: { x: 0, y: 1 }
+        }
+      ],
+      rng,
+      {
+        viewport: { width: 200, height: 200 }
+      }
+    );
+
+    const first = system.update(0, [])[0];
+    const second = system.update(0, [])[0];
+
+    expect(first.position.y).toBeLessThan(0);
+    expect(second.position.y).toBeLessThan(0);
+    expect(Math.abs(first.position.x - second.position.x)).toBeGreaterThan(0.001);
+  });
+
   it("keeps spawn drift independent of target stage direction", () => {
     const system = new SpawnSystem(
       {

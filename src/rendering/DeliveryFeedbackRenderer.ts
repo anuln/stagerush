@@ -26,6 +26,8 @@ export interface GuidanceFeedbackEvent {
   position: { x: number; y: number };
   sticky?: boolean;
   tone?: GuidanceBubbleTone;
+  durationMs?: number;
+  opacity?: number;
 }
 
 interface FeedbackPopup {
@@ -36,6 +38,7 @@ interface FeedbackPopup {
   kind: "score" | "miss" | "hazard" | "guidance";
   hazardType: HazardFeedbackType | null;
   guidanceTone: GuidanceBubbleTone;
+  guidanceOpacity: number;
   position: { x: number; y: number };
   createdAtMs: number;
   durationMs: number;
@@ -90,6 +93,7 @@ export class DeliveryFeedbackRenderer {
         kind: "score",
         hazardType: null,
         guidanceTone: "neutral",
+        guidanceOpacity: 1,
         position: { ...scoreEvent.stagePosition },
         createdAtMs: frame.nowMs,
         durationMs: 950
@@ -111,6 +115,7 @@ export class DeliveryFeedbackRenderer {
         kind: "miss",
         hazardType: null,
         guidanceTone: "warning",
+        guidanceOpacity: 1,
         position: { ...missEvent.position },
         createdAtMs: frame.nowMs,
         durationMs: 750
@@ -126,6 +131,7 @@ export class DeliveryFeedbackRenderer {
         kind: "hazard",
         hazardType: hazardEvent.type,
         guidanceTone: "neutral",
+        guidanceOpacity: 1,
         position: { ...hazardEvent.position },
         createdAtMs: frame.nowMs,
         durationMs: 920
@@ -141,9 +147,13 @@ export class DeliveryFeedbackRenderer {
         kind: "guidance",
         hazardType: null,
         guidanceTone: guidanceEvent.tone ?? "neutral",
+        guidanceOpacity: clamp(guidanceEvent.opacity ?? 1, 0.35, 1),
         position: { ...guidanceEvent.position },
         createdAtMs: frame.nowMs,
-        durationMs: guidanceEvent.sticky ? 260 : 1250
+        durationMs: Math.max(
+          250,
+          Math.floor(guidanceEvent.durationMs ?? (guidanceEvent.sticky ? 260 : 1250))
+        )
       });
     }
 
@@ -204,7 +214,7 @@ export class DeliveryFeedbackRenderer {
                   : 20,
           lineHeight: popup.kind === "guidance" ? 16 : undefined,
           wordWrap: popup.kind === "guidance",
-          wordWrapWidth: popup.kind === "guidance" ? 170 : undefined,
+          wordWrapWidth: popup.kind === "guidance" ? 210 : undefined,
           fill: popup.kind === "hazard" || popup.kind === "guidance" ? 0x111111 : popup.color,
           stroke: {
             color: popup.kind === "hazard" || popup.kind === "guidance" ? 0xffffff : 0x111111,
@@ -219,7 +229,7 @@ export class DeliveryFeedbackRenderer {
           18 -
           progress * (popup.kind === "hazard" || popup.kind === "guidance" ? 12 : 32)
       );
-      label.alpha = 1 - progress;
+      label.alpha = (1 - progress) * (popup.kind === "guidance" ? popup.guidanceOpacity : 1);
 
       if (popup.kind === "hazard" || popup.kind === "guidance") {
         this.layer.addChild(this.createThoughtBubble(popup, label));

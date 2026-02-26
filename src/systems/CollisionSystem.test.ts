@@ -34,6 +34,24 @@ describe("CollisionSystem", () => {
     expect(b.state).toBe("DRIFTING");
   });
 
+  it("restores prior drifting velocity after chat resolves", () => {
+    const a = makeArtist("a", 100, 100, "DRIFTING");
+    const b = makeArtist("b", 120, 100, "DRIFTING");
+    a.velocity = { x: 15, y: 9 };
+    b.velocity = { x: -12, y: 7 };
+    const system = new CollisionSystem(40, 1500);
+
+    system.update([a, b], 0);
+    expect(a.velocity).toEqual({ x: 0, y: 0 });
+    expect(b.velocity).toEqual({ x: 0, y: 0 });
+
+    system.update([a, b], 1501);
+    expect(a.state).toBe("DRIFTING");
+    expect(b.state).toBe("DRIFTING");
+    expect(a.velocity).toEqual({ x: 15, y: 9 });
+    expect(b.velocity).toEqual({ x: -12, y: 7 });
+  });
+
   it("does not retrigger collisions while artists are already in active chat session", () => {
     const a = makeArtist("a", 100, 100);
     const b = makeArtist("b", 120, 100);
@@ -73,5 +91,24 @@ describe("CollisionSystem", () => {
     expect(resolved.resolved).toHaveLength(1);
     expect(blockedByCooldown.started).toHaveLength(0);
     expect(retriggered.started).toHaveLength(1);
+  });
+
+  it("progressively increases chat duration with an upper cap", () => {
+    const a = makeArtist("a", 100, 100, "FOLLOWING");
+    const b = makeArtist("b", 120, 100, "DRIFTING");
+    const system = new CollisionSystem(40, 2000, 0, 250, 2400);
+
+    system.update([a, b], 0);
+    const firstStillActive = system.update([a, b], 1999);
+    const firstResolved = system.update([a, b], 2001);
+    const secondStarted = system.update([a, b], 2002);
+    const secondStillActive = system.update([a, b], 4251);
+    const secondResolved = system.update([a, b], 4253);
+
+    expect(firstStillActive.resolved).toHaveLength(0);
+    expect(firstResolved.resolved).toHaveLength(1);
+    expect(secondStarted.started).toHaveLength(1);
+    expect(secondStillActive.resolved).toHaveLength(0);
+    expect(secondResolved.resolved).toHaveLength(1);
   });
 });

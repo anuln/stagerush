@@ -69,6 +69,7 @@ interface AdminPanelOptions {
   initialOverrides: AdminAssetOverrides;
   onFestivalChange: (festivalId: string) => void;
   onPreviewChange: (overrides: AdminAssetOverrides) => void;
+  onBaseMapUpdate?: (map: FestivalMap) => void;
   onApply: (overrides: AdminAssetOverrides) => void;
   onReset: () => void;
 }
@@ -538,6 +539,7 @@ export class AdminPanel {
   private readonly activeFestivalId: string;
   private readonly onFestivalChange: AdminPanelOptions["onFestivalChange"];
   private readonly onPreviewChange: AdminPanelOptions["onPreviewChange"];
+  private readonly onBaseMapUpdate?: AdminPanelOptions["onBaseMapUpdate"];
   private readonly onApply: AdminPanelOptions["onApply"];
   private readonly onReset: AdminPanelOptions["onReset"];
   private readonly root: HTMLDivElement;
@@ -592,6 +594,7 @@ export class AdminPanel {
     this.activeFestivalId = options.activeFestivalId;
     this.onFestivalChange = options.onFestivalChange;
     this.onPreviewChange = options.onPreviewChange;
+    this.onBaseMapUpdate = options.onBaseMapUpdate;
     this.onApply = options.onApply;
     this.onReset = options.onReset;
     const normalizedInitialOverrides = pruneCommittedAdminOverrides(
@@ -4082,6 +4085,7 @@ export class AdminPanel {
 
   private syncOverridesAfterCommit(committedMap: FestivalMap): void {
     this.map = structuredClone(committedMap);
+    this.onBaseMapUpdate?.(structuredClone(committedMap));
     this.draftOverrides = pruneCommittedAdminOverrides(
       committedMap,
       structuredClone(this.draftOverrides)

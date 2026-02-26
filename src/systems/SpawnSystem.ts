@@ -53,6 +53,7 @@ interface SpawnSystemOptions {
 
 const INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES = 30;
 const EDGE_THRESHOLD = 0.01;
+const SPAWN_POINT_REPEAT_AVOIDANCE_BIAS = 0.75;
 
 const TIER_SPEED_MULTIPLIER_RANGE: Record<
   ArtistTier,
@@ -75,6 +76,7 @@ export class SpawnSystem {
   private viewport: { width: number; height: number } | null;
   private readonly spawnInsetPx: number;
   private readonly pickArtistProfileId: SpawnSystemOptions["pickArtistProfileId"];
+  private lastSpawnPointId: string | null = null;
   private spawnedCount = 0;
   private cooldownRemainingSeconds = 0;
 
@@ -148,8 +150,7 @@ export class SpawnSystem {
   }
 
   private spawnArtist(): Artist {
-    const spawnPoint =
-      this.spawnPoints[Math.floor(this.rng() * this.spawnPoints.length)];
+    const spawnPoint = this.pickSpawnPoint();
     const targetStage =
       this.stages.length > 0
         ? this.stages[Math.floor(this.rng() * this.stages.length)]
@@ -251,14 +252,18 @@ export class SpawnSystem {
     if (viewport) {
       if (spawnPoint.position.x <= EDGE_THRESHOLD) {
         x = -this.spawnInsetPx;
+        y = this.rng() * viewport.height;
       } else if (spawnPoint.position.x >= 1 - EDGE_THRESHOLD) {
         x = viewport.width + this.spawnInsetPx;
+        y = this.rng() * viewport.height;
       }
 
       if (spawnPoint.position.y <= EDGE_THRESHOLD) {
         y = -this.spawnInsetPx;
+        x = this.rng() * viewport.width;
       } else if (spawnPoint.position.y >= 1 - EDGE_THRESHOLD) {
         y = viewport.height + this.spawnInsetPx;
+        x = this.rng() * viewport.width;
       }
     }
 
@@ -268,6 +273,29 @@ export class SpawnSystem {
     }
 
     return { x, y };
+  }
+
+  private pickSpawnPoint(): ResolvedSpawnPoint {
+    if (this.spawnPoints.length <= 1) {
+      const only = this.spawnPoints[0];
+      if (only) {
+        this.lastSpawnPointId = only.id;
+      }
+      return only;
+    }
+
+    let index = Math.floor(this.rng() * this.spawnPoints.length);
+    if (
+      this.lastSpawnPointId &&
+      this.spawnPoints[index]?.id === this.lastSpawnPointId &&
+      this.rng() < SPAWN_POINT_REPEAT_AVOIDANCE_BIAS
+    ) {
+      index = (index + 1 + Math.floor(this.rng() * (this.spawnPoints.length - 1))) % this.spawnPoints.length;
+    }
+
+    const selected = this.spawnPoints[index] ?? this.spawnPoints[0];
+    this.lastSpawnPointId = selected.id;
+    return selected;
   }
 
   private pickTier(): ArtistTier {
