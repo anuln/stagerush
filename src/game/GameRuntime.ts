@@ -101,6 +101,18 @@ type FtuxEventKey =
   | "first_successful_stage_arrival"
   | "first_timeout_miss";
 
+const FTUX_EVENTS_BY_MAP = new Map<string, Set<FtuxEventKey>>();
+
+function getOrCreateFtuxEventSet(mapId: string): Set<FtuxEventKey> {
+  const existing = FTUX_EVENTS_BY_MAP.get(mapId);
+  if (existing) {
+    return existing;
+  }
+  const next = new Set<FtuxEventKey>();
+  FTUX_EVENTS_BY_MAP.set(mapId, next);
+  return next;
+}
+
 export class GameRuntime {
   private layout: ResolvedFestivalLayout;
   private artists: Artist[] = [];
@@ -150,7 +162,8 @@ export class GameRuntime {
     runtimeOutcome: "ACTIVE"
   };
   private readonly stageSetCounts = new Map<string, number>();
-  private readonly shownFtuxEvents = new Set<FtuxEventKey>();
+  private shownFtuxEvents: Set<FtuxEventKey>;
+  private ftuxMapId: string;
   private firstSpawnArtistId: string | null = null;
 
   constructor(
@@ -169,6 +182,8 @@ export class GameRuntime {
     );
     this.livesState = new LivesState(runtimeLevel.maxEncounterStrikes);
     this.levelNumber = runtimeLevel.levelNumber;
+    this.ftuxMapId = layout.map.id;
+    this.shownFtuxEvents = getOrCreateFtuxEventSet(this.ftuxMapId);
     this.artistSpriteProfiles = options.artistSprites ?? layout.map.assets.artists;
     const artistProfilePool = new ArtistProfilePool(this.artistSpriteProfiles, {
       levelNumber: runtimeLevel.levelNumber
@@ -245,6 +260,12 @@ export class GameRuntime {
   }
 
   onLayoutChanged(nextLayout: ResolvedFestivalLayout): void {
+    const nextMapId = nextLayout.map.id;
+    if (nextMapId !== this.ftuxMapId) {
+      this.ftuxMapId = nextMapId;
+      this.shownFtuxEvents = getOrCreateFtuxEventSet(nextMapId);
+      this.firstSpawnArtistId = null;
+    }
     this.layout = nextLayout;
     this.spawnSystem.setSpawnPoints(nextLayout.spawnPoints);
     this.spawnSystem.setStageTargets(nextLayout.stages);
