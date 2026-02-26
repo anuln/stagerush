@@ -22,6 +22,7 @@ export class Artist {
   readonly spriteProfileId: string | null;
   readonly assignedStageId: string | null;
   readonly assignedStageColor: string | null;
+  readonly movementSpeedPxPerSecond: number;
   position: Vector2;
   velocity: Vector2;
   state: ArtistState;
@@ -35,6 +36,10 @@ export class Artist {
     this.spriteProfileId = config.spriteProfileId ?? null;
     this.assignedStageId = config.assignedStageId ?? null;
     this.assignedStageColor = config.assignedStageColor ?? null;
+    this.movementSpeedPxPerSecond = Math.max(
+      24,
+      config.movementSpeedPxPerSecond ?? Math.hypot(config.velocity.x, config.velocity.y)
+    );
     this.position = { ...config.position };
     this.velocity = { ...config.velocity };
     this.state = config.state ?? "DRIFTING";

@@ -19,7 +19,7 @@ export interface SessionWrapMetric {
   id: string;
   label: string;
   value: string;
-  tone?: "neutral" | "positive" | "warning";
+  tone?: "neutral" | "positive" | "warning" | "critical";
 }
 
 export interface SessionWrapProgress {
@@ -30,6 +30,7 @@ export interface SessionWrapModel {
   outcome: "complete" | "failed" | "festival_complete";
   resultLabel: string;
   tier: string;
+  tierIconPath: string;
   sessionScore: number;
   runTotalScore: number;
   metrics: SessionWrapMetric[];

@@ -64,6 +64,7 @@ export class DistractionSystem {
 
       if (artist && artist.state === "DISTRACTED" && artist.isActive()) {
         artist.state = session.priorArtistState;
+        artist.velocity = { ...session.priorArtistVelocity };
       }
 
       this.sessions.delete(artistId);
@@ -100,6 +101,7 @@ export class DistractionSystem {
         artistId: artist.id,
         distractionId: distraction.id,
         priorArtistState: artist.state,
+        priorArtistVelocity: { ...artist.velocity },
         endsAtMs: nowMs + distraction.delay * 1000
       });
 

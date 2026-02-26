@@ -1,4 +1,5 @@
 import type { ArtistState } from "./ArtistState";
+import type { Vector2 } from "../utils/MathUtils";
 
 export type HazardBlockReason = "CHATTING" | "DISTRACTED";
 
@@ -24,6 +25,7 @@ export interface DistractionDelaySession {
   artistId: string;
   distractionId: string;
   priorArtistState: ArtistState;
+  priorArtistVelocity: Vector2;
   endsAtMs: number;
 }
 

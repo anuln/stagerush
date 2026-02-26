@@ -19,6 +19,7 @@ export class ScreenOverlayController {
   private readonly root: HTMLDivElement;
   private lastKey = "";
   private counterFrames: number[] = [];
+  private counterTimers: number[] = [];
   private menuMedia: MenuMediaConfig = {
     path: "/assets/ui/stage-rush-intro-mobile.png",
     mediaType: "image",
@@ -52,6 +53,10 @@ export class ScreenOverlayController {
       cancelAnimationFrame(handle);
     }
     this.counterFrames = [];
+    for (const handle of this.counterTimers) {
+      window.clearTimeout(handle);
+    }
+    this.counterTimers = [];
   }
 
   private createActions(
@@ -86,6 +91,9 @@ export class ScreenOverlayController {
   ): string {
     if (tone === "positive") {
       return "is-positive";
+    }
+    if (tone === "critical") {
+      return "is-critical";
     }
     if (tone === "warning") {
       return "is-warning";
@@ -129,18 +137,17 @@ export class ScreenOverlayController {
     const result = document.createElement("h2");
     result.className = "screen-session-result";
     result.textContent = sessionWrap.resultLabel;
-    const subtitle = document.createElement("p");
-    subtitle.className = "screen-session-subtitle";
-    subtitle.textContent = model.subtitle;
-    titleBlock.append(daySession, result, subtitle);
+    titleBlock.append(daySession, result);
 
     const tierBadge = document.createElement("div");
     tierBadge.className = "screen-session-tier";
     const tierLabel = document.createElement("span");
     tierLabel.textContent = "Tier";
-    const tierValue = document.createElement("strong");
-    tierValue.textContent = sessionWrap.tier;
-    tierBadge.append(tierLabel, tierValue);
+    const tierIcon = document.createElement("img");
+    tierIcon.className = "screen-session-tier-icon";
+    tierIcon.src = sessionWrap.tierIconPath;
+    tierIcon.alt = `${sessionWrap.tier} trophy`;
+    tierBadge.append(tierLabel, tierIcon);
 
     header.append(titleBlock, tierBadge);
     panel.appendChild(header);
@@ -175,10 +182,20 @@ export class ScreenOverlayController {
       const label = document.createElement("span");
       label.className = "screen-session-metric-label";
       label.textContent = metric.label;
+      const body = document.createElement("div");
+      body.className = "screen-session-metric-body";
       const value = document.createElement("strong");
       value.className = "screen-session-metric-value";
       value.textContent = metric.value;
-      card.append(label, value);
+      body.appendChild(value);
+      if (metric.id === "artists-routed") {
+        const statusDot = document.createElement("span");
+        statusDot.className = "screen-session-metric-dot";
+        statusDot.classList.add(this.formatMetricTone(metric.tone));
+        statusDot.setAttribute("aria-hidden", "true");
+        body.appendChild(statusDot);
+      }
+      card.append(label, body);
       metrics.appendChild(card);
     });
     panel.appendChild(metrics);
@@ -206,25 +223,36 @@ export class ScreenOverlayController {
     counters.forEach((counter) => {
       const target = Number.parseInt(counter.dataset.counterTarget ?? "0", 10);
       const prefix = counter.dataset.counterPrefix ?? "";
-      if (!Number.isFinite(target) || target <= 0 || reducedMotion) {
-        counter.textContent = `${prefix}${Math.max(0, Math.floor(target)).toLocaleString()}`;
+      const finalValue = Math.max(0, Math.floor(target));
+      if (!Number.isFinite(target) || reducedMotion || finalValue <= 0) {
+        counter.textContent = `${prefix}${finalValue.toLocaleString()}`;
         return;
       }
-      const durationMs = Math.min(1200, Math.max(450, Math.floor(target * 0.7)));
+
+      const durationMs = Math.min(1400, Math.max(550, Math.floor(finalValue * 0.55)));
       const startedAt = performance.now();
+      counter.textContent = `${prefix}0`;
+
       const tick = (now: number): void => {
         const elapsed = now - startedAt;
         const t = Math.max(0, Math.min(1, elapsed / durationMs));
         const eased = 1 - Math.pow(1 - t, 3);
-        const value = Math.round(target * eased);
+        const value = Math.round(finalValue * eased);
         counter.textContent = `${prefix}${value.toLocaleString()}`;
         if (t < 1) {
           const handle = requestAnimationFrame(tick);
           this.counterFrames.push(handle);
+          return;
         }
+        counter.textContent = `${prefix}${finalValue.toLocaleString()}`;
       };
-      const handle = requestAnimationFrame(tick);
-      this.counterFrames.push(handle);
+
+      const firstHandle = requestAnimationFrame(tick);
+      this.counterFrames.push(firstHandle);
+      const finalHandle = window.setTimeout(() => {
+        counter.textContent = `${prefix}${finalValue.toLocaleString()}`;
+      }, durationMs + 120);
+      this.counterTimers.push(finalHandle);
     });
   }
 
@@ -232,8 +260,8 @@ export class ScreenOverlayController {
     model: ScreenViewModel | null,
     onAction: (actionId: ScreenActionId) => void
   ): void {
-    this.clearCounterAnimations();
     if (!model) {
+      this.clearCounterAnimations();
       if (!this.root.classList.contains("is-hidden")) {
         this.root.classList.add("is-hidden");
       }
@@ -245,6 +273,7 @@ export class ScreenOverlayController {
     if (this.lastKey === key && !this.root.classList.contains("is-hidden")) {
       return;
     }
+    this.clearCounterAnimations();
     this.lastKey = key;
     this.root.classList.remove("is-hidden");
     this.root.dataset.screen = model.screen.toLowerCase();

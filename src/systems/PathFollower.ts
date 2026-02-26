@@ -89,13 +89,14 @@ export class PathFollower {
   }
 
   private applyAssignment(artist: Artist, plannedPath: PlannedPath): void {
+    const artistSpeed = this.resolveArtistSpeed(artist);
     const points = [
       { x: artist.position.x, y: artist.position.y },
       ...plannedPath.smoothedPoints.slice(1).map((point) => ({ ...point }))
     ];
     const completionVelocity = resolveCompletionVelocity(
       points,
-      this.speedPxPerSecond,
+      artistSpeed,
       artist.velocity
     );
 
@@ -137,7 +138,8 @@ export class PathFollower {
         continue;
       }
 
-      let remainingDistance = Math.max(0, this.speedPxPerSecond * deltaSeconds);
+      const artistSpeed = this.resolveArtistSpeed(artist);
+      let remainingDistance = Math.max(0, artistSpeed * deltaSeconds);
       while (
         remainingDistance > 0 &&
         assignment.segmentIndex < assignment.points.length - 1
@@ -200,6 +202,10 @@ export class PathFollower {
     }
 
     return updates;
+  }
+
+  private resolveArtistSpeed(artist: Artist): number {
+    return Math.max(1, artist.movementSpeedPxPerSecond || this.speedPxPerSecond);
   }
 }
 

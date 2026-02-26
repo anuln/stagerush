@@ -21,6 +21,7 @@ class FakeRuntime implements RuntimeController {
       outcome: "ACTIVE",
       performanceTier: null,
       deliveredArtists: 0,
+      incorrectStageArtists: 0,
       missedArtists: 0,
       remainingLives: 3,
       remainingTimeSeconds: 60,
@@ -144,6 +145,36 @@ describe("GameManager", () => {
     expect(manager.snapshot.level.cumulativeScore).toBe(820);
     expect(manager.snapshot.profile.bestFestivalScore).toBe(820);
     expect(manager.snapshot.profile.bestLevelScore).toBe(500);
+  });
+
+  it("delays evening session completion transition before showing wrap card", () => {
+    const runtimes: FakeRuntime[] = [];
+    const manager = new GameManager({
+      layout: makeLayout(2),
+      createRuntime: (levelNumber) => {
+        const runtime = new FakeRuntime(levelNumber);
+        runtime.status.sessionIndexInDay = 3;
+        runtime.status.sessionName = "Evening";
+        runtimes.push(runtime);
+        return runtime;
+      }
+    });
+
+    manager.startFestival();
+    runtimes[0].status.levelScore = 300;
+    runtimes[0].status.outcome = "COMPLETED";
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 100);
+    expect(manager.snapshot.screen).toBe("PLAYING");
+    expect(manager.snapshot.level.cumulativeScore).toBe(0);
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 3800);
+    expect(manager.snapshot.screen).toBe("PLAYING");
+    expect(manager.snapshot.level.cumulativeScore).toBe(0);
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 4200);
+    expect(manager.snapshot.screen).toBe("LEVEL_COMPLETE");
+    expect(manager.snapshot.level.cumulativeScore).toBe(300);
   });
 
   it("uses screen actions for menu start and menu return", () => {

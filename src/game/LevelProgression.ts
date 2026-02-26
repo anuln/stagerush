@@ -171,9 +171,9 @@ export function resolveLevelRuntimeConfig(
     24
   );
   const tunedDriftSpeedPxPerSecond = clamp(
-    base.driftSpeedPxPerSecond - 10 + (boundedLevel - 1) * 1.5,
-    60,
-    95
+    base.driftSpeedPxPerSecond - 24 + (boundedLevel - 1) * 2.4,
+    48,
+    88
   );
   const timedSpawnBudget = estimateTimedSpawnBudget(
     base.levelDurationSeconds,

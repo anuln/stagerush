@@ -163,4 +163,36 @@ describe("AudioManager", () => {
     await manager.playMusic("bg_chill");
     expect(player.volume).toBeCloseTo(0.72, 5);
   });
+
+  it("pauses and resumes active music when app activity changes", async () => {
+    const player = makeFakePlayer();
+    const manager = new AudioManager(
+      { bg_chill: "audio/chill.mp3" },
+      { createPlayer: () => player }
+    );
+
+    await manager.playMusic("bg_chill");
+    expect(player.playSpy).toHaveBeenCalledTimes(1);
+
+    manager.setAppActive(false);
+    expect(player.pauseSpy).toHaveBeenCalledTimes(1);
+
+    manager.setAppActive(true);
+    expect(player.playSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not play sfx while app is inactive", async () => {
+    const player = makeFakePlayer();
+    const createPlayer = vi.fn(() => player);
+    const manager = new AudioManager(
+      { spawn: "audio/spawn.mp3" },
+      { createPlayer }
+    );
+
+    manager.setAppActive(false);
+    const played = await manager.playSfx("spawn");
+
+    expect(played).toBe(false);
+    expect(createPlayer).not.toHaveBeenCalled();
+  });
 });

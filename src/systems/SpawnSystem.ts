@@ -51,6 +51,22 @@ interface SpawnSystemOptions {
   pickArtistProfileId?: (tier: ArtistTier) => string | null;
 }
 
+const INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES = 30;
+const EDGE_THRESHOLD = 0.01;
+
+const TIER_SPEED_MULTIPLIER_RANGE: Record<
+  ArtistTier,
+  { min: number; max: number }
+> = {
+  headliner: { min: 0.9, max: 1.02 },
+  midtier: { min: 0.78, max: 0.9 },
+  newcomer: { min: 0.64, max: 0.8 }
+};
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
 export class SpawnSystem {
   private readonly level: RuntimeLevelConfig;
   private readonly rng: () => number;
@@ -145,7 +161,7 @@ export class SpawnSystem {
       this.rng
     );
 
-    const inboundDirection = this.resolveInboundDirection(spawnPoint, targetStage);
+    const inboundDirection = this.resolveRandomInboundDirection(spawnPoint);
     const driftVariance = Math.max(0, this.level.driftAngleVarianceDegrees ?? 0);
     const driftOffsetDegrees =
       driftVariance > 0 ? getRandomInRange(-driftVariance, driftVariance, this.rng) : 0;
@@ -153,12 +169,13 @@ export class SpawnSystem {
       inboundDirection,
       (driftOffsetDegrees * Math.PI) / 180
     );
+    const tier = this.pickTier();
+    const movementSpeedPxPerSecond = this.resolveSpawnSpeedPxPerSecond(tier);
     const velocity = scaleVector(
       normalizeVector(driftDirection, inboundDirection),
-      this.level.driftSpeedPxPerSecond
+      movementSpeedPxPerSecond
     );
     const spawnPosition = this.resolveSpawnPosition(spawnPoint, inboundDirection);
-    const tier = this.pickTier();
 
     return new Artist({
       id: `artist-${this.level.levelNumber}-${this.spawnedCount + 1}`,
@@ -166,6 +183,7 @@ export class SpawnSystem {
       spriteProfileId: this.pickArtistProfileId?.(tier) ?? undefined,
       assignedStageId: targetStage?.id ?? null,
       assignedStageColor: targetStage?.color ?? null,
+      movementSpeedPxPerSecond,
       position: spawnPosition,
       velocity,
       timerSeconds,
@@ -173,17 +191,53 @@ export class SpawnSystem {
     });
   }
 
-  private resolveInboundDirection(
-    spawnPoint: ResolvedSpawnPoint,
-    targetStage: SpawnTarget | null
+  private resolveRandomInboundDirection(
+    spawnPoint: ResolvedSpawnPoint
   ): { x: number; y: number } {
-    if (!targetStage) {
-      return normalizeVector(spawnPoint.directionVector);
+    const inward = this.resolveMapInwardVector(spawnPoint);
+    const coneHalfAngleRadians =
+      (INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES * Math.PI) / 180;
+    const offsetRadians = getRandomInRange(
+      -coneHalfAngleRadians,
+      coneHalfAngleRadians,
+      this.rng
+    );
+    const randomDirection = rotateVector(inward, offsetRadians);
+    return normalizeVector(randomDirection, inward);
+  }
+
+  private resolveMapInwardVector(
+    spawnPoint: ResolvedSpawnPoint
+  ): { x: number; y: number } {
+    const position = spawnPoint.position;
+    let inwardX = 0;
+    let inwardY = 0;
+    if (position.x <= EDGE_THRESHOLD) {
+      inwardX += 1;
+    } else if (position.x >= 1 - EDGE_THRESHOLD) {
+      inwardX -= 1;
     }
-    return normalizeVector({
-      x: targetStage.screenPosition.x - spawnPoint.screenPosition.x,
-      y: targetStage.screenPosition.y - spawnPoint.screenPosition.y
-    }, normalizeVector(spawnPoint.directionVector));
+    if (position.y <= EDGE_THRESHOLD) {
+      inwardY += 1;
+    } else if (position.y >= 1 - EDGE_THRESHOLD) {
+      inwardY -= 1;
+    }
+    const edgeNormal = normalizeVector({ x: inwardX, y: inwardY }, { x: 0, y: 0 });
+    if (Math.hypot(edgeNormal.x, edgeNormal.y) > 0.001) {
+      return edgeNormal;
+    }
+
+    if (this.viewport) {
+      const centerInward = normalizeVector({
+        x: this.viewport.width * 0.5 - spawnPoint.screenPosition.x,
+        y: this.viewport.height * 0.5 - spawnPoint.screenPosition.y
+      }, { x: 0, y: 0 });
+      if (Math.hypot(centerInward.x, centerInward.y) > 0.001) {
+        return centerInward;
+      }
+    }
+
+    return normalizeVector(spawnPoint.directionVector);
   }
 
   private resolveSpawnPosition(
@@ -193,18 +247,17 @@ export class SpawnSystem {
     let x = spawnPoint.screenPosition.x;
     let y = spawnPoint.screenPosition.y;
     const viewport = this.viewport;
-    const edgeThreshold = 0.01;
 
     if (viewport) {
-      if (spawnPoint.position.x <= edgeThreshold) {
+      if (spawnPoint.position.x <= EDGE_THRESHOLD) {
         x = -this.spawnInsetPx;
-      } else if (spawnPoint.position.x >= 1 - edgeThreshold) {
+      } else if (spawnPoint.position.x >= 1 - EDGE_THRESHOLD) {
         x = viewport.width + this.spawnInsetPx;
       }
 
-      if (spawnPoint.position.y <= edgeThreshold) {
+      if (spawnPoint.position.y <= EDGE_THRESHOLD) {
         y = -this.spawnInsetPx;
-      } else if (spawnPoint.position.y >= 1 - edgeThreshold) {
+      } else if (spawnPoint.position.y >= 1 - EDGE_THRESHOLD) {
         y = viewport.height + this.spawnInsetPx;
       }
     }
@@ -232,5 +285,17 @@ export class SpawnSystem {
       return "midtier";
     }
     return "newcomer";
+  }
+
+  private resolveSpawnSpeedPxPerSecond(tier: ArtistTier): number {
+    const tierRange = TIER_SPEED_MULTIPLIER_RANGE[tier];
+    const tierScale = getRandomInRange(tierRange.min, tierRange.max, this.rng);
+    const levelScale = clamp(1 + (this.level.levelNumber - 1) * 0.014, 1, 1.1);
+    const microJitter = getRandomInRange(0.97, 1.03, this.rng);
+    return clamp(
+      this.level.driftSpeedPxPerSecond * tierScale * levelScale * microJitter,
+      36,
+      102
+    );
   }
 }

@@ -60,7 +60,11 @@ export class LevelManager {
   }
 
   retryLevel(): boolean {
-    if (this.state !== "LEVEL_FAILED") {
+    if (
+      this.state !== "LEVEL_FAILED" &&
+      this.state !== "LEVEL_COMPLETE" &&
+      this.state !== "FESTIVAL_COMPLETE"
+    ) {
       return false;
     }
 

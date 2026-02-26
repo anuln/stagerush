@@ -46,6 +46,7 @@ export interface GameManagerSnapshot {
 }
 
 export class GameManager {
+  private static readonly EVENING_COMPLETION_DELAY_MS = 4000;
   private layout: ResolvedFestivalLayout;
   private readonly createRuntime: GameManagerOptions["createRuntime"];
   private readonly levelManager: LevelManager;
@@ -53,6 +54,8 @@ export class GameManager {
   private readonly onScreenChanged: GameManagerOptions["onScreenChanged"];
   private runtime: RuntimeController | null = null;
   private screen: ScreenState = "MENU";
+  private eveningCompletionDelayUntilMs: number | null = null;
+  private eveningCompletionDelayKey: string | null = null;
 
   constructor(options: GameManagerOptions) {
     this.layout = options.layout;
@@ -172,12 +175,18 @@ export class GameManager {
     this.runtime.update(deltaSeconds, viewport, nowMs);
     const status = this.runtime.getStatus();
     if (status.outcome === "FAILED") {
+      this.clearCompletionDelay();
       this.levelManager.markLevelFailed(status.levelScore);
       this.setScreen("LEVEL_FAILED");
       return;
     }
 
     if (status.outcome === "COMPLETED") {
+      const now = Number.isFinite(nowMs) ? (nowMs as number) : Date.now();
+      if (this.shouldDelayEveningCompletion(status, now)) {
+        return;
+      }
+      this.clearCompletionDelay();
       this.levelManager.markLevelCompleted(status.levelScore);
       this.persistence?.recordLevelCompletion({
         levelNumber: this.levelManager.snapshot.currentLevel,
@@ -191,7 +200,10 @@ export class GameManager {
           ? "FESTIVAL_COMPLETE"
           : "LEVEL_COMPLETE"
       );
+      return;
     }
+
+    this.clearCompletionDelay();
   }
 
   private mountRuntimeForActiveLevel(): void {
@@ -217,6 +229,31 @@ export class GameManager {
     const previous = this.screen;
     this.screen = next;
     this.onScreenChanged?.(next, previous);
+  }
+
+  private shouldDelayEveningCompletion(status: RuntimeStatus, nowMs: number): boolean {
+    if (status.sessionIndexInDay !== 3) {
+      return false;
+    }
+
+    const levelSnapshot = this.levelManager.snapshot;
+    const nextKey = `${status.levelNumber}:${levelSnapshot.attemptKey}`;
+    if (this.eveningCompletionDelayKey !== nextKey) {
+      this.eveningCompletionDelayKey = nextKey;
+      this.eveningCompletionDelayUntilMs =
+        nowMs + GameManager.EVENING_COMPLETION_DELAY_MS;
+    }
+
+    const deadline = this.eveningCompletionDelayUntilMs;
+    if (deadline === null) {
+      return false;
+    }
+    return nowMs < deadline;
+  }
+
+  private clearCompletionDelay(): void {
+    this.eveningCompletionDelayUntilMs = null;
+    this.eveningCompletionDelayKey = null;
   }
 
   private getPersistenceSnapshot(): PersistenceSnapshot {

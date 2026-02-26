@@ -199,6 +199,7 @@ describe("GameRuntime", () => {
   });
 
   it("fails when hazard encounters exceed configured strike budget", () => {
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.25);
     const layout = makeLayout(
       [
         {
@@ -238,16 +239,20 @@ describe("GameRuntime", () => {
       }
     );
 
-    for (let tick = 0; tick < 24; tick += 1) {
-      runtime.update(0.2, { width: 100, height: 100 }, 1000 + tick * 200);
-      if (runtime.getStatus().outcome === "FAILED") {
-        break;
+    try {
+      for (let tick = 0; tick < 40; tick += 1) {
+        runtime.update(0.2, { width: 100, height: 100 }, 1000 + tick * 200);
+        if (runtime.getStatus().outcome === "FAILED") {
+          break;
+        }
       }
-    }
 
-    const status = runtime.getStatus();
-    expect(status.outcome).toBe("FAILED");
-    expect(status.remainingLives).toBe(0);
+      const status = runtime.getStatus();
+      expect(status.outcome).toBe("FAILED");
+      expect(status.remainingLives).toBe(0);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it("assigns drawn paths even when they do not snap to a stage", () => {
@@ -282,6 +287,117 @@ describe("GameRuntime", () => {
 
     runtime.update(0.2, { width: 100, height: 100 }, 1200);
     expect(runtime.getTelemetrySnapshot().activePaths).toBeGreaterThan(0);
+  });
+
+  it("tracks incorrect-stage deliveries when artists perform on non-assigned stages", () => {
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const layout: ResolvedFestivalLayout = {
+      map: {
+        id: "stage-match-test",
+        name: "Stage Match Test",
+        description: "fixture",
+        totalLevels: 1,
+        background: "assets/maps/test/bg.png",
+        stages: [
+          {
+            id: "left-stage",
+            size: "small",
+            position: { x: 0.2, y: 0.5 },
+            snapRadius: 0.12,
+            sprite: "assets/maps/test/left-stage.png",
+            color: "#f59e0b"
+          },
+          {
+            id: "right-stage",
+            size: "small",
+            position: { x: 0.8, y: 0.5 },
+            snapRadius: 0.12,
+            sprite: "assets/maps/test/right-stage.png",
+            color: "#10b981"
+          }
+        ],
+        spawnPoints: [
+          {
+            id: "center",
+            position: { x: 0.5, y: 0.5 },
+            driftAngle: 0
+          }
+        ],
+        distractions: [],
+        levels: [],
+        assets: {
+          artists: [],
+          stageSprites: {},
+          distractionSprites: {},
+          audio: {}
+        }
+      },
+      viewport: { width: 100, height: 100 },
+      stages: [
+        {
+          id: "left-stage",
+          size: "small",
+          position: { x: 0.2, y: 0.5 },
+          snapRadius: 0.12,
+          sprite: "assets/maps/test/left-stage.png",
+          color: "#f59e0b",
+          screenPosition: { x: 20, y: 50 },
+          pixelWidth: 48,
+          pixelHeight: 48
+        },
+        {
+          id: "right-stage",
+          size: "small",
+          position: { x: 0.8, y: 0.5 },
+          snapRadius: 0.12,
+          sprite: "assets/maps/test/right-stage.png",
+          color: "#10b981",
+          screenPosition: { x: 80, y: 50 },
+          pixelWidth: 48,
+          pixelHeight: 48
+        }
+      ],
+      spawnPoints: [
+        {
+          id: "center",
+          position: { x: 0.5, y: 0.5 },
+          driftAngle: 0,
+          screenPosition: { x: 50, y: 50 },
+          directionVector: { x: 0, y: 1 }
+        }
+      ],
+      distractions: []
+    };
+
+      const runtime = new GameRuntime(
+        layout,
+        createLayerSet(new Container()),
+        {
+          ...BASE_LEVEL,
+          totalArtists: 1,
+          maxSimultaneous: 1,
+          spawnIntervalMs: [0, 0],
+          levelDurationSeconds: 20
+        }
+      );
+
+      runtime.update(0, { width: 100, height: 100 }, 1000);
+      const engaged = runtime.onPointerDown(22, 50, 1001);
+      expect(engaged).toBe(true);
+      runtime.onPointerMove(80, 50);
+      runtime.onPointerUp(80, 50, 1002);
+
+      for (let tick = 0; tick < 30; tick += 1) {
+        runtime.update(0.2, { width: 100, height: 100 }, 1200 + tick * 200);
+      }
+
+      const status = runtime.getStatus();
+      expect(status.deliveredArtists).toBe(1);
+      expect(status.incorrectStageArtists).toBe(1);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it("removes runtime UI layers on dispose to prevent HUD stacking across levels", () => {

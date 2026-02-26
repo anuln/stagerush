@@ -129,8 +129,82 @@ describe("SpawnSystem", () => {
     const spawned = system.update(0, []);
 
     expect(spawned).toHaveLength(1);
-    expect(spawned[0].velocity.x).toBeCloseTo(-86.6025, 3);
-    expect(spawned[0].velocity.y).toBeCloseTo(-50, 3);
+    expect(spawned[0].velocity.x).toBeLessThan(0);
+    const inward = { x: -1, y: 0 };
+    const speed = Math.hypot(spawned[0].velocity.x, spawned[0].velocity.y);
+    const inwardDot =
+      (spawned[0].velocity.x * inward.x + spawned[0].velocity.y * inward.y) / speed;
+    const offAxisDegrees = (Math.acos(Math.max(-1, Math.min(1, inwardDot))) * 180) / Math.PI;
+    expect(offAxisDegrees).toBeLessThanOrEqual(72);
+    expect(Math.hypot(spawned[0].velocity.x, spawned[0].velocity.y)).toBeCloseTo(
+      spawned[0].movementSpeedPxPerSecond,
+      4
+    );
+  });
+
+  it("assigns faster movement envelopes for headliners than newcomers", () => {
+    const spawnPoints = [
+      {
+        id: "north",
+        position: { x: 0.5, y: 0 },
+        driftAngle: 180,
+        screenPosition: { x: 100, y: 0 },
+        directionVector: { x: 0, y: 1 }
+      }
+    ];
+
+    const newcomerSystem = new SpawnSystem(
+      {
+        levelNumber: 5,
+        totalArtists: 1,
+        sessionTargetSets: 1,
+        sessionDayNumber: 2,
+        sessionIndexInDay: 2,
+        sessionName: "Afternoon",
+        sessionsPerDay: 3,
+        totalFestivalDays: 3,
+        maxSimultaneous: 1,
+        levelDurationSeconds: 60,
+        maxEncounterStrikes: 12,
+        timerRangeSeconds: [10, 10],
+        spawnIntervalMs: [100, 100],
+        tierWeights: { headliner: 0, midtier: 0, newcomer: 1 },
+        activeDistractionIds: [],
+        driftSpeedPxPerSecond: 80,
+        driftAngleVarianceDegrees: 0
+      },
+      spawnPoints,
+      () => 0.5
+    );
+    const headlinerSystem = new SpawnSystem(
+      {
+        levelNumber: 5,
+        totalArtists: 1,
+        sessionTargetSets: 1,
+        sessionDayNumber: 2,
+        sessionIndexInDay: 2,
+        sessionName: "Afternoon",
+        sessionsPerDay: 3,
+        totalFestivalDays: 3,
+        maxSimultaneous: 1,
+        levelDurationSeconds: 60,
+        maxEncounterStrikes: 12,
+        timerRangeSeconds: [10, 10],
+        spawnIntervalMs: [100, 100],
+        tierWeights: { headliner: 1, midtier: 0, newcomer: 0 },
+        activeDistractionIds: [],
+        driftSpeedPxPerSecond: 80,
+        driftAngleVarianceDegrees: 0
+      },
+      spawnPoints,
+      () => 0.5
+    );
+
+    const newcomer = newcomerSystem.update(0, [])[0];
+    const headliner = headlinerSystem.update(0, [])[0];
+    expect(headliner.movementSpeedPxPerSecond).toBeGreaterThan(
+      newcomer.movementSpeedPxPerSecond
+    );
   });
 
   it("spawns artists slightly outside viewport bounds before entering", () => {
@@ -181,7 +255,7 @@ describe("SpawnSystem", () => {
     expect(spawned[0].position.x).toBeLessThan(0);
   });
 
-  it("biases drift direction toward stages instead of edge-parallel movement", () => {
+  it("keeps spawn drift independent of target stage direction", () => {
     const system = new SpawnSystem(
       {
         levelNumber: 1,
@@ -225,8 +299,9 @@ describe("SpawnSystem", () => {
     );
 
     const [artist] = system.update(0, []);
-    expect(artist.velocity.y).toBeGreaterThan(0);
-    expect(Math.abs(artist.velocity.x)).toBeLessThan(0.1);
+    const speed = Math.hypot(artist.velocity.x, artist.velocity.y);
+    const inwardDot = artist.velocity.x / speed;
+    expect(inwardDot).toBeGreaterThanOrEqual(0.49);
   });
 
   it("assigns sprite profile ids from roster callback at spawn", () => {

@@ -27,6 +27,7 @@ export interface ArtistConfig {
   spriteProfileId?: string;
   assignedStageId?: string | null;
   assignedStageColor?: string | null;
+  movementSpeedPxPerSecond?: number;
   position: Vector2;
   velocity: Vector2;
   timerSeconds: number;

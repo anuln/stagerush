@@ -54,4 +54,39 @@ describe("LevelManager", () => {
       lastLevelScore: 450
     });
   });
+
+  it("allows retrying from completed states without resetting cumulative progress", () => {
+    const manager = new LevelManager({ totalLevels: 2 });
+    manager.startFestival();
+
+    manager.markLevelCompleted(300);
+    expect(manager.snapshot).toMatchObject({
+      state: "LEVEL_COMPLETE",
+      cumulativeScore: 300,
+      lastLevelScore: 300
+    });
+
+    const retriedLevelComplete = manager.retryLevel();
+    expect(retriedLevelComplete).toBe(true);
+    expect(manager.snapshot).toMatchObject({
+      state: "PLAYING",
+      cumulativeScore: 300,
+      lastLevelScore: null
+    });
+
+    manager.markLevelCompleted(340);
+    manager.advanceToNextLevel();
+    manager.markLevelCompleted(520);
+    expect(manager.snapshot.state).toBe("FESTIVAL_COMPLETE");
+    expect(manager.snapshot.cumulativeScore).toBe(1160);
+
+    const retriedFestivalComplete = manager.retryLevel();
+    expect(retriedFestivalComplete).toBe(true);
+    expect(manager.snapshot).toMatchObject({
+      state: "PLAYING",
+      currentLevel: 2,
+      cumulativeScore: 1160,
+      lastLevelScore: null
+    });
+  });
 });

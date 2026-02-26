@@ -31,6 +31,7 @@ function makeDistraction(id: string, x: number): ResolvedDistraction {
 describe("DistractionSystem", () => {
   it("applies distraction delay when artist enters active radius and resumes afterward", () => {
     const artist = makeArtist("a1", 110, 100);
+    const originalVelocity = { ...artist.velocity };
     const system = new DistractionSystem([makeDistraction("d1", 100)], ["d1"]);
 
     const started = system.update([artist], 0);
@@ -45,6 +46,7 @@ describe("DistractionSystem", () => {
     const done = system.update([artist], 2001);
     expect(done.resolved).toHaveLength(1);
     expect(artist.state).toBe("FOLLOWING");
+    expect(artist.velocity).toEqual(originalVelocity);
   });
 
   it("only triggers active distraction IDs", () => {

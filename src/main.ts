@@ -16,6 +16,7 @@ import {
 } from "./admin/AdminAssetOverrides";
 import { AudioManager } from "./audio/AudioManager";
 import type { FestivalMap } from "./config/FestivalConfig";
+import { resolveLevelFxProfile } from "./config/FxLedger";
 import {
   normalizeSessionPeriod,
   resolveSessionPreviewMode,
@@ -36,7 +37,8 @@ import {
   PerformanceOverlay,
   type RuntimeTelemetrySnapshot as OverlayTelemetrySnapshot
 } from "./debug/PerformanceOverlay";
-import { GameManager } from "./game/GameManager";
+import { ScoreDebugOverlay } from "./debug/ScoreDebugOverlay";
+import { GameManager, type GameManagerSnapshot } from "./game/GameManager";
 import { resolveLevelRuntimeConfig } from "./game/LevelProgression";
 import {
   GameRuntime,
@@ -75,11 +77,13 @@ function isMobileUserAgent(): boolean {
 function parsePerformanceFlags(): {
   showOverlay: boolean;
   autoQuality: boolean;
+  scoreDebug: boolean;
 } {
   const params = new URLSearchParams(window.location.search);
   return {
     showOverlay: params.get("perf") === "1",
-    autoQuality: params.get("quality") === "auto"
+    autoQuality: params.get("quality") === "auto",
+    scoreDebug: params.get("scoredebug") === "1"
   };
 }
 
@@ -270,6 +274,7 @@ async function bootstrap(): Promise<void> {
   const layerSet = createLayerSet(app.stage);
   const debugToggles = createDebugToggles();
   const performanceOverlay = new PerformanceOverlay(perfFlags.showOverlay);
+  const scoreDebugOverlay = new ScoreDebugOverlay(perfFlags.scoreDebug);
   const mapRenderer = new MapRenderer(layerSet, debugToggles);
   const atmosphereRenderer = new SessionAtmosphereRenderer(layerSet.atmosphereLayer);
   const runPersistence = new RunPersistence();
@@ -284,10 +289,90 @@ async function bootstrap(): Promise<void> {
   let hasFestivalManifest = false;
   let activeBundleId = "";
   let activeFestivalId = "";
+  let lastEveningFireworksCueKey: string | null = null;
+  let eveningFireworksCueTimers: number[] = [];
   let sourceMap: FestivalMap | null = null;
   let previewSessionMode: SessionFxPreviewMode = "auto";
+  let removeAudioActivityListeners: (() => void) | null = null;
 
   let currentLayout: ResolvedFestivalLayout | null = null;
+
+  const clearEveningFireworksCues = (): void => {
+    for (const handle of eveningFireworksCueTimers) {
+      window.clearTimeout(handle);
+    }
+    eveningFireworksCueTimers = [];
+  };
+
+  const wireAudioActivityLifecycle = (): void => {
+    removeAudioActivityListeners?.();
+    const syncAudioActive = (): void => {
+      const isVisible = document.visibilityState === "visible" && !document.hidden;
+      const isFocused = typeof document.hasFocus === "function" ? document.hasFocus() : true;
+      audioManager?.setAppActive(isVisible && isFocused);
+    };
+    const onVisibilityChange = (): void => syncAudioActive();
+    const onPageHide = (): void => audioManager?.setAppActive(false);
+    const onPageShow = (): void => syncAudioActive();
+    const onBlur = (): void => syncAudioActive();
+    const onFocus = (): void => syncAudioActive();
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+    syncAudioActive();
+
+    removeAudioActivityListeners = () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+    };
+  };
+
+  const scheduleEveningFireworksCues = (
+    snapshot: GameManagerSnapshot,
+    runtimeStatus: NonNullable<GameManagerSnapshot["runtime"]>
+  ): void => {
+    if (snapshot.screen !== "PLAYING") {
+      clearEveningFireworksCues();
+      return;
+    }
+    if (runtimeStatus.outcome !== "COMPLETED" || runtimeStatus.sessionIndexInDay !== 3) {
+      clearEveningFireworksCues();
+      return;
+    }
+
+    const cueKey = `${runtimeStatus.levelNumber}:${snapshot.level.attemptKey}`;
+    if (lastEveningFireworksCueKey === cueKey) {
+      return;
+    }
+    lastEveningFireworksCueKey = cueKey;
+    clearEveningFireworksCues();
+    const burstOffsetsMs = [0, 1250, 2550];
+    for (const delayMs of burstOffsetsMs) {
+      const handle = window.setTimeout(() => {
+        if (!audioManager) {
+          return;
+        }
+        void audioManager.playSfx("fireworks", {
+          category: "hero",
+          cooldownMs: 220
+        }).then((played) => {
+          if (!played) {
+            void audioManager?.playSfx("level_complete", {
+              category: "hero",
+              cooldownMs: 220
+            });
+          }
+        });
+      }, delayMs);
+      eveningFireworksCueTimers.push(handle);
+    }
+  };
 
   const runScreenAction = async (actionId: ScreenActionId): Promise<void> => {
     if (!gameManager || isScreenActionPending) {
@@ -393,6 +478,7 @@ async function bootstrap(): Promise<void> {
       sfxVolume: settings.sfxVolume,
       musicFadeMs: 220
     });
+    wireAudioActivityLifecycle();
     currentLayout = resolveFestivalLayout(map, {
       width: app.renderer.width,
       height: app.renderer.height
@@ -404,7 +490,11 @@ async function bootstrap(): Promise<void> {
       layout: currentLayout,
       persistence: runPersistence,
       onScreenChanged: (next) => {
+        if (next !== "PLAYING") {
+          clearEveningFireworksCues();
+        }
         if (next === "MENU") {
+          lastEveningFireworksCueKey = null;
           audioManager?.stopMusic();
         }
       },
@@ -472,6 +562,8 @@ async function bootstrap(): Promise<void> {
 
   window.render_game_to_text = () => {
     const snapshot = gameManager?.snapshot ?? null;
+    const viewModel = snapshot ? buildScreenViewModel(snapshot) : null;
+    const sessionWrap = viewModel?.sessionWrap ?? null;
     const overlayElement = document.querySelector<HTMLDivElement>(".screen-overlay");
     const overlayVisible = overlayElement
       ? !overlayElement.classList.contains("is-hidden")
@@ -481,6 +573,11 @@ async function bootstrap(): Promise<void> {
         screen: snapshot?.screen ?? "UNINITIALIZED",
         levelState: snapshot?.level.state ?? null,
         levelNumber: snapshot?.level.currentLevel ?? null,
+        runtimeLevelScore: snapshot?.runtime?.levelScore ?? null,
+        levelLastScore: snapshot?.level.lastLevelScore ?? null,
+        levelCumulativeScore: snapshot?.level.cumulativeScore ?? null,
+        interstitialSessionScore: sessionWrap?.sessionScore ?? null,
+        interstitialFestivalScore: sessionWrap?.runTotalScore ?? null,
         overlayVisible,
         primaryActionLabel:
           document.querySelector<HTMLButtonElement>(".screen-action.primary")
@@ -498,7 +595,11 @@ async function bootstrap(): Promise<void> {
   window.addEventListener("resize", handleResize);
   window.addEventListener("beforeunload", () => {
     window.removeEventListener("resize", handleResize);
+    clearEveningFireworksCues();
+    removeAudioActivityListeners?.();
+    removeAudioActivityListeners = null;
     performanceOverlay.dispose();
+    scoreDebugOverlay.dispose();
     kioskController.dispose();
   });
 
@@ -603,6 +704,25 @@ async function bootstrap(): Promise<void> {
       },
       performance.now()
     );
+    const snapshot = gameManager?.snapshot ?? null;
+    const runtimeStatus = snapshot?.runtime ?? null;
+    if (snapshot && runtimeStatus) {
+      scheduleEveningFireworksCues(snapshot, runtimeStatus);
+    } else {
+      clearEveningFireworksCues();
+    }
+    const activeLevelNumber = runtimeStatus?.levelNumber ?? snapshot?.level.currentLevel ?? 1;
+    atmosphereRenderer.setLevelFx(resolveLevelFxProfile(activeLevelNumber));
+    atmosphereRenderer.setRuntimeContext(
+      runtimeStatus
+        ? {
+            levelNumber: runtimeStatus.levelNumber,
+            dayNumber: runtimeStatus.dayNumber,
+            sessionIndexInDay: runtimeStatus.sessionIndexInDay,
+            outcome: runtimeStatus.outcome
+          }
+        : null
+    );
 
     const atmosphereSession = resolveAtmosphereSession(
       gameManager,
@@ -632,12 +752,11 @@ async function bootstrap(): Promise<void> {
     };
     performanceOverlay.update(overlayTelemetry);
 
-    screenOverlay.render(
-      gameManager ? buildScreenViewModel(gameManager.snapshot) : null,
-      (actionId) => {
-        void runScreenAction(actionId);
-      }
-    );
+    const screenModel = snapshot ? buildScreenViewModel(snapshot) : null;
+    screenOverlay.render(screenModel, (actionId) => {
+      void runScreenAction(actionId);
+    });
+    scoreDebugOverlay.update(snapshot, screenModel);
   });
 }
 

@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { SessionFxConfig, SessionPeriod } from "../config/FestivalConfig";
+import type { FireworksFxProfile, LevelFxProfile } from "../config/FxLedger";
 import {
   resolveSessionFxProfile,
   SESSION_PERIODS
@@ -13,6 +14,31 @@ interface ParticleState {
   speed: number;
   size: number;
   drift: number;
+}
+
+interface FireworkParticleState {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: number;
+}
+
+interface RuntimeFxContext {
+  levelNumber: number;
+  dayNumber: number;
+  sessionIndexInDay: number;
+  outcome: "ACTIVE" | "FAILED" | "COMPLETED";
+}
+
+interface FireworksPlan {
+  profile: FireworksFxProfile;
+  endAtMs: number;
+  remainingBursts: number;
+  nextBurstAtMs: number;
 }
 
 interface RgbColor {
@@ -64,19 +90,32 @@ export class SessionAtmosphereRenderer {
   private readonly overlay = new Graphics();
   private readonly stageGlow = new Graphics();
   private readonly particlesLayer = new Container();
+  private readonly fireworksLayer = new Container();
+  private readonly fireworksGraphics = new Graphics();
   private readonly particles: ParticleState[] = [];
+  private readonly fireworkParticles: FireworkParticleState[] = [];
   private layout: ResolvedFestivalLayout | null = null;
   private config: SessionFxConfig | undefined;
   private activeSession: SessionPeriod = "morning";
   private blendSession: SessionPeriod = "morning";
+  private levelFx: LevelFxProfile | null = null;
+  private runtimeContext: RuntimeFxContext | null = null;
   private transition = 1;
   private elapsedMs = 0;
   private effectsDensity = 1;
+  private fireworksPlan: FireworksPlan | null = null;
+  private lastFireworksTriggerKey: string | null = null;
 
   constructor(parent: Container) {
     this.root = parent;
     this.root.label = "sessionAtmosphereLayer";
-    this.root.addChild(this.overlay, this.stageGlow, this.particlesLayer);
+    this.fireworksLayer.addChild(this.fireworksGraphics);
+    this.root.addChild(
+      this.overlay,
+      this.stageGlow,
+      this.particlesLayer,
+      this.fireworksLayer
+    );
   }
 
   setLayout(layout: ResolvedFestivalLayout): void {
@@ -87,6 +126,14 @@ export class SessionAtmosphereRenderer {
 
   setConfig(config: SessionFxConfig | undefined): void {
     this.config = config;
+  }
+
+  setLevelFx(levelFx: LevelFxProfile | null): void {
+    this.levelFx = levelFx;
+  }
+
+  setRuntimeContext(context: RuntimeFxContext | null): void {
+    this.runtimeContext = context;
   }
 
   setSession(next: SessionPeriod): void {
@@ -108,8 +155,12 @@ export class SessionAtmosphereRenderer {
     this.effectsDensity = clamp(effectsDensity, 0.2, 1);
     this.elapsedMs += Math.max(0, deltaSeconds * 1000);
 
-    const fromProfile = resolveSessionFxProfile(this.config, this.blendSession);
-    const toProfile = resolveSessionFxProfile(this.config, this.activeSession);
+    const fromProfile =
+      this.levelFx?.atmosphere ??
+      resolveSessionFxProfile(this.config, this.blendSession);
+    const toProfile =
+      this.levelFx?.atmosphere ??
+      resolveSessionFxProfile(this.config, this.activeSession);
     this.transition = clamp(this.transition + deltaSeconds / 0.9, 0, 1);
     const t = this.transition;
     const overlayColor = rgbToHex(
@@ -136,6 +187,7 @@ export class SessionAtmosphereRenderer {
     this.renderOverlay(overlayColor, overlayOpacity);
     this.renderStageGlow(stageGlow);
     this.updateParticles(particleCount, particleColor, particleSpeed, deltaSeconds);
+    this.updateFireworks(deltaSeconds);
   }
 
   private renderOverlay(color: number, alpha: number): void {
@@ -219,5 +271,147 @@ export class SessionAtmosphereRenderer {
       particle.sprite.position.set(particle.x, particle.y);
     }
   }
+
+  private updateFireworks(deltaSeconds: number): void {
+    this.maybeTriggerFireworks();
+    const plan = this.fireworksPlan;
+    if (plan) {
+      while (
+        plan.remainingBursts > 0 &&
+        this.elapsedMs >= plan.nextBurstAtMs &&
+        this.elapsedMs <= plan.endAtMs
+      ) {
+        this.spawnFireworkBurst(plan.profile);
+        plan.remainingBursts -= 1;
+        plan.nextBurstAtMs += randomRange(
+          plan.profile.launchIntervalMsMin,
+          plan.profile.launchIntervalMsMax
+        );
+      }
+      if (
+        (this.elapsedMs > plan.endAtMs && plan.remainingBursts <= 0) ||
+        this.elapsedMs > plan.endAtMs + 1200
+      ) {
+        this.fireworksPlan = null;
+      }
+    }
+
+    if (this.fireworkParticles.length === 0 && !this.fireworksPlan) {
+      this.fireworksGraphics.clear();
+      return;
+    }
+
+    const gravity = 42;
+    for (let index = this.fireworkParticles.length - 1; index >= 0; index -= 1) {
+      const particle = this.fireworkParticles[index];
+      particle.vy += gravity * deltaSeconds;
+      particle.x += particle.vx * deltaSeconds;
+      particle.y += particle.vy * deltaSeconds;
+      particle.life -= deltaSeconds;
+      if (particle.life <= 0) {
+        this.fireworkParticles.splice(index, 1);
+      }
+    }
+
+    this.fireworksGraphics.clear();
+    const alphaBase = this.levelFx?.fireworks.trailAlpha ?? 0.86;
+    for (const particle of this.fireworkParticles) {
+      const lifeRatio = clamp(particle.life / particle.maxLife, 0, 1);
+      this.fireworksGraphics.circle(particle.x, particle.y, particle.size);
+      this.fireworksGraphics.fill({
+        color: particle.color,
+        alpha: lifeRatio * alphaBase
+      });
+    }
+  }
+
+  private maybeTriggerFireworks(): void {
+    const runtime = this.runtimeContext;
+    const profile = this.levelFx?.fireworks;
+    if (!runtime || !profile?.enabled) {
+      return;
+    }
+    if (runtime.outcome !== "COMPLETED") {
+      return;
+    }
+    if (runtime.sessionIndexInDay !== 3) {
+      return;
+    }
+    const triggerKey = `${runtime.levelNumber}-${runtime.dayNumber}-${runtime.sessionIndexInDay}-complete`;
+    if (triggerKey === this.lastFireworksTriggerKey) {
+      return;
+    }
+    this.lastFireworksTriggerKey = triggerKey;
+    this.startFireworksPlan(profile);
+  }
+
+  private startFireworksPlan(profile: FireworksFxProfile): void {
+    const burstCountMin = Math.max(
+      0,
+      Math.round(profile.burstCountMin * this.effectsDensity)
+    );
+    const burstCountMax = Math.max(
+      burstCountMin,
+      Math.round(profile.burstCountMax * this.effectsDensity)
+    );
+    this.fireworksPlan = {
+      profile,
+      endAtMs: this.elapsedMs + profile.durationMs,
+      remainingBursts: randomRangeInt(burstCountMin, burstCountMax),
+      nextBurstAtMs: this.elapsedMs + randomRange(90, 200)
+    };
+  }
+
+  private spawnFireworkBurst(profile: FireworksFxProfile): void {
+    if (!this.layout) {
+      return;
+    }
+    const burstCount = randomRangeInt(
+      Math.max(4, Math.round(profile.particlesPerBurstMin * this.effectsDensity)),
+      Math.max(6, Math.round(profile.particlesPerBurstMax * this.effectsDensity))
+    );
+    const centerX = randomRange(
+      this.layout.viewport.width * 0.12,
+      this.layout.viewport.width * 0.88
+    );
+    const centerY = randomRange(
+      this.layout.viewport.height * 0.12,
+      this.layout.viewport.height * 0.44
+    );
+    const radius = randomRange(profile.burstRadiusMin, profile.burstRadiusMax);
+    const palette =
+      profile.colors.length > 0
+        ? profile.colors
+        : ["#FFFFFF", "#FFD166", "#FF8C5A", "#6EE7D4"];
+    for (let index = 0; index < burstCount; index += 1) {
+      const angle = (Math.PI * 2 * index) / burstCount + randomRange(-0.22, 0.22);
+      const speed = radius * (0.72 + Math.random() * 0.66);
+      const life = randomRange(0.55, 1.05);
+      const colorHex = palette[Math.floor(Math.random() * palette.length)] ?? "#FFFFFF";
+      this.fireworkParticles.push({
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - randomRange(8, 18),
+        life,
+        maxLife: life,
+        size: randomRange(1.1, 2.8),
+        color: parseHexColor(colorHex)
+      });
+    }
+  }
 }
 
+function randomRange(min: number, max: number): number {
+  if (max <= min) {
+    return min;
+  }
+  return min + Math.random() * (max - min);
+}
+
+function randomRangeInt(min: number, max: number): number {
+  if (max <= min) {
+    return Math.floor(min);
+  }
+  return Math.floor(randomRange(min, max + 1));
+}

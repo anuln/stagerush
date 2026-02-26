@@ -57,6 +57,7 @@ describe("buildScreenViewModel", () => {
         outcome: "FAILED",
         performanceTier: "SILVER",
         deliveredArtists: 3,
+        incorrectStageArtists: 1,
         missedArtists: 4,
         remainingLives: 0,
         remainingTimeSeconds: 0,
@@ -74,12 +75,15 @@ describe("buildScreenViewModel", () => {
     expect(model?.sessionWrap?.resultLabel).toBe("Session Turbulence");
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
-    ).toMatchObject({ label: "Artists Routed", value: "3 👎", tone: "warning" });
+    ).toMatchObject({ label: "Artists Routed", value: "3", tone: "critical" });
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-missed")
     ).toMatchObject({ label: "Artists Missed", value: "4", tone: "warning" });
-    expect(model?.sessionWrap?.metrics).toHaveLength(2);
-    expect(model?.sessionWrap?.progress.nextLabel).toBe("Up Next · Day 2 Evening Session");
+    expect(
+      model?.sessionWrap?.metrics.find((metric) => metric.id === "incorrect-stage")
+    ).toMatchObject({ label: "Incorrect Stage", value: "1", tone: "warning" });
+    expect(model?.sessionWrap?.metrics).toHaveLength(3);
+    expect(model?.sessionWrap?.progress.nextLabel).toBe("Session minimums not met");
     expect(model?.actions.map((action) => action.id)).toEqual(["RETRY_LEVEL"]);
   });
 
@@ -112,6 +116,7 @@ describe("buildScreenViewModel", () => {
         outcome: "COMPLETED",
         performanceTier: "GOLD",
         deliveredArtists: 6,
+        incorrectStageArtists: 0,
         missedArtists: 1,
         remainingLives: 2,
         remainingTimeSeconds: 0,
@@ -148,6 +153,7 @@ describe("buildScreenViewModel", () => {
         outcome: "COMPLETED",
         performanceTier: "GOLD",
         deliveredArtists: 9,
+        incorrectStageArtists: 2,
         missedArtists: 2,
         remainingLives: 1,
         remainingTimeSeconds: 0,
@@ -165,23 +171,106 @@ describe("buildScreenViewModel", () => {
     expect(levelComplete?.sessionWrap?.resultLabel).toBe("Session Locked In");
     expect(
       levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
-    ).toMatchObject({ value: "6 👍", tone: "positive" });
+    ).toMatchObject({ value: "6", tone: "positive" });
     expect(levelComplete?.sessionWrap?.progress.nextLabel).toBe(
-      "Up Next · Day 1 Evening Session"
+      "Up Next: Day 1 Evening Session"
     );
-    expect(levelComplete?.summaryRows.some((row) => row.label === "Session Tier")).toBe(
-      true
-    );
+    expect(levelComplete?.sessionWrap?.tierIconPath).toBe("/assets/ui/trophies/gold.svg");
 
     expect(festivalComplete?.sessionWrap?.outcome).toBe("festival_complete");
     expect(festivalComplete?.sessionWrap?.resultLabel).toBe("Festival Headliner Moment");
     expect(festivalComplete?.sessionWrap?.progress.nextLabel).toContain("Festival complete");
     expect(festivalComplete?.actions[0].label).toBe("Run Festival Again");
-    expect(festivalComplete?.summaryRows.some((row) => row.label === "Final Tier")).toBe(
-      true
-    );
+    expect(festivalComplete?.sessionWrap?.tierIconPath).toBe("/assets/ui/trophies/gold.svg");
     expect(festivalComplete?.actions.map((action) => action.id)).toEqual([
       "START_FESTIVAL"
+    ]);
+  });
+
+  it("adds retry action on wrap cards when routed score is warning/critical", () => {
+    const levelCompleteWarning = buildScreenViewModel({
+      screen: "LEVEL_COMPLETE",
+      level: {
+        state: "LEVEL_COMPLETE",
+        currentLevel: 2,
+        totalLevels: 4,
+        attemptNumber: 1,
+        attemptKey: "2:1",
+        cumulativeScore: 820,
+        lastLevelScore: 220
+      },
+      profile: {
+        highestUnlockedLevel: 4,
+        bestFestivalScore: 3100,
+        bestLevelScore: 600
+      },
+      runtime: {
+        levelNumber: 2,
+        dayNumber: 1,
+        sessionName: "Afternoon Session",
+        sessionIndexInDay: 2,
+        totalFestivalDays: 2,
+        sessionTargetSets: 6,
+        paceDeltaSets: -0.8,
+        levelScore: 220,
+        outcome: "COMPLETED",
+        performanceTier: "SILVER",
+        deliveredArtists: 4,
+        incorrectStageArtists: 0,
+        missedArtists: 3,
+        remainingLives: 2,
+        remainingTimeSeconds: 0,
+        totalArtists: 14,
+        spawnedArtists: 14,
+        resolvedArtists: 14
+      }
+    });
+
+    const festivalCompleteWarning = buildScreenViewModel({
+      screen: "FESTIVAL_COMPLETE",
+      level: {
+        state: "FESTIVAL_COMPLETE",
+        currentLevel: 4,
+        totalLevels: 4,
+        attemptNumber: 1,
+        attemptKey: "4:1",
+        cumulativeScore: 1640,
+        lastLevelScore: 180
+      },
+      profile: {
+        highestUnlockedLevel: 4,
+        bestFestivalScore: 3200,
+        bestLevelScore: 920
+      },
+      runtime: {
+        levelNumber: 4,
+        dayNumber: 2,
+        sessionName: "Evening Session",
+        sessionIndexInDay: 3,
+        totalFestivalDays: 2,
+        sessionTargetSets: 9,
+        paceDeltaSets: -1.8,
+        levelScore: 180,
+        outcome: "COMPLETED",
+        performanceTier: "SILVER",
+        deliveredArtists: 5,
+        incorrectStageArtists: 2,
+        missedArtists: 4,
+        remainingLives: 1,
+        remainingTimeSeconds: 0,
+        totalArtists: 16,
+        spawnedArtists: 16,
+        resolvedArtists: 16
+      }
+    });
+
+    expect(levelCompleteWarning?.actions.map((action) => action.id)).toEqual([
+      "NEXT_LEVEL",
+      "RETRY_LEVEL"
+    ]);
+    expect(festivalCompleteWarning?.actions.map((action) => action.id)).toEqual([
+      "START_FESTIVAL",
+      "RETRY_LEVEL"
     ]);
   });
 });

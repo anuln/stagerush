@@ -1,6 +1,10 @@
 import type { GameManagerSnapshot } from "../game/GameManager";
 import { resolvePerformanceTier } from "../game/GameRuntime";
-import type { ScreenViewModel, SessionWrapModel } from "./ScreenState";
+import type {
+  ScreenActionModel,
+  ScreenViewModel,
+  SessionWrapModel
+} from "./ScreenState";
 
 const SESSION_NAME_SEQUENCE = ["Morning", "Afternoon", "Evening"] as const;
 
@@ -39,6 +43,16 @@ function formatSessionName(value: string | null | undefined): string {
   return `${trimmed} Session`;
 }
 
+function resolveTierIconPath(tier: string): string {
+  if (tier === "GOLD") {
+    return "/assets/ui/trophies/gold.svg";
+  }
+  if (tier === "SILVER") {
+    return "/assets/ui/trophies/silver.svg";
+  }
+  return "/assets/ui/trophies/bronze.svg";
+}
+
 function resolveUpNextLabel(
   snapshot: GameManagerSnapshot,
   outcome: SessionWrapModel["outcome"]
@@ -49,16 +63,13 @@ function resolveUpNextLabel(
     return "Festival complete.";
   }
   if (outcome === "failed") {
-    if (runtime) {
-      return `Up Next · Day ${runtime.dayNumber} ${formatSessionName(runtime.sessionName)}`;
-    }
-    return `Up Next · Session ${level.currentLevel}`;
+    return "Session minimums not met";
   }
   if (level.currentLevel >= level.totalLevels) {
     return "Festival complete.";
   }
   if (!runtime) {
-    return `Up Next · Session ${level.currentLevel + 1}`;
+    return `Up Next: Session ${level.currentLevel + 1}`;
   }
 
   const totalFestivalDays = Math.max(runtime.dayNumber, runtime.totalFestivalDays);
@@ -71,7 +82,7 @@ function resolveUpNextLabel(
   }
   const nextSessionName =
     SESSION_NAME_SEQUENCE[nextSessionIndex - 1] ?? `Session ${nextSessionIndex}`;
-  return `Up Next · Day ${nextDay} ${formatSessionName(nextSessionName)}`;
+  return `Up Next: Day ${nextDay} ${formatSessionName(nextSessionName)}`;
 }
 
 function buildSessionWrap(
@@ -81,11 +92,15 @@ function buildSessionWrap(
   const runtime = snapshot.runtime;
   const level = snapshot.level;
   const tier = formatPerformance(snapshot);
+  const tierIconPath = resolveTierIconPath(tier);
   const delivered = Math.max(0, runtime?.deliveredArtists ?? 0);
   const missed = Math.max(0, runtime?.missedArtists ?? 0);
+  const incorrectStage = Math.max(0, runtime?.incorrectStageArtists ?? 0);
   const targetSets = Math.max(1, runtime?.sessionTargetSets ?? 1);
   const nextLabel = resolveUpNextLabel(snapshot, outcome);
-  const targetStatus = delivered >= targetSets ? "👍" : "👎";
+  const deliveryRatio = delivered / targetSets;
+  const routedTone =
+    deliveryRatio >= 1 ? "positive" : deliveryRatio >= 0.72 ? "warning" : "critical";
 
   const resultLabel =
     outcome === "festival_complete"
@@ -93,31 +108,51 @@ function buildSessionWrap(
       : outcome === "failed"
         ? "Session Turbulence"
         : "Session Locked In";
+  const sessionScore = Math.max(
+    0,
+    Math.floor(runtime?.levelScore ?? level.lastLevelScore ?? 0)
+  );
+  const runTotalScore = Math.max(
+    0,
+    Math.floor(level.cumulativeScore ?? 0)
+  );
 
   return {
     outcome,
     resultLabel,
     tier,
-    sessionScore: Math.max(0, Math.floor(level.lastLevelScore ?? 0)),
-    runTotalScore: Math.max(0, Math.floor(level.cumulativeScore ?? 0)),
+    tierIconPath,
+    sessionScore,
+    runTotalScore,
     metrics: [
       {
         id: "artists-routed",
         label: "Artists Routed",
-        value: `${delivered} ${targetStatus}`,
-        tone: delivered >= targetSets ? "positive" : "warning"
+        value: String(delivered),
+        tone: routedTone
       },
       {
         id: "artists-missed",
         label: "Artists Missed",
         value: String(missed),
         tone: missed > 0 ? "warning" : "neutral"
+      },
+      {
+        id: "incorrect-stage",
+        label: "Incorrect Stage",
+        value: String(incorrectStage),
+        tone: incorrectStage > 0 ? "warning" : "neutral"
       }
     ],
     progress: {
       nextLabel
     }
   };
+}
+
+function shouldOfferRetryAction(sessionWrap: SessionWrapModel): boolean {
+  const routedMetric = sessionWrap.metrics.find((metric) => metric.id === "artists-routed");
+  return routedMetric?.tone === "warning" || routedMetric?.tone === "critical";
 }
 
 export function buildScreenViewModel(
@@ -147,15 +182,10 @@ export function buildScreenViewModel(
     return {
       screen: "LEVEL_FAILED",
       title: formatDaySession(snapshot),
-      subtitle:
-        "Session Wrap Card · crowd pressure spiked past limit.",
+      subtitle: "",
       summaryRows: [
         { label: "Session Score", value: formatScore(level.lastLevelScore) },
         { label: "Festival Score", value: formatScore(level.cumulativeScore) },
-        {
-          label: "Session Tier",
-          value: sessionWrap.tier
-        },
         {
           label: "Session Best",
           value: formatScore(snapshot.profile.bestLevelScore)
@@ -170,41 +200,51 @@ export function buildScreenViewModel(
 
   if (snapshot.screen === "LEVEL_COMPLETE") {
     const sessionWrap = buildSessionWrap(snapshot, "complete");
+    const actions: ScreenActionModel[] = shouldOfferRetryAction(sessionWrap)
+      ? [
+          { id: "NEXT_LEVEL", label: "Next Session", emphasis: "primary" },
+          { id: "RETRY_LEVEL", label: "Retry Session", emphasis: "secondary" }
+        ]
+      : [
+          { id: "NEXT_LEVEL", label: "Next Session", emphasis: "primary" }
+        ];
     return {
       screen: "LEVEL_COMPLETE",
       title: formatDaySession(snapshot),
-      subtitle: "Session Wrap Card · route quality locked in.",
+      subtitle: "",
       summaryRows: [
         { label: "Session Score", value: formatScore(level.lastLevelScore) },
-        { label: "Session Tier", value: sessionWrap.tier },
         { label: "Festival Score", value: formatScore(level.cumulativeScore) },
         {
           label: "Session Best",
           value: formatScore(snapshot.profile.bestLevelScore)
         }
       ],
-      actions: [
-        { id: "NEXT_LEVEL", label: "Next Session", emphasis: "primary" }
-      ],
+      actions,
       sessionWrap
     };
   }
 
   if (snapshot.screen === "FESTIVAL_COMPLETE") {
     const sessionWrap = buildSessionWrap(snapshot, "festival_complete");
+    const actions: ScreenActionModel[] = shouldOfferRetryAction(sessionWrap)
+      ? [
+          { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" },
+          { id: "RETRY_LEVEL", label: "Retry Session", emphasis: "secondary" }
+        ]
+      : [
+          { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" }
+        ];
     return {
       screen: "FESTIVAL_COMPLETE",
       title: "Festival Complete",
-      subtitle: "Session Wrap Card Finale · lineup complete.",
+      subtitle: "",
       summaryRows: [
         { label: "Sessions Cleared", value: `${level.totalLevels}` },
         { label: "Festival Score", value: formatScore(level.cumulativeScore) },
-        { label: "Final Tier", value: sessionWrap.tier },
         { label: "Best festival", value: formatScore(snapshot.profile.bestFestivalScore) }
       ],
-      actions: [
-        { id: "START_FESTIVAL", label: "Run Festival Again", emphasis: "primary" }
-      ],
+      actions,
       sessionWrap
     };
   }

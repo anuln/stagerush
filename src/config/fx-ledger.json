@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-02-26",
+  "current": {
+    "version": "v1.0.0",
+    "defaults": {
+      "atmosphere": {
+        "overlayColor": "#8BBEFF",
+        "overlayOpacity": 0.1,
+        "particleColor": "#F9F3D2",
+        "particleCount": 14,
+        "particleSpeed": 16,
+        "stageGlow": 0.14
+      },
+      "fireworks": {
+        "enabled": false,
+        "burstCountMin": 0,
+        "burstCountMax": 0,
+        "particlesPerBurstMin": 0,
+        "particlesPerBurstMax": 0,
+        "launchIntervalMsMin": 0,
+        "launchIntervalMsMax": 0,
+        "durationMs": 0,
+        "burstRadiusMin": 0,
+        "burstRadiusMax": 0,
+        "trailAlpha": 0,
+        "colors": []
+      }
+    },
+    "byLevel": {
+      "1": {
+        "levelNumber": 1,
+        "sessionPeriod": "morning",
+        "atmosphere": {
+          "overlayColor": "#8BBEFF",
+          "overlayOpacity": 0.1,
+          "particleColor": "#F9F3D2",
+          "particleCount": 14,
+          "particleSpeed": 16,
+          "stageGlow": 0.14
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 1 morning baseline."
+      },
+      "2": {
+        "levelNumber": 2,
+        "sessionPeriod": "afternoon",
+        "atmosphere": {
+          "overlayColor": "#F0C07A",
+          "overlayOpacity": 0.13,
+          "particleColor": "#FFE8B4",
+          "particleCount": 12,
+          "particleSpeed": 12,
+          "stageGlow": 0.18
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 1 afternoon warmth."
+      },
+      "3": {
+        "levelNumber": 3,
+        "sessionPeriod": "evening",
+        "atmosphere": {
+          "overlayColor": "#2B3F7E",
+          "overlayOpacity": 0.24,
+          "particleColor": "#FFC875",
+          "particleCount": 24,
+          "particleSpeed": 26,
+          "stageGlow": 0.46
+        },
+        "fireworks": {
+          "enabled": true,
+          "burstCountMin": 3,
+          "burstCountMax": 5,
+          "particlesPerBurstMin": 16,
+          "particlesPerBurstMax": 24,
+          "launchIntervalMsMin": 150,
+          "launchIntervalMsMax": 280,
+          "durationMs": 2200,
+          "burstRadiusMin": 44,
+          "burstRadiusMax": 68,
+          "trailAlpha": 0.86,
+          "colors": ["#FFD166", "#FF8C5A", "#FF4E7A", "#6EE7D4"]
+        },
+        "notes": "Day 1 evening wrap fireworks (lite)."
+      },
+      "4": {
+        "levelNumber": 4,
+        "sessionPeriod": "morning",
+        "atmosphere": {
+          "overlayColor": "#97C8FF",
+          "overlayOpacity": 0.11,
+          "particleColor": "#F9F3D2",
+          "particleCount": 16,
+          "particleSpeed": 17,
+          "stageGlow": 0.18
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 2 morning, richer baseline."
+      },
+      "5": {
+        "levelNumber": 5,
+        "sessionPeriod": "afternoon",
+        "atmosphere": {
+          "overlayColor": "#FFC877",
+          "overlayOpacity": 0.15,
+          "particleColor": "#FFE1A2",
+          "particleCount": 14,
+          "particleSpeed": 14,
+          "stageGlow": 0.24
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 2 afternoon golden build."
+      },
+      "6": {
+        "levelNumber": 6,
+        "sessionPeriod": "evening",
+        "atmosphere": {
+          "overlayColor": "#243873",
+          "overlayOpacity": 0.27,
+          "particleColor": "#FFB766",
+          "particleCount": 28,
+          "particleSpeed": 30,
+          "stageGlow": 0.52
+        },
+        "fireworks": {
+          "enabled": true,
+          "burstCountMin": 6,
+          "burstCountMax": 9,
+          "particlesPerBurstMin": 20,
+          "particlesPerBurstMax": 30,
+          "launchIntervalMsMin": 110,
+          "launchIntervalMsMax": 220,
+          "durationMs": 2500,
+          "burstRadiusMin": 48,
+          "burstRadiusMax": 74,
+          "trailAlpha": 0.9,
+          "colors": ["#FFD166", "#FF8C5A", "#6EE7D4", "#5CC8FF", "#F973C2"]
+        },
+        "notes": "Day 2 evening fireworks (mid)."
+      },
+      "7": {
+        "levelNumber": 7,
+        "sessionPeriod": "morning",
+        "atmosphere": {
+          "overlayColor": "#A6D4FF",
+          "overlayOpacity": 0.09,
+          "particleColor": "#F3F8D5",
+          "particleCount": 13,
+          "particleSpeed": 15,
+          "stageGlow": 0.2
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 3 morning crisp reset."
+      },
+      "8": {
+        "levelNumber": 8,
+        "sessionPeriod": "afternoon",
+        "atmosphere": {
+          "overlayColor": "#FFCA73",
+          "overlayOpacity": 0.17,
+          "particleColor": "#FFE6AE",
+          "particleCount": 16,
+          "particleSpeed": 16,
+          "stageGlow": 0.28
+        },
+        "fireworks": {
+          "enabled": false,
+          "burstCountMin": 0,
+          "burstCountMax": 0,
+          "particlesPerBurstMin": 0,
+          "particlesPerBurstMax": 0,
+          "launchIntervalMsMin": 0,
+          "launchIntervalMsMax": 0,
+          "durationMs": 0,
+          "burstRadiusMin": 0,
+          "burstRadiusMax": 0,
+          "trailAlpha": 0,
+          "colors": []
+        },
+        "notes": "Day 3 afternoon pre-finale lift."
+      },
+      "9": {
+        "levelNumber": 9,
+        "sessionPeriod": "evening",
+        "atmosphere": {
+          "overlayColor": "#1E2F66",
+          "overlayOpacity": 0.3,
+          "particleColor": "#FFA94F",
+          "particleCount": 32,
+          "particleSpeed": 34,
+          "stageGlow": 0.6
+        },
+        "fireworks": {
+          "enabled": true,
+          "burstCountMin": 10,
+          "burstCountMax": 14,
+          "particlesPerBurstMin": 24,
+          "particlesPerBurstMax": 36,
+          "launchIntervalMsMin": 80,
+          "launchIntervalMsMax": 170,
+          "durationMs": 2900,
+          "burstRadiusMin": 52,
+          "burstRadiusMax": 82,
+          "trailAlpha": 0.94,
+          "colors": ["#FFD166", "#FF8C5A", "#6EE7D4", "#5CC8FF", "#F973C2", "#FFFFFF"]
+        },
+        "notes": "Day 3 evening grand finale fireworks."
+      }
+    }
+  },
+  "history": [
+    {
+      "version": "v1.0.0",
+      "updatedAt": "2026-02-26",
+      "author": "codex",
+      "summary": "Introduced session-level FX progression across all 9 sessions and evening wrap fireworks progression for levels 3/6/9."
+    }
+  ]
+}

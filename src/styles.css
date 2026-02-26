@@ -437,15 +437,15 @@ canvas {
 
 .screen-session-tier {
   display: grid;
-  gap: 2px;
+  gap: 6px;
   justify-items: center;
   align-content: center;
   border-radius: 14px;
   border: 1px solid rgba(246, 211, 144, 0.62);
   background: linear-gradient(160deg, rgba(255, 206, 123, 0.26), rgba(255, 153, 84, 0.28));
   color: #ffe8c7;
-  min-width: 96px;
-  min-height: 74px;
+  min-width: 92px;
+  min-height: 84px;
   padding: 8px 10px;
   box-shadow: inset 0 1px 0 rgba(255, 239, 213, 0.38);
 }
@@ -457,16 +457,18 @@ canvas {
   text-transform: uppercase;
 }
 
-.screen-session-tier strong {
-  font-size: 22px;
-  letter-spacing: 0.04em;
+.screen-session-tier-icon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.28));
 }
 
 .screen-session-score-strip {
   margin-top: 14px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .screen-session-score-card {
@@ -476,6 +478,7 @@ canvas {
   padding: 10px 12px;
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .screen-session-score-card span {
@@ -483,12 +486,17 @@ canvas {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .screen-session-score-card strong {
   color: #f4fbff;
   font-size: clamp(19px, 4vw, 26px);
   letter-spacing: 0.01em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .screen-session-score-card.is-run-total {
@@ -496,31 +504,61 @@ canvas {
 }
 
 .screen-session-metrics {
-  margin-top: 12px;
+  margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .screen-session-metric {
   border-radius: 12px;
   border: 1px solid rgba(160, 200, 234, 0.28);
   background: rgba(255, 255, 255, 0.03);
-  padding: 9px 10px;
+  padding: 7px 8px;
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .screen-session-metric-label {
   color: rgba(169, 203, 233, 0.8);
-  font-size: 10px;
-  letter-spacing: 0.07em;
+  font-size: 9px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .screen-session-metric-value {
   color: #e9f6ff;
-  font-size: 15px;
+  font-size: 14px;
+  text-align: right;
+}
+
+.screen-session-metric-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.screen-session-metric-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 249, 255, 0.4);
+  background: rgba(171, 204, 230, 0.54);
+}
+
+.screen-session-metric-dot.is-positive {
+  background: #4ae9b1;
+}
+
+.screen-session-metric-dot.is-warning {
+  background: #ffd15e;
+}
+
+.screen-session-metric-dot.is-critical {
+  background: #ff6f6f;
 }
 
 .screen-session-metric.is-positive {
@@ -531,6 +569,11 @@ canvas {
 .screen-session-metric.is-warning {
   border-color: rgba(255, 164, 132, 0.5);
   background: rgba(255, 128, 96, 0.08);
+}
+
+.screen-session-metric.is-critical {
+  border-color: rgba(255, 118, 118, 0.52);
+  background: rgba(255, 102, 102, 0.09);
 }
 
 .screen-session-progress {
@@ -546,8 +589,12 @@ canvas {
 .screen-session-next {
   margin: 0;
   color: rgba(211, 230, 246, 0.92);
-  font-size: 13px;
-  letter-spacing: 0.01em;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .screen-panel.is-session-wrap .screen-actions {
@@ -649,7 +696,23 @@ canvas {
   }
 
   .screen-session-score-strip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screen-session-score-card {
+    padding: 8px 10px;
+  }
+
+  .screen-session-score-card strong {
+    font-size: clamp(17px, 5vw, 22px);
+  }
+
+  .screen-session-metrics {
+    gap: 6px;
+  }
+
+  .screen-session-metric {
+    padding: 6px 7px;
   }
 }
 
@@ -702,6 +765,26 @@ canvas {
 .kiosk-btn.home.is-holding {
   box-shadow: 0 0 0 2px rgba(255, 126, 77, 0.45);
   filter: saturate(1.2);
+}
+
+.score-debug-overlay {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1600;
+  max-width: min(92vw, 380px);
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(132, 176, 225, 0.55);
+  background: rgba(5, 11, 24, 0.86);
+  color: #dff1ff;
+  font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.34;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+  pointer-events: none;
 }
 
 .kiosk-root.is-pinned .kiosk-btn.pin {

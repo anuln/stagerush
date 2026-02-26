@@ -35,8 +35,10 @@ export class AudioManager {
   private readonly cancelSchedule: AudioManagerOptions["cancelSchedule"];
   private readonly nowMs: () => number;
   private muted = false;
+  private appActive = true;
   private activeMusicCue: string | null = null;
   private activeMusicPlayer: AudioPlayer | null = null;
+  private pendingMusicCue: string | null = null;
   private fadeOutHandles: Array<ReturnType<typeof setTimeout>> = [];
   private fadeInHandles: Array<ReturnType<typeof setTimeout>> = [];
   private mix: AudioMixSettings = {
@@ -66,6 +68,37 @@ export class AudioManager {
     this.muted = nextMuted;
     if (this.activeMusicPlayer) {
       this.activeMusicPlayer.volume = this.muted ? 0 : this.resolveMusicVolume();
+    }
+  }
+
+  setAppActive(nextActive: boolean): void {
+    if (this.appActive === nextActive) {
+      return;
+    }
+    this.appActive = nextActive;
+    if (!this.appActive) {
+      this.clearFadeGroup("in");
+      this.clearFadeGroup("out");
+      if (this.activeMusicPlayer) {
+        this.activeMusicPlayer.pause();
+      }
+      this.pendingMusicCue = this.activeMusicCue;
+      return;
+    }
+
+    if (this.pendingMusicCue && this.pendingMusicCue !== this.activeMusicCue) {
+      const cue = this.pendingMusicCue;
+      this.pendingMusicCue = null;
+      void this.playMusic(cue);
+      return;
+    }
+
+    if (this.activeMusicPlayer && this.activeMusicCue) {
+      this.activeMusicPlayer.volume = this.muted ? 0 : this.resolveMusicVolume();
+      void Promise.resolve(this.activeMusicPlayer.play()).catch(() => {
+        // Ignore autoplay failures when tab regains focus.
+      });
+      this.pendingMusicCue = null;
     }
   }
 
@@ -117,6 +150,9 @@ export class AudioManager {
     cueKey: string,
     options: SfxPlayOptions = {}
   ): Promise<boolean> {
+    if (!this.appActive) {
+      return false;
+    }
     const now = this.nowMs();
     const cooldownMs = Math.max(
       0,
@@ -159,6 +195,23 @@ export class AudioManager {
       return false;
     }
 
+    if (!this.appActive) {
+      this.pendingMusicCue = cueId;
+      if (
+        this.activeMusicPlayer &&
+        this.activeMusicCue &&
+        this.activeMusicCue !== cueId
+      ) {
+        this.activeMusicPlayer.pause();
+        this.activeMusicPlayer.currentTime = 0;
+        this.activeMusicPlayer = null;
+      } else if (this.activeMusicPlayer) {
+        this.activeMusicPlayer.pause();
+      }
+      this.activeMusicCue = cueId;
+      return true;
+    }
+
     if (this.activeMusicCue === cueId && this.activeMusicPlayer) {
       return true;
     }
@@ -193,6 +246,7 @@ export class AudioManager {
   stopMusic(): void {
     this.clearFadeGroup("in");
     this.clearFadeGroup("out");
+    this.pendingMusicCue = null;
     if (!this.activeMusicPlayer) {
       return;
     }

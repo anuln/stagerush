@@ -68,6 +68,7 @@ export interface RuntimeStatus {
   outcome: RuntimeOutcome;
   performanceTier: PerformanceTier | null;
   deliveredArtists: number;
+  incorrectStageArtists: number;
   missedArtists: number;
   remainingLives: number;
   remainingTimeSeconds: number;
@@ -143,6 +144,7 @@ export class GameRuntime {
   private remainingLevelTimeSeconds = 0;
   private roundPerformanceTier: PerformanceTier | null = null;
   private deliveredArtists = 0;
+  private incorrectStageArtists = 0;
   private missedArtists = 0;
   private levelFailureReported = false;
   private levelOutcome: RuntimeOutcome = "ACTIVE";
@@ -479,6 +481,15 @@ export class GameRuntime {
 
     const stageUpdate = this.stageSystem.update(this.nowMs);
     for (const delivery of stageUpdate.completedDeliveries) {
+      const deliveredArtist = this.artists.find(
+        (entry) => entry.id === delivery.artistId
+      );
+      if (
+        deliveredArtist?.assignedStageId &&
+        deliveredArtist.assignedStageId !== delivery.stageId
+      ) {
+        this.incorrectStageArtists += 1;
+      }
       this.deliveredArtists += 1;
       this.stageSetCounts.set(
         delivery.stageId,
@@ -617,6 +628,7 @@ export class GameRuntime {
       outcome: this.levelOutcome,
       performanceTier: this.roundPerformanceTier,
       deliveredArtists: this.deliveredArtists,
+      incorrectStageArtists: this.incorrectStageArtists,
       missedArtists: this.missedArtists,
       remainingLives: this.livesState.remainingLives,
       remainingTimeSeconds: this.remainingLevelTimeSeconds,
