@@ -411,8 +411,9 @@
         "rotationWeight": 1.9,
         "seed": 225417,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Neon Ritual (Synthwave) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Neon Ritual (Synthwave) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-headliner-b-performanceaudio-b52639b1.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Synthwave festival artist sprite for Neon Ritual, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -424,13 +425,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_headliner_b_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_b_walk2.png",
-            "assets/maps/govball/artists/artist_headliner_b_walk3.png"
+            "assets/maps/govball2026/committed/artist-headliner-b-walk1-7539909e.png",
+            "assets/maps/govball2026/committed/artist-headliner-b-walk2-0c8148d2.png",
+            "assets/maps/govball2026/committed/artist-headliner-b-walk3-4b116602.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_b_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_headliner_b_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_headliner_b_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-headliner-b-distracted-1343e48c.png",
+          "performing": "assets/maps/govball2026/committed/artist-headliner-b-performing-063c0249.png"
         }
       },
       {
