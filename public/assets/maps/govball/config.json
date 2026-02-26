@@ -89,8 +89,8 @@
       "id": "merch1",
       "type": "merch_stand",
       "position": {
-        "x": 0.5,
-        "y": 0.42
+        "x": 0.259130394977072,
+        "y": 0.379321925575437
       },
       "radius": 0.07,
       "delay": 2,
@@ -101,8 +101,8 @@
       "id": "burger1",
       "type": "burger_shack",
       "position": {
-        "x": 0.3,
-        "y": 0.55
+        "x": 0.1808695254118546,
+        "y": 0.7170676335414324
       },
       "radius": 0.06,
       "delay": 2,
@@ -113,8 +113,8 @@
       "id": "paparazzi1",
       "type": "paparazzi",
       "position": {
-        "x": 0.65,
-        "y": 0.35
+        "x": 0.7460869167162024,
+        "y": 0.23478339918435195
       },
       "radius": 0.06,
       "delay": 3,
@@ -125,8 +125,8 @@
       "id": "fans1",
       "type": "fan_crowd",
       "position": {
-        "x": 0.45,
-        "y": 0.68
+        "x": 0.7743477862814199,
+        "y": 0.8672311816701455
       },
       "radius": 0.08,
       "delay": 3,
@@ -137,8 +137,8 @@
       "id": "burger2",
       "type": "burger_shack",
       "position": {
-        "x": 0.72,
-        "y": 0.72
+        "x": 0.5004347428031589,
+        "y": 0.6016324604099019
       },
       "radius": 0.06,
       "delay": 2,
@@ -149,8 +149,8 @@
       "id": "merch2",
       "type": "merch_stand",
       "position": {
-        "x": 0.18,
-        "y": 0.48
+        "x": 0.6178260471509851,
+        "y": 0.6018770227189373
       },
       "radius": 0.07,
       "delay": 2,
@@ -864,6 +864,16 @@
       "level_complete": "assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
       "level_failed": "assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
       "timer_warning": "assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3"
+    }
+  },
+  "sessionFx": {
+    "evening": {
+      "overlayColor": "#252856",
+      "overlayOpacity": 0.24,
+      "particleColor": "#FFC875",
+      "particleCount": 22,
+      "particleSpeed": 26,
+      "stageGlow": 0.44
     }
   }
 }
