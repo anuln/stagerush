@@ -41,6 +41,7 @@ export interface AdminAssetOverrides {
   stageSprites?: Record<string, string>;
   stagePositions?: Record<string, NormalizedPoint>;
   distractionPositions?: Record<string, NormalizedPoint>;
+  // Keys are distraction ids (preferred). Legacy type keys are still supported.
   distractionSprites?: Record<string, string>;
   audioCues?: Record<string, string>;
   artistSprites?: Record<string, ArtistAssetOverride>;
@@ -399,15 +400,23 @@ export function applyAdminAssetOverrides(
 
   if (overrides.distractionSprites) {
     for (const distraction of cloned.distractions) {
-      const overridePath = overrides.distractionSprites[distraction.type];
+      const overridePath =
+        overrides.distractionSprites[distraction.id] ??
+        overrides.distractionSprites[distraction.type];
       if (overridePath) {
         distraction.sprite = overridePath;
       }
     }
-    cloned.assets.distractionSprites = {
-      ...cloned.assets.distractionSprites,
-      ...overrides.distractionSprites
-    };
+    for (const [idOrType, path] of Object.entries(overrides.distractionSprites)) {
+      if (!path) {
+        continue;
+      }
+      const matchedDistraction = cloned.distractions.find(
+        (entry) => entry.id === idOrType
+      );
+      const typeKey = matchedDistraction?.type ?? idOrType;
+      cloned.assets.distractionSprites[typeKey] = path;
+    }
   }
 
   if (overrides.audioCues) {
@@ -591,10 +600,13 @@ export function pruneCommittedAdminOverrides(
   }
 
   if (next.distractionSprites) {
-    for (const [type, path] of Object.entries(next.distractionSprites)) {
-      const mapPath = map.assets.distractionSprites[type];
+    for (const [idOrType, path] of Object.entries(next.distractionSprites)) {
+      const distraction = map.distractions.find((entry) => entry.id === idOrType);
+      const mapPath = distraction
+        ? distraction.sprite || map.assets.distractionSprites[distraction.type]
+        : map.assets.distractionSprites[idOrType];
       if (!path || !mapPath || sameAssetPath(path, mapPath)) {
-        delete next.distractionSprites[type];
+        delete next.distractionSprites[idOrType];
       }
     }
     if (Object.keys(next.distractionSprites).length === 0) {

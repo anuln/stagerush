@@ -55,6 +55,15 @@ function makeFixtureMap(): FestivalMap {
         sprite: "assets/maps/fixture/distraction_merch.png"
       },
       {
+        id: "merch-b",
+        type: "merch_stand",
+        position: { x: 0.24, y: 0.68 },
+        radius: 0.06,
+        delay: 2,
+        appearsAtLevel: 1,
+        sprite: "assets/maps/fixture/distraction_merch.png"
+      },
+      {
         id: "fans-a",
         type: "fan_crowd",
         position: { x: 0.62, y: 0.68 },
@@ -159,7 +168,7 @@ describe("AdminPanelModel", () => {
       makeAudioCatalog()
     );
 
-    expect(slots).toHaveLength(14);
+    expect(slots).toHaveLength(15);
     expect(slots[0].id).toBe("background");
     expect(slots[1].id).toBe("intro-screen");
     const bgSlot = slots.find((slot) => slot.id === "background");
@@ -171,8 +180,12 @@ describe("AdminPanelModel", () => {
     expect(audioSlot?.promptText).toBe("Music prompt");
 
     const artistPoseSlot = slots.find((slot) => slot.id === "artist:headliner-a:pose1");
-    expect(artistPoseSlot?.defaultPath).toBe("");
-    expect(artistPoseSlot?.resolvedPath).toBe("/");
+    expect(artistPoseSlot?.defaultPath).toBe(
+      "assets/maps/fixture/artist_headliner_walk1.png"
+    );
+    expect(artistPoseSlot?.resolvedPath).toBe(
+      "/assets/maps/fixture/artist_headliner_walk1.png"
+    );
   });
 
   it("applies and clears overrides by slot meta", () => {
@@ -198,6 +211,20 @@ describe("AdminPanelModel", () => {
     };
     next = setOverrideForSlot(next, audioMeta, "assets/audio/new_music.mp3");
     expect(next.audioCues).toEqual({ music_bg: "assets/audio/new_music.mp3" });
+
+    const distractionMeta: SlotMeta = {
+      kind: "distraction",
+      distractionId: "merch-a",
+      distractionType: "merch_stand"
+    };
+    next = setOverrideForSlot(
+      next,
+      distractionMeta,
+      "assets/maps/new_merch_a.png"
+    );
+    expect(next.distractionSprites).toEqual({
+      "merch-a": "assets/maps/new_merch_a.png"
+    });
   });
 
   it("updates and clamps stage placement overrides", () => {
@@ -216,7 +243,7 @@ describe("AdminPanelModel", () => {
     expect(overrides.distractionPositions?.["merch-a"]).toEqual({ x: 0, y: 1 });
     expect(getDistractionPosition(map, overrides, "merch-a")).toEqual({ x: 0, y: 1 });
     expect(getDistractionPosition(map, overrides, "fans-a")).toEqual(
-      map.distractions[1].position
+      map.distractions[2].position
     );
   });
 

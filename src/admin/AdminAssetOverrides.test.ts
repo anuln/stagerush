@@ -149,7 +149,7 @@ describe("AdminAssetOverrides", () => {
       distractionPositions: { d1: { x: 0.62, y: 0.58 } },
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
       distractionSprites: {
-        merch_stand: "assets/maps/generated/distraction_merch_v2.png"
+        d1: "assets/maps/generated/distraction_merch_v2.png"
       },
       audioCues: {
         spawn: "assets/audio/spawn_v2.mp3"
@@ -227,7 +227,7 @@ describe("AdminAssetOverrides", () => {
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
       distractionPositions: { d1: { x: 0.61, y: 0.57 } },
       distractionSprites: {
-        merch_stand: "assets/maps/generated/distraction_merch_v2.png"
+        d1: "assets/maps/generated/distraction_merch_v2.png"
       },
       audioCues: {
         spawn: "assets/audio/spawn_v2.mp3"
@@ -261,7 +261,7 @@ describe("AdminAssetOverrides", () => {
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
       distractionPositions: { d1: { x: 0.61, y: 0.57 } },
       distractionSprites: {
-        merch_stand: "assets/maps/generated/distraction_merch_v2.png"
+        d1: "assets/maps/generated/distraction_merch_v2.png"
       },
       audioCues: {
         spawn: "assets/audio/spawn_v2.mp3"

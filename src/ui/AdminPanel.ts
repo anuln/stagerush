@@ -78,9 +78,35 @@ const GEMINI_KEY_STORAGE_KEY = "stagecall:admin:gemini-key";
 const GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-image";
 const ELEVENLABS_KEY_STORAGE_KEY = "stagecall:admin:elevenlabs-key";
 const GITHUB_TOKEN_STORAGE_KEY = "stagecall:admin:github-token";
-const GITHUB_SETTINGS_STORAGE_KEY = "stagecall:admin:github-settings:v1";
+const ADMIN_SESSION_SECRETS_STORAGE_KEY = "stagecall:admin:session-secrets:v1";
+const GITHUB_SETTINGS_STORAGE_KEY = "stagecall:admin:github-settings:v2";
 const ELEVEN_SOUND_MODEL_ID = "eleven_text_to_sound_v2";
 const ELEVEN_MAX_DURATION_SEC = 30;
+
+interface AdminSessionSecrets {
+  geminiApiKey?: string;
+  elevenLabsApiKey?: string;
+  githubToken?: string;
+}
+
+interface AdminSessionSecretsStore {
+  version: 1;
+  byFestival: Record<string, AdminSessionSecrets>;
+}
+
+interface GithubSettingsStore {
+  version: 2;
+  byFestival: Record<
+    string,
+    {
+      owner?: string;
+      repo?: string;
+      branch?: string;
+      targetPath?: string;
+      remember?: boolean;
+    }
+  >;
+}
 
 function toDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -566,15 +592,12 @@ export class AdminPanel {
   private isGenerating = false;
   private geminiApiKey = "";
   private geminiModel = GEMINI_MODEL_DEFAULT;
-  private rememberGeminiKey = false;
   private elevenLabsApiKey = "";
-  private rememberElevenLabsKey = false;
   private selectedArtistId: string | null = null;
   private artistSeedDraftByArtist = new Map<string, string>();
   private artistAudioLengthDraftByArtist = new Map<string, string>();
   private artistSeedWarningByArtist = new Map<string, string>();
   private githubToken = "";
-  private rememberGithubToken = false;
   private rememberGithubSettings = true;
   private githubOwner = "anuln";
   private githubRepo = "stagerush";
@@ -609,53 +632,14 @@ export class AdminPanel {
       saveAdminAssetOverrides(this.activeFestivalId, normalizedInitialOverrides);
     }
 
+    this.inPlayLevel = Math.max(1, this.map.totalLevels);
     this.selectedStageForMap = this.map.stages[0]?.id ?? null;
     this.selectedDistractionForMap = this.map.distractions[0]?.id ?? null;
-    const rememberedGeminiKey = window.localStorage.getItem(GEMINI_KEY_STORAGE_KEY);
-    if (rememberedGeminiKey && rememberedGeminiKey.trim().length > 0) {
-      this.geminiApiKey = rememberedGeminiKey;
-      this.rememberGeminiKey = true;
-    }
-    const rememberedElevenKey = window.localStorage.getItem(ELEVENLABS_KEY_STORAGE_KEY);
-    if (rememberedElevenKey && rememberedElevenKey.trim().length > 0) {
-      this.elevenLabsApiKey = rememberedElevenKey;
-      this.rememberElevenLabsKey = true;
-    }
+    this.loadSessionSecrets();
     this.githubTargetPath = toRepoPathFromPublicUrl(this.mapConfigPath);
     this.githubCommitMessage = `chore(admin): update ${this.activeFestivalId} festival config`;
 
-    const rememberedGithubToken = window.localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY);
-    if (rememberedGithubToken && rememberedGithubToken.trim().length > 0) {
-      this.githubToken = rememberedGithubToken;
-      this.rememberGithubToken = true;
-    }
-    const rawGithubSettings = window.localStorage.getItem(GITHUB_SETTINGS_STORAGE_KEY);
-    if (rawGithubSettings) {
-      try {
-        const parsed = JSON.parse(rawGithubSettings) as {
-          owner?: string;
-          repo?: string;
-          branch?: string;
-          targetPath?: string;
-          remember?: boolean;
-        };
-        if (typeof parsed.owner === "string" && parsed.owner.trim().length > 0) {
-          this.githubOwner = parsed.owner.trim();
-        }
-        if (typeof parsed.repo === "string" && parsed.repo.trim().length > 0) {
-          this.githubRepo = parsed.repo.trim();
-        }
-        if (typeof parsed.branch === "string" && parsed.branch.trim().length > 0) {
-          this.githubBranch = parsed.branch.trim();
-        }
-        if (typeof parsed.targetPath === "string" && parsed.targetPath.trim().length > 0) {
-          this.githubTargetPath = parsed.targetPath.trim();
-        }
-        this.rememberGithubSettings = parsed.remember !== false;
-      } catch {
-        // Ignore malformed legacy settings.
-      }
-    }
+    this.loadGithubSettings();
 
     this.root = document.createElement("div");
     this.root.className = "admin-root";
@@ -676,6 +660,147 @@ export class AdminPanel {
     this.root.appendChild(this.panel);
 
     void this.loadCatalogs();
+  }
+
+  private loadSessionSecrets(): void {
+    const next: AdminSessionSecrets = {};
+    try {
+      const raw = window.sessionStorage.getItem(ADMIN_SESSION_SECRETS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as AdminSessionSecretsStore;
+        if (parsed?.version === 1 && parsed.byFestival?.[this.activeFestivalId]) {
+          Object.assign(next, parsed.byFestival[this.activeFestivalId]);
+        }
+      }
+    } catch {
+      // Ignore malformed session secrets payload.
+    }
+
+    // Legacy one-time migration from localStorage to session storage.
+    if (!next.geminiApiKey) {
+      const legacyGemini = window.localStorage.getItem(GEMINI_KEY_STORAGE_KEY);
+      if (legacyGemini?.trim()) {
+        next.geminiApiKey = legacyGemini.trim();
+      }
+      window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+    }
+    if (!next.elevenLabsApiKey) {
+      const legacyEleven = window.localStorage.getItem(ELEVENLABS_KEY_STORAGE_KEY);
+      if (legacyEleven?.trim()) {
+        next.elevenLabsApiKey = legacyEleven.trim();
+      }
+      window.localStorage.removeItem(ELEVENLABS_KEY_STORAGE_KEY);
+    }
+    if (!next.githubToken) {
+      const legacyToken = window.localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY);
+      if (legacyToken?.trim()) {
+        next.githubToken = legacyToken.trim();
+      }
+      window.localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+    }
+
+    this.geminiApiKey = next.geminiApiKey ?? "";
+    this.elevenLabsApiKey = next.elevenLabsApiKey ?? "";
+    this.githubToken = next.githubToken ?? "";
+    this.persistSessionSecrets();
+  }
+
+  private persistSessionSecrets(): void {
+    const currentFestivalSecrets: AdminSessionSecrets = {};
+    if (this.geminiApiKey.trim().length > 0) {
+      currentFestivalSecrets.geminiApiKey = this.geminiApiKey.trim();
+    }
+    if (this.elevenLabsApiKey.trim().length > 0) {
+      currentFestivalSecrets.elevenLabsApiKey = this.elevenLabsApiKey.trim();
+    }
+    if (this.githubToken.trim().length > 0) {
+      currentFestivalSecrets.githubToken = this.githubToken.trim();
+    }
+    try {
+      const raw = window.sessionStorage.getItem(ADMIN_SESSION_SECRETS_STORAGE_KEY);
+      const store: AdminSessionSecretsStore =
+        raw && raw.trim().length > 0
+          ? (JSON.parse(raw) as AdminSessionSecretsStore)
+          : { version: 1, byFestival: {} };
+      if (!store.byFestival || typeof store.byFestival !== "object") {
+        store.byFestival = {};
+      }
+      if (Object.keys(currentFestivalSecrets).length === 0) {
+        delete store.byFestival[this.activeFestivalId];
+      } else {
+        store.byFestival[this.activeFestivalId] = currentFestivalSecrets;
+      }
+      if (Object.keys(store.byFestival).length === 0) {
+        window.sessionStorage.removeItem(ADMIN_SESSION_SECRETS_STORAGE_KEY);
+      } else {
+        store.version = 1;
+        window.sessionStorage.setItem(
+          ADMIN_SESSION_SECRETS_STORAGE_KEY,
+          JSON.stringify(store)
+        );
+      }
+    } catch {
+      // Ignore session storage exceptions.
+    }
+  }
+
+  private loadGithubSettings(): void {
+    const raw = window.localStorage.getItem(GITHUB_SETTINGS_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as GithubSettingsStore;
+        if (parsed?.version === 2 && parsed.byFestival?.[this.activeFestivalId]) {
+          const byFestival = parsed.byFestival[this.activeFestivalId];
+          if (typeof byFestival.owner === "string" && byFestival.owner.trim()) {
+            this.githubOwner = byFestival.owner.trim();
+          }
+          if (typeof byFestival.repo === "string" && byFestival.repo.trim()) {
+            this.githubRepo = byFestival.repo.trim();
+          }
+          if (typeof byFestival.branch === "string" && byFestival.branch.trim()) {
+            this.githubBranch = byFestival.branch.trim();
+          }
+          if (typeof byFestival.targetPath === "string" && byFestival.targetPath.trim()) {
+            this.githubTargetPath = byFestival.targetPath.trim();
+          }
+          this.rememberGithubSettings = byFestival.remember !== false;
+          return;
+        }
+      } catch {
+        // Fall through to legacy shape handling.
+      }
+    }
+
+    const legacyRaw = window.localStorage.getItem("stagecall:admin:github-settings:v1");
+    if (!legacyRaw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(legacyRaw) as {
+        owner?: string;
+        repo?: string;
+        branch?: string;
+        targetPath?: string;
+        remember?: boolean;
+      };
+      if (typeof parsed.owner === "string" && parsed.owner.trim().length > 0) {
+        this.githubOwner = parsed.owner.trim();
+      }
+      if (typeof parsed.repo === "string" && parsed.repo.trim().length > 0) {
+        this.githubRepo = parsed.repo.trim();
+      }
+      if (typeof parsed.branch === "string" && parsed.branch.trim().length > 0) {
+        this.githubBranch = parsed.branch.trim();
+      }
+      if (typeof parsed.targetPath === "string" && parsed.targetPath.trim().length > 0) {
+        this.githubTargetPath = parsed.targetPath.trim();
+      }
+      this.rememberGithubSettings = parsed.remember !== false;
+      this.persistGithubSettings();
+      window.localStorage.removeItem("stagecall:admin:github-settings:v1");
+    } catch {
+      // Ignore malformed legacy settings.
+    }
   }
 
   private async loadCatalogs(): Promise<void> {
@@ -1078,10 +1203,6 @@ export class AdminPanel {
     );
   }
 
-  private normalizeAssetPath(path: string): string {
-    return path.trim().replace(/^\/+/, "");
-  }
-
   private getAudioLengthSecForSlot(slot: AssetSlot): number {
     if (slot.meta.kind === "artist" && slot.meta.field === "performanceAudioClip") {
       return this.getArtistAudioLengthSec(slot.meta.artistId);
@@ -1144,18 +1265,6 @@ export class AdminPanel {
       return usageMap[cue] ?? `Audio cue used by runtime event '${cue}'.`;
     }
     return "";
-  }
-
-  private findUsageLabelsForAssetPath(assetPath: string): string[] {
-    const target = this.normalizeAssetPath(assetPath);
-    if (!target) {
-      return [];
-    }
-    const slots = this.getAllSlots();
-    const labels = slots
-      .filter((slot) => this.normalizeAssetPath(slot.defaultPath) === target)
-      .map((slot) => slot.label);
-    return Array.from(new Set(labels));
   }
 
   private getIntroPresentationDraft(): Required<IntroPresentationConfig> {
@@ -1776,15 +1885,6 @@ export class AdminPanel {
     const actions = document.createElement("div");
     actions.className = "admin-header-actions";
 
-    const applyButton = document.createElement("button");
-    applyButton.type = "button";
-    applyButton.className = "admin-btn primary";
-    applyButton.textContent = "Apply + Reload";
-    applyButton.addEventListener("click", () => {
-      this.onApply(structuredClone(this.draftOverrides));
-    });
-    actions.appendChild(applyButton);
-
     const resetButton = document.createElement("button");
     resetButton.type = "button";
     resetButton.className = "admin-btn";
@@ -1828,7 +1928,7 @@ export class AdminPanel {
       { id: "generate", label: "Generate", hint: "Create new art" },
       { id: "map", label: "Map", hint: "Pin map markers" },
       { id: "library", label: "Library", hint: "Review variants" },
-      { id: "publish", label: "Publish", hint: "Apply and reload" }
+      { id: "publish", label: "Publish", hint: "Commit to Git" }
     ];
     for (const tabDef of tabDefs) {
       const button = document.createElement("button");
@@ -2223,9 +2323,7 @@ export class AdminPanel {
     geminiInput.value = this.geminiApiKey;
     geminiInput.addEventListener("input", () => {
       this.geminiApiKey = geminiInput.value.trim();
-      if (this.rememberGeminiKey) {
-        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-      }
+      this.persistSessionSecrets();
     });
     geminiField.appendChild(geminiInput);
     card.appendChild(geminiField);
@@ -2243,24 +2341,6 @@ export class AdminPanel {
     geminiModelField.appendChild(geminiModelInput);
     card.appendChild(geminiModelField);
 
-    const rememberGemini = document.createElement("label");
-    rememberGemini.className = "admin-check";
-    const rememberGeminiInput = document.createElement("input");
-    rememberGeminiInput.type = "checkbox";
-    rememberGeminiInput.checked = this.rememberGeminiKey;
-    rememberGeminiInput.addEventListener("change", () => {
-      this.rememberGeminiKey = rememberGeminiInput.checked;
-      if (this.rememberGeminiKey) {
-        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-      } else {
-        window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
-      }
-    });
-    const rememberGeminiLabel = document.createElement("span");
-    rememberGeminiLabel.textContent = "Remember Gemini key on this device";
-    rememberGemini.append(rememberGeminiInput, rememberGeminiLabel);
-    card.appendChild(rememberGemini);
-
     const elevenField = document.createElement("label");
     elevenField.className = "admin-field";
     elevenField.innerHTML = "<span>ElevenLabs API Key</span>";
@@ -2271,30 +2351,16 @@ export class AdminPanel {
     elevenInput.value = this.elevenLabsApiKey;
     elevenInput.addEventListener("input", () => {
       this.elevenLabsApiKey = elevenInput.value.trim();
-      if (this.rememberElevenLabsKey) {
-        window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
-      }
+      this.persistSessionSecrets();
     });
     elevenField.appendChild(elevenInput);
     card.appendChild(elevenField);
 
-    const rememberEleven = document.createElement("label");
-    rememberEleven.className = "admin-check";
-    const rememberElevenInput = document.createElement("input");
-    rememberElevenInput.type = "checkbox";
-    rememberElevenInput.checked = this.rememberElevenLabsKey;
-    rememberElevenInput.addEventListener("change", () => {
-      this.rememberElevenLabsKey = rememberElevenInput.checked;
-      if (this.rememberElevenLabsKey) {
-        window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
-      } else {
-        window.localStorage.removeItem(ELEVENLABS_KEY_STORAGE_KEY);
-      }
-    });
-    const rememberElevenLabel = document.createElement("span");
-    rememberElevenLabel.textContent = "Remember ElevenLabs key on this device";
-    rememberEleven.append(rememberElevenInput, rememberElevenLabel);
-    card.appendChild(rememberEleven);
+    const storageHint = document.createElement("p");
+    storageHint.className = "admin-copy";
+    storageHint.textContent =
+      "Keys stay in browser session storage for this festival only (cleared when browser session ends).";
+    card.appendChild(storageHint);
 
     return card;
   }
@@ -2340,7 +2406,7 @@ export class AdminPanel {
     const applyPath = document.createElement("button");
     applyPath.type = "button";
     applyPath.className = "admin-btn";
-    applyPath.textContent = "Set Manual Path";
+    applyPath.textContent = "Apply to Preview";
     applyPath.addEventListener("click", () => {
       const value = pathInput.value.trim();
       this.draftOverrides = setOverrideForSlot(
@@ -2350,6 +2416,7 @@ export class AdminPanel {
       );
       this.notifyPreviewChange();
       this.pathDraftBySlot.set(slot.id, value);
+      this.generateStatus = `${slot.label} updated in live preview.`;
       this.render();
     });
     pathActions.appendChild(applyPath);
@@ -2603,7 +2670,7 @@ export class AdminPanel {
     const applyPath = document.createElement("button");
     applyPath.type = "button";
     applyPath.className = "admin-btn primary";
-    applyPath.textContent = "Apply Path";
+    applyPath.textContent = "Apply to Preview";
     applyPath.addEventListener("click", () => {
       const value = pathInput.value.trim();
       this.draftOverrides = setOverrideForSlot(
@@ -2612,6 +2679,7 @@ export class AdminPanel {
         value.length > 0 ? value : null
       );
       this.notifyPreviewChange();
+      this.generateStatus = `${selectedSlot.label} updated in live preview.`;
       this.render();
     });
     pathActions.appendChild(applyPath);
@@ -2782,6 +2850,25 @@ export class AdminPanel {
       section.appendChild(usageText);
     }
 
+    const activeLabel = document.createElement("p");
+    activeLabel.className = "admin-preview-meta";
+    activeLabel.textContent = "Current Active Asset (in-game)";
+    section.appendChild(activeLabel);
+    if (selectedSlot.meta.kind === "introScreen") {
+      this.appendIntroFramingPreview(
+        section,
+        selectedSlot.resolvedPath,
+        "Current intro composition"
+      );
+    }
+    this.appendMediaPreview(section, selectedSlot, selectedSlot.resolvedPath);
+    const activePath = document.createElement("code");
+    activePath.className = "admin-preview-path";
+    activePath.textContent = summarizeAssetPath(
+      selectedSlot.overridePath ?? selectedSlot.defaultPath
+    );
+    section.appendChild(activePath);
+
     if (selectedSlot.mediaType === "image") {
       const keyField = document.createElement("label");
       keyField.className = "admin-field";
@@ -2794,30 +2881,10 @@ export class AdminPanel {
       keyInput.value = this.geminiApiKey;
       keyInput.addEventListener("input", () => {
         this.geminiApiKey = keyInput.value.trim();
-        if (this.rememberGeminiKey) {
-          window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-        }
+        this.persistSessionSecrets();
       });
       keyField.append(keyLabel, keyInput);
       section.appendChild(keyField);
-
-      const remember = document.createElement("label");
-      remember.className = "admin-check";
-      const rememberInput = document.createElement("input");
-      rememberInput.type = "checkbox";
-      rememberInput.checked = this.rememberGeminiKey;
-      rememberInput.addEventListener("change", () => {
-        this.rememberGeminiKey = rememberInput.checked;
-        if (this.rememberGeminiKey) {
-          window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, this.geminiApiKey);
-        } else {
-          window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
-        }
-      });
-      const rememberLabel = document.createElement("span");
-      rememberLabel.textContent = "Remember Gemini key on this device";
-      remember.append(rememberInput, rememberLabel);
-      section.appendChild(remember);
 
       const modelField = document.createElement("label");
       modelField.className = "admin-field";
@@ -2844,30 +2911,10 @@ export class AdminPanel {
       keyInput.value = this.elevenLabsApiKey;
       keyInput.addEventListener("input", () => {
         this.elevenLabsApiKey = keyInput.value.trim();
-        if (this.rememberElevenLabsKey) {
-          window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
-        }
+        this.persistSessionSecrets();
       });
       keyField.append(keyLabel, keyInput);
       section.appendChild(keyField);
-
-      const remember = document.createElement("label");
-      remember.className = "admin-check";
-      const rememberInput = document.createElement("input");
-      rememberInput.type = "checkbox";
-      rememberInput.checked = this.rememberElevenLabsKey;
-      rememberInput.addEventListener("change", () => {
-        this.rememberElevenLabsKey = rememberInput.checked;
-        if (this.rememberElevenLabsKey) {
-          window.localStorage.setItem(ELEVENLABS_KEY_STORAGE_KEY, this.elevenLabsApiKey);
-        } else {
-          window.localStorage.removeItem(ELEVENLABS_KEY_STORAGE_KEY);
-        }
-      });
-      const rememberLabel = document.createElement("span");
-      rememberLabel.textContent = "Remember ElevenLabs key on this device";
-      remember.append(rememberInput, rememberLabel);
-      section.appendChild(remember);
 
       const lengthField = document.createElement("label");
       lengthField.className = "admin-field";
@@ -2886,6 +2933,12 @@ export class AdminPanel {
       lengthField.append(lengthLabel, lengthInput);
       section.appendChild(lengthField);
     }
+
+    const sessionHint = document.createElement("p");
+    sessionHint.className = "admin-copy";
+    sessionHint.textContent =
+      "Generation keys are cached in this browser session for the active festival.";
+    section.appendChild(sessionHint);
 
     const promptField = document.createElement("label");
     promptField.className = "admin-field";
@@ -3230,38 +3283,20 @@ export class AdminPanel {
     card.className = "admin-section-card";
 
     const title = document.createElement("h3");
-    title.textContent = "Prompt and Asset Library";
+    title.textContent = "Active In-Play Asset Library";
     card.appendChild(title);
 
-    const inPlaySlots = this.getAllSlots();
-    const allowedAssetPaths = new Set(
-      inPlaySlots.map((slot) => slot.defaultPath.replace(/^\/+/, ""))
-    );
-    const entries = [
-      ...this.spriteCatalog.map((entry) => ({
-        id: entry.id,
-        type: entry.category,
-        assetPath: entry.assetPath,
-        promptText: entry.promptText,
-        mediaType: "image" as const,
-        usageLabels: this.findUsageLabelsForAssetPath(entry.assetPath)
-      })),
-      ...this.audioCatalog.map((entry) => ({
-        id: entry.id,
-        type: entry.type,
-        assetPath: entry.assetPath,
-        promptText: entry.promptText,
-        mediaType: "audio" as const,
-        usageLabels: this.findUsageLabelsForAssetPath(entry.assetPath)
-      }))
-    ].filter((entry) =>
-      allowedAssetPaths.has(entry.assetPath.replace(/^\/+/, ""))
-    );
+    const copy = document.createElement("p");
+    copy.className = "admin-copy";
+    copy.textContent =
+      "Shows exactly what is currently in play for this festival (including overrides), with usage context and prompt reference.";
+    card.appendChild(copy);
 
-    if (entries.length === 0) {
+    const slots = this.getAllSlots();
+    if (slots.length === 0) {
       const empty = document.createElement("p");
       empty.className = "admin-empty";
-      empty.textContent = "Catalogs are empty or unavailable.";
+      empty.textContent = "No active assets found for the current festival/level.";
       card.appendChild(empty);
       section.appendChild(card);
       return section;
@@ -3269,46 +3304,47 @@ export class AdminPanel {
 
     const list = document.createElement("div");
     list.className = "admin-library-list";
-    for (const entry of entries) {
+    for (const slot of slots) {
       const item = document.createElement("article");
       item.className = "admin-library-item";
 
       const heading = document.createElement("h4");
-      heading.textContent = `${entry.id} (${entry.type})`;
+      heading.textContent = `${slot.label} (${slot.category})`;
       item.appendChild(heading);
+
+      const source = document.createElement("p");
+      source.className = "admin-copy";
+      source.textContent = slot.overridePath
+        ? "Source: override (active)"
+        : "Source: default map asset (active)";
+      item.appendChild(source);
 
       const path = document.createElement("code");
       path.className = "admin-preview-path";
-      path.textContent = entry.assetPath;
+      path.textContent = summarizeAssetPath(slot.overridePath ?? slot.defaultPath);
       item.appendChild(path);
-      if (entry.usageLabels.length > 0) {
-        const usage = document.createElement("p");
-        usage.className = "admin-copy";
-        usage.textContent = `Used by: ${entry.usageLabels.join(", ")}`;
-        item.appendChild(usage);
+
+      const usage = this.describeUsageForSlot(slot);
+      if (usage) {
+        const usageText = document.createElement("p");
+        usageText.className = "admin-copy";
+        usageText.textContent = usage;
+        item.appendChild(usageText);
       }
 
-      if (entry.mediaType === "image") {
-        const image = document.createElement("img");
-        image.className = "admin-preview-image";
-        image.src = toResolvedPath(entry.assetPath);
-        image.alt = entry.id;
-        item.appendChild(image);
-      } else {
-        const audio = document.createElement("audio");
-        audio.className = "admin-preview-audio";
-        audio.controls = true;
-        audio.preload = "none";
-        audio.src = toResolvedPath(entry.assetPath);
-        item.appendChild(audio);
+      if (slot.meta.kind === "introScreen") {
+        this.appendIntroFramingPreview(item, slot.resolvedPath, "Intro composition preview");
       }
+      this.appendMediaPreview(item, slot, slot.resolvedPath);
 
       const prompt = document.createElement("pre");
       prompt.className = "admin-code";
-      prompt.textContent = entry.promptText || "No prompt available.";
+      prompt.textContent = slot.promptText || "No prompt available.";
       item.appendChild(prompt);
+
       list.appendChild(item);
     }
+
     card.appendChild(list);
     section.appendChild(card);
     return section;
@@ -3327,7 +3363,7 @@ export class AdminPanel {
     const copy = document.createElement("p");
     copy.className = "admin-copy";
     copy.textContent =
-      "Commits the resolved festival map (including all currently applied overrides) directly via GitHub Contents API. PAT is optional to remember and stored only in this browser.";
+      "Commits the resolved festival map (including all currently applied overrides) directly via GitHub Contents API.";
     card.appendChild(copy);
 
     const tokenField = document.createElement("label");
@@ -3340,30 +3376,16 @@ export class AdminPanel {
     tokenInput.value = this.githubToken;
     tokenInput.addEventListener("input", () => {
       this.githubToken = tokenInput.value.trim();
-      if (this.rememberGithubToken) {
-        window.localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, this.githubToken);
-      }
+      this.persistSessionSecrets();
     });
     tokenField.appendChild(tokenInput);
     card.appendChild(tokenField);
 
-    const rememberTokenRow = document.createElement("label");
-    rememberTokenRow.className = "admin-check";
-    const rememberTokenInput = document.createElement("input");
-    rememberTokenInput.type = "checkbox";
-    rememberTokenInput.checked = this.rememberGithubToken;
-    rememberTokenInput.addEventListener("change", () => {
-      this.rememberGithubToken = rememberTokenInput.checked;
-      if (this.rememberGithubToken) {
-        window.localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, this.githubToken);
-      } else {
-        window.localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
-      }
-    });
-    const rememberTokenLabel = document.createElement("span");
-    rememberTokenLabel.textContent = "Remember PAT on this device";
-    rememberTokenRow.append(rememberTokenInput, rememberTokenLabel);
-    card.appendChild(rememberTokenRow);
+    const tokenHint = document.createElement("p");
+    tokenHint.className = "admin-copy";
+    tokenHint.textContent =
+      "PAT is stored in session storage for this festival and cleared when the browser session ends.";
+    card.appendChild(tokenHint);
 
     const repoGrid = document.createElement("div");
     repoGrid.className = "admin-grid-3";
@@ -3808,24 +3830,38 @@ export class AdminPanel {
   }
 
   private persistGithubSettings(): void {
-    if (!this.rememberGithubSettings) {
-      window.localStorage.removeItem(GITHUB_SETTINGS_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      GITHUB_SETTINGS_STORAGE_KEY,
-      JSON.stringify(
-        {
+    try {
+      const raw = window.localStorage.getItem(GITHUB_SETTINGS_STORAGE_KEY);
+      const store: GithubSettingsStore =
+        raw && raw.trim().length > 0
+          ? (JSON.parse(raw) as GithubSettingsStore)
+          : { version: 2, byFestival: {} };
+      if (!store.byFestival || typeof store.byFestival !== "object") {
+        store.byFestival = {};
+      }
+      if (!this.rememberGithubSettings) {
+        delete store.byFestival[this.activeFestivalId];
+      } else {
+        store.byFestival[this.activeFestivalId] = {
           owner: this.githubOwner,
           repo: this.githubRepo,
           branch: this.githubBranch,
           targetPath: this.githubTargetPath,
           remember: this.rememberGithubSettings
-        },
-        null,
-        2
-      )
-    );
+        };
+      }
+      if (Object.keys(store.byFestival).length === 0) {
+        window.localStorage.removeItem(GITHUB_SETTINGS_STORAGE_KEY);
+      } else {
+        store.version = 2;
+        window.localStorage.setItem(
+          GITHUB_SETTINGS_STORAGE_KEY,
+          JSON.stringify(store, null, 2)
+        );
+      }
+    } catch {
+      // Ignore settings persistence errors.
+    }
   }
 
   private normalizeCommittedJson(content: string): string {
@@ -4080,6 +4116,11 @@ export class AdminPanel {
   }
 
   private notifyPreviewChange(): void {
+    try {
+      saveAdminAssetOverrides(this.activeFestivalId, this.draftOverrides);
+    } catch {
+      // Storage may fail for oversized inline assets; preview still updates in-memory.
+    }
     this.onPreviewChange(structuredClone(this.draftOverrides));
   }
 

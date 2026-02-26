@@ -849,7 +849,7 @@ export class GameRuntime {
     }
     return {
       id: "first_spawn_unrouted",
-      text: "Route me to my stage!",
+      text: "Drag to route me to my stage..",
       position: { ...artist.position },
       sticky: true
     };

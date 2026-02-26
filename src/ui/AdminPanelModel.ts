@@ -31,7 +31,7 @@ export type SlotMeta =
   | { kind: "background" }
   | { kind: "introScreen" }
   | { kind: "stage"; stageId: string }
-  | { kind: "distraction"; distractionType: string }
+  | { kind: "distraction"; distractionId: string; distractionType: string }
   | {
       kind: "artist";
       artistId: string;
@@ -118,22 +118,27 @@ export function buildAssetSlots(
     });
   }
 
-  const distractionTypes = Array.from(
-    new Set(map.distractions.map((entry) => entry.type))
-  );
-  for (const type of distractionTypes) {
-    const defaultPath = map.assets.distractionSprites[type];
-    const overridePath = normalizeOverride(overrides.distractionSprites?.[type]);
+  for (const distraction of map.distractions) {
+    const defaultPath =
+      distraction.sprite || map.assets.distractionSprites[distraction.type] || "";
+    const overridePath = normalizeOverride(
+      overrides.distractionSprites?.[distraction.id] ??
+        overrides.distractionSprites?.[distraction.type]
+    );
     slots.push({
-      id: `distraction:${type}`,
-      label: `Distraction · ${type}`,
+      id: `distraction:${distraction.id}`,
+      label: `Distraction · ${distraction.id}`,
       category: "distraction",
       mediaType: "image",
       defaultPath,
       overridePath,
       resolvedPath: toResolvedPath(overridePath ?? defaultPath),
       promptText: resolvePromptText(defaultPath, spriteCatalog, audioCatalog),
-      meta: { kind: "distraction", distractionType: type }
+      meta: {
+        kind: "distraction",
+        distractionId: distraction.id,
+        distractionType: distraction.type
+      }
     });
   }
 
@@ -154,9 +159,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 1`,
       category: "artist",
       mediaType: "image",
-      defaultPath: "",
+      defaultPath: pose1Path,
       overridePath: normalizeOverride(artistOverrides?.walk1),
-      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? ""),
+      resolvedPath: toResolvedPath(artistOverrides?.walk1 ?? pose1Path),
       promptText:
         artist.promptByPose?.pose1 ??
         resolvePromptText(pose1Path, spriteCatalog, audioCatalog),
@@ -167,9 +172,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 2`,
       category: "artist",
       mediaType: "image",
-      defaultPath: "",
+      defaultPath: pose2Path,
       overridePath: normalizeOverride(artistOverrides?.walk2),
-      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? ""),
+      resolvedPath: toResolvedPath(artistOverrides?.walk2 ?? pose2Path),
       promptText:
         artist.promptByPose?.pose2 ??
         resolvePromptText(pose2Path, spriteCatalog, audioCatalog),
@@ -180,9 +185,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · pose 3`,
       category: "artist",
       mediaType: "image",
-      defaultPath: "",
+      defaultPath: pose3Path,
       overridePath: normalizeOverride(artistOverrides?.walk3),
-      resolvedPath: toResolvedPath(artistOverrides?.walk3 ?? ""),
+      resolvedPath: toResolvedPath(artistOverrides?.walk3 ?? pose3Path),
       promptText:
         artist.promptByPose?.pose3 ??
         resolvePromptText(pose3Path, spriteCatalog, audioCatalog),
@@ -193,9 +198,9 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · distraction pose`,
       category: "artist",
       mediaType: "image",
-      defaultPath: "",
+      defaultPath: distractionPath,
       overridePath: normalizeOverride(artistOverrides?.distracted),
-      resolvedPath: toResolvedPath(artistOverrides?.distracted ?? ""),
+      resolvedPath: toResolvedPath(artistOverrides?.distracted ?? distractionPath),
       promptText:
         artist.promptByPose?.distracted ??
         resolvePromptText(distractionPath, spriteCatalog, audioCatalog),
@@ -206,9 +211,11 @@ export function buildAssetSlots(
       label: `Artist · ${artist.name} · performance pose`,
       category: "artist",
       mediaType: "image",
-      defaultPath: "",
+      defaultPath: artist.sprites.performing,
       overridePath: normalizeOverride(artistOverrides?.performing),
-      resolvedPath: toResolvedPath(artistOverrides?.performing ?? ""),
+      resolvedPath: toResolvedPath(
+        artistOverrides?.performing ?? artist.sprites.performing
+      ),
       promptText:
         artist.promptByPose?.performing ??
         resolvePromptText(artist.sprites.performing, spriteCatalog, audioCatalog),
@@ -402,7 +409,7 @@ export function setOverrideForSlot(
 
   if (meta.kind === "distraction") {
     const distractionSprites = { ...(next.distractionSprites ?? {}) };
-    mutateRecord(distractionSprites, meta.distractionType, normalized);
+    mutateRecord(distractionSprites, meta.distractionId, normalized);
     assignOrDelete(next, "distractionSprites", distractionSprites);
     return next;
   }
