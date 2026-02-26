@@ -443,8 +443,9 @@
         "rotationWeight": 1.7,
         "seed": 338509,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Skyline Echo (Alt Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 8,
+          "promptText": "Short performance sting for Skyline Echo (Alt Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-headliner-c-performanceaudio-c5192a6d.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Alt Rock festival artist sprite for Skyline Echo, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -456,13 +457,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_headliner_c_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_c_walk2.png",
-            "assets/maps/govball/artists/artist_headliner_c_walk3.png"
+            "assets/maps/govball2026/committed/artist-headliner-c-walk1-2b1bad95.png",
+            "assets/maps/govball2026/committed/artist-headliner-c-walk2-afdbcdb7.png",
+            "assets/maps/govball2026/committed/artist-headliner-c-walk3-a4a6e304.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_c_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_headliner_c_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_headliner_c_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-headliner-c-distracted-6d887c94.png",
+          "performing": "assets/maps/govball2026/committed/artist-headliner-c-performing-af26aad6.png"
         }
       },
       {
@@ -634,8 +635,9 @@
         "rotationWeight": 1.35,
         "seed": 452156,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Velvet Loop (Dream Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 8,
+          "promptText": "Short performance sting for Velvet Loop (Dream Pop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-mid-d-performanceaudio-cf332bac.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Dream Pop festival artist sprite for Velvet Loop, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -647,13 +649,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_mid_d_walk1.png",
-            "assets/maps/govball/artists/artist_mid_d_walk2.png",
-            "assets/maps/govball/artists/artist_mid_d_walk3.png"
+            "assets/maps/govball2026/committed/artist-mid-d-walk1-9e650ef4.png",
+            "assets/maps/govball2026/committed/artist-mid-d-walk2-bd64368c.png",
+            "assets/maps/govball2026/committed/artist-mid-d-walk3-a94c51c1.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_d_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_mid_d_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_mid_d_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-mid-d-distracted-2ff06a64.png",
+          "performing": "assets/maps/govball2026/committed/artist-mid-d-performing-eb1060b4.png"
         }
       },
       {
@@ -665,8 +667,9 @@
         "rotationWeight": 1.15,
         "seed": 563267,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Signal Bloom (UK Garage) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 6,
+          "promptText": "Short performance sting for Signal Bloom (UK Garage) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-mid-e-performanceaudio-df0e1639.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized UK Garage festival artist sprite for Signal Bloom, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -678,13 +681,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_mid_e_walk1.png",
-            "assets/maps/govball/artists/artist_mid_e_walk2.png",
-            "assets/maps/govball/artists/artist_mid_e_walk3.png"
+            "assets/maps/govball2026/committed/artist-mid-e-walk1-534e786b.png",
+            "assets/maps/govball2026/committed/artist-mid-e-walk2-d943944b.png",
+            "assets/maps/govball2026/committed/artist-mid-e-walk3-d3ba257f.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_e_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_mid_e_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_mid_e_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-mid-e-distracted-2eba3e7e.png",
+          "performing": "assets/maps/govball2026/committed/artist-mid-e-performing-766b7cf7.png"
         }
       },
       {
@@ -792,8 +795,9 @@
         "rotationWeight": 1.5,
         "seed": 507623,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Subway Flora (Afrobeat) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Subway Flora (Afrobeat) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-new-d-performanceaudio-94195554.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Afrobeat festival artist sprite for Subway Flora, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -805,13 +809,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_new_d_walk1.png",
-            "assets/maps/govball/artists/artist_new_d_walk2.png",
-            "assets/maps/govball/artists/artist_new_d_walk3.png"
+            "assets/maps/govball2026/committed/artist-new-d-walk1-3d025ab5.png",
+            "assets/maps/govball2026/committed/artist-new-d-walk2-fcfbea18.png",
+            "assets/maps/govball2026/committed/artist-new-d-walk3-ea715023.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_d_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_new_d_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_new_d_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-d-distracted-22e8ad45.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-d-performing-525df5f1.png"
         }
       },
       {
