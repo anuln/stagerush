@@ -857,14 +857,14 @@
       "bg_chill": "assets/audio/govball/generated/music/audio_bg_chill_v1.mp3",
       "bg_energy": "assets/audio/govball/generated/music/audio_bg_energy_v1.mp3",
       "bg_peak": "assets/audio/govball/generated/music/audio_bg_peak_v1.mp3",
-      "spawn": "assets/audio/govball/generated/sfx/sfx_spawn_v1.mp3",
+      "spawn": "assets/maps/govball2026/committed/audio-spawn-511c55fc.mp3",
       "path_draw": "assets/audio/govball/generated/sfx/sfx_path_draw_v1.mp3",
       "deliver": "assets/audio/govball/generated/sfx/sfx_deliver_v1.mp3",
       "deliver_combo": "assets/audio/govball/generated/sfx/sfx_deliver_combo_v1.mp3",
       "miss": "assets/audio/govball/generated/sfx/sfx_miss_v1.mp3",
       "chat": "assets/audio/govball/generated/sfx/sfx_chat_v1.mp3",
       "distraction": "assets/audio/govball/generated/sfx/sfx_distraction_v1.mp3",
-      "level_complete": "assets/audio/govball/generated/sfx/sfx_level_complete_v1.mp3",
+      "level_complete": "assets/maps/govball2026/committed/audio-level-complete-2e0dd718.mp3",
       "level_failed": "assets/audio/govball/generated/sfx/sfx_level_failed_v1.mp3",
       "timer_warning": "assets/audio/govball/generated/sfx/sfx_timer_warning_v1.mp3"
     }
