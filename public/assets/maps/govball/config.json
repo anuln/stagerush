@@ -757,8 +757,9 @@
         "rotationWeight": 1.8,
         "seed": 396512,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Greenroom Static (Hyperpop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Greenroom Static (Hyperpop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-new-c-performanceaudio-c4fe9194.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Hyperpop festival artist sprite for Greenroom Static, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -770,13 +771,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_new_c_walk1.png",
-            "assets/maps/govball/artists/artist_new_c_walk2.png",
-            "assets/maps/govball/artists/artist_new_c_walk3.png"
+            "assets/maps/govball2026/committed/artist-new-c-walk1-c1768fde.png",
+            "assets/maps/govball2026/committed/artist-new-c-walk2-3d4ddfbd.png",
+            "assets/maps/govball2026/committed/artist-new-c-walk3-543cff87.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_c_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_new_c_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_new_c_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-c-distracted-e6d9ab7f.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-c-performing-6a952237.png"
         }
       },
       {
@@ -817,10 +818,11 @@
         "genre": "R&B",
         "debutLevel": 7,
         "rotationWeight": 1.3,
-        "seed": 618734,
+        "seed": 1121772,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Cloud Cartel (R&B) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 4,
+          "promptText": "Short performance sting for Cloud Cartel (R&B) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-new-e-performanceaudio-6c1c8b66.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized R&B festival artist sprite for Cloud Cartel, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -832,13 +834,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_new_e_walk1.png",
-            "assets/maps/govball/artists/artist_new_e_walk2.png",
-            "assets/maps/govball/artists/artist_new_e_walk3.png"
+            "assets/maps/govball2026/committed/artist-new-e-walk1-3e3ad1ff.png",
+            "assets/maps/govball2026/committed/artist-new-e-walk2-c2025d90.png",
+            "assets/maps/govball2026/committed/artist-new-e-walk3-9853b217.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_e_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_new_e_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_new_e_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-e-distracted-751ed853.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-e-performing-c6b788b6.png"
         }
       }
     ],
