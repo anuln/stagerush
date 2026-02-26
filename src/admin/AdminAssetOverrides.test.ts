@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { FestivalMap } from "../config/FestivalConfig";
 import {
   applyAdminAssetOverrides,
-  hasAdminAssetOverrides
+  hasAdminAssetOverrides,
+  pruneCommittedAdminOverrides
 } from "./AdminAssetOverrides";
 
 function makeMap(): FestivalMap {
@@ -203,5 +204,101 @@ describe("AdminAssetOverrides", () => {
     expect(map.background).toBe("assets/maps/base/bg.png");
     expect(map.stages[0].position).toEqual({ x: 0.5, y: 0.2 });
     expect(map.stages[0].sprite).toBe("assets/maps/base/stage_main.png");
+  });
+
+  it("prunes committed overrides that already match map state", () => {
+    const map = applyAdminAssetOverrides(makeMap(), {
+      background: "assets/maps/generated/bg_v2.png",
+      introScreen: "assets/ui/intro_v2.png",
+      introPresentation: {
+        fitMode: "contain",
+        focusX: 50,
+        focusY: 55,
+        zoom: 1.15,
+        overlayOpacity: 0.32
+      },
+      sessionFx: {
+        evening: {
+          overlayOpacity: 0.24,
+          stageGlow: 0.46
+        }
+      },
+      stagePositions: { main: { x: 0.42, y: 0.29 } },
+      stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
+      distractionPositions: { d1: { x: 0.61, y: 0.57 } },
+      distractionSprites: {
+        merch_stand: "assets/maps/generated/distraction_merch_v2.png"
+      },
+      audioCues: {
+        spawn: "assets/audio/spawn_v2.mp3"
+      },
+      artistSprites: {
+        "artist-a": {
+          walk1: "assets/maps/generated/artists/a_walk1_v2.png",
+          walk2: "assets/maps/generated/artists/a_walk2_v2.png",
+          performing: "assets/maps/generated/artists/a_performing_v2.png"
+        }
+      }
+    });
+
+    const overrides = {
+      background: "assets/maps/generated/bg_v2.png",
+      introScreen: "assets/ui/intro_v2.png",
+      introPresentation: {
+        fitMode: "contain" as const,
+        focusX: 50,
+        focusY: 55,
+        zoom: 1.15,
+        overlayOpacity: 0.32
+      },
+      sessionFx: {
+        evening: {
+          overlayOpacity: 0.24,
+          stageGlow: 0.46
+        }
+      },
+      stagePositions: { main: { x: 0.42, y: 0.29 } },
+      stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
+      distractionPositions: { d1: { x: 0.61, y: 0.57 } },
+      distractionSprites: {
+        merch_stand: "assets/maps/generated/distraction_merch_v2.png"
+      },
+      audioCues: {
+        spawn: "assets/audio/spawn_v2.mp3"
+      },
+      artistSprites: {
+        "artist-a": {
+          walk1: "assets/maps/generated/artists/a_walk1_v2.png",
+          walk2: "assets/maps/generated/artists/a_walk2_v2.png",
+          performing: "assets/maps/generated/artists/a_performing_v2.png"
+        }
+      }
+    };
+
+    const pruned = pruneCommittedAdminOverrides(map, overrides);
+    expect(pruned).toEqual({});
+  });
+
+  it("keeps only divergent overrides after pruning", () => {
+    const map = makeMap();
+    const pruned = pruneCommittedAdminOverrides(map, {
+      stageSprites: {
+        main: "assets/maps/base/stage_main.png"
+      },
+      artistSprites: {
+        "artist-a": {
+          walk1: "assets/maps/base/artists/a_walk1.png",
+          performing: "assets/maps/generated/artists/a_performing_v2.png"
+        }
+      }
+    });
+
+    expect(pruned).toEqual({
+      artistSprites: {
+        "artist-a": {
+          performing: "assets/maps/generated/artists/a_performing_v2.png"
+        }
+      }
+    });
   });
 });

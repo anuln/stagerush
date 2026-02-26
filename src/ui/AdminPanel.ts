@@ -10,6 +10,7 @@ import {
 import {
   applyAdminAssetOverrides,
   hasAdminAssetOverrides,
+  pruneCommittedAdminOverrides,
   saveAdminAssetOverrides,
   type AdminAssetOverrides
 } from "../admin/AdminAssetOverrides";
@@ -42,6 +43,23 @@ type ArtistSlotField =
   | "performing"
   | "performanceAudioClip";
 type MapPlacementMode = "stage" | "distraction";
+
+const ARTIST_ORDERED_FIELDS: ArtistSlotField[] = [
+  "walk1",
+  "walk2",
+  "walk3",
+  "distracted",
+  "performing",
+  "performanceAudioClip"
+];
+
+const ARTIST_IMAGE_FIELDS: ArtistSlotField[] = [
+  "walk1",
+  "walk2",
+  "walk3",
+  "distracted",
+  "performing"
+];
 
 interface AdminPanelOptions {
   map: FestivalMap;
@@ -576,7 +594,17 @@ export class AdminPanel {
     this.onPreviewChange = options.onPreviewChange;
     this.onApply = options.onApply;
     this.onReset = options.onReset;
-    this.draftOverrides = structuredClone(options.initialOverrides);
+    const normalizedInitialOverrides = pruneCommittedAdminOverrides(
+      this.map,
+      structuredClone(options.initialOverrides)
+    );
+    this.draftOverrides = normalizedInitialOverrides;
+    if (
+      JSON.stringify(normalizedInitialOverrides) !==
+      JSON.stringify(options.initialOverrides)
+    ) {
+      saveAdminAssetOverrides(this.activeFestivalId, normalizedInitialOverrides);
+    }
 
     this.selectedStageForMap = this.map.stages[0]?.id ?? null;
     this.selectedDistractionForMap = this.map.distractions[0]?.id ?? null;
@@ -784,6 +812,85 @@ export class AdminPanel {
           slot.meta.field === field
       ) ?? null
     );
+  }
+
+  private getOrderedArtistSlots(
+    artistId: string,
+    slots: AssetSlot[] = this.getAllSlots()
+  ): AssetSlot[] {
+    return ARTIST_ORDERED_FIELDS
+      .map((field) => this.getArtistSlotByField(slots, artistId, field))
+      .filter((slot): slot is AssetSlot => Boolean(slot));
+  }
+
+  private async runArtistBatchImageGeneration(artistId: string): Promise<void> {
+    if (this.isGenerating) {
+      return;
+    }
+    const orderedSlots = this
+      .getOrderedArtistSlots(artistId)
+      .filter(
+        (slot) =>
+          slot.mediaType === "image" &&
+          slot.meta.kind === "artist" &&
+          ARTIST_IMAGE_FIELDS.includes(slot.meta.field)
+      );
+    if (orderedSlots.length === 0) {
+      this.generateStatus = "No artist image slots available for batch generation.";
+      this.render();
+      return;
+    }
+
+    let completed = 0;
+    let failed = 0;
+    for (let index = 0; index < orderedSlots.length; index += 1) {
+      const slot = orderedSlots[index];
+      this.generateStatus = `Generating ${index + 1}/${orderedSlots.length}: ${slot.label.replace(
+        /^Artist\s·\s[^·]+\s·\s/i,
+        ""
+      )}`;
+      this.render();
+      await this.runGeminiGeneration(slot);
+      if (this.generateStatus.startsWith("Generation complete")) {
+        completed += 1;
+      } else {
+        failed += 1;
+      }
+    }
+
+    this.generateStatus =
+      failed > 0
+        ? `Batch generation complete: ${completed} succeeded, ${failed} failed.`
+        : `Batch generation complete: ${completed}/${orderedSlots.length} images generated.`;
+    this.render();
+  }
+
+  private async applyAllArtistCandidates(artistId: string): Promise<void> {
+    const slotsWithCandidates = this
+      .getOrderedArtistSlots(artistId)
+      .filter((slot) => this.slotCandidates.has(slot.id));
+    if (slotsWithCandidates.length === 0) {
+      this.generateStatus = "No generated candidates to apply for this artist.";
+      this.render();
+      return;
+    }
+
+    let applied = 0;
+    let failed = 0;
+    for (const slot of slotsWithCandidates) {
+      await this.applyCandidateToSlot(slot);
+      if (this.generateStatus.includes("applied to live preview")) {
+        applied += 1;
+      } else {
+        failed += 1;
+      }
+    }
+
+    this.generateStatus =
+      failed > 0
+        ? `Apply all complete: ${applied} applied, ${failed} failed.`
+        : `Apply all complete: ${applied}/${slotsWithCandidates.length} assets applied.`;
+    this.render();
   }
 
   private getArtistSeedWarning(artistId: string): string {
@@ -2042,19 +2149,40 @@ export class AdminPanel {
 
     if (this.activeTab === "generate") {
       section.appendChild(this.buildGenerationCredentialsCard());
+
+      const batchActions = document.createElement("div");
+      batchActions.className = "admin-row-inline";
+      const generateAll = document.createElement("button");
+      generateAll.type = "button";
+      generateAll.className = "admin-btn primary";
+      generateAll.textContent = this.isGenerating
+        ? "Generating..."
+        : "Generate All Images";
+      generateAll.disabled = this.isGenerating;
+      generateAll.addEventListener("click", () => {
+        void this.runArtistBatchImageGeneration(selectedArtistId);
+      });
+      batchActions.appendChild(generateAll);
+
+      const acceptAll = document.createElement("button");
+      acceptAll.type = "button";
+      acceptAll.className = "admin-btn";
+      acceptAll.textContent = "Accept All Generated";
+      acceptAll.disabled =
+        this.isGenerating ||
+        this.getOrderedArtistSlots(selectedArtistId).every(
+          (slot) => !this.slotCandidates.has(slot.id)
+        );
+      acceptAll.addEventListener("click", () => {
+        void this.applyAllArtistCandidates(selectedArtistId);
+      });
+      batchActions.appendChild(acceptAll);
+      section.appendChild(batchActions);
     }
 
     const grid = document.createElement("div");
     grid.className = "admin-library-list";
-    const orderedFields: ArtistSlotField[] = [
-      "walk1",
-      "walk2",
-      "walk3",
-      "distracted",
-      "performing",
-      "performanceAudioClip"
-    ];
-    for (const field of orderedFields) {
+    for (const field of ARTIST_ORDERED_FIELDS) {
       const slot = slotByField.get(field);
       if (!slot) {
         continue;
@@ -2193,7 +2321,7 @@ export class AdminPanel {
 
     const pathField = document.createElement("label");
     pathField.className = "admin-field";
-    pathField.innerHTML = "<span>Path / Data URL</span>";
+    pathField.innerHTML = "<span>Manual Path / Data URL</span>";
     const pathInput = document.createElement("input");
     pathInput.type = "text";
     pathInput.className = "admin-input";
@@ -2203,14 +2331,13 @@ export class AdminPanel {
       this.pathDraftBySlot.set(slot.id, pathInput.value);
     });
     pathField.appendChild(pathInput);
-    card.appendChild(pathField);
 
     const pathActions = document.createElement("div");
     pathActions.className = "admin-row-inline";
     const applyPath = document.createElement("button");
     applyPath.type = "button";
-    applyPath.className = "admin-btn primary";
-    applyPath.textContent = "Apply Path";
+    applyPath.className = "admin-btn";
+    applyPath.textContent = "Set Manual Path";
     applyPath.addEventListener("click", () => {
       const value = pathInput.value.trim();
       this.draftOverrides = setOverrideForSlot(
@@ -2227,7 +2354,7 @@ export class AdminPanel {
     const revert = document.createElement("button");
     revert.type = "button";
     revert.className = "admin-btn";
-    revert.textContent = "Revert";
+    revert.textContent = "Clear Manual Path";
     revert.disabled = !slot.overridePath;
     revert.addEventListener("click", () => {
       this.draftOverrides = setOverrideForSlot(this.draftOverrides, slot.meta, null);
@@ -2236,7 +2363,19 @@ export class AdminPanel {
       this.render();
     });
     pathActions.appendChild(revert);
-    card.appendChild(pathActions);
+    const isArtistGenerateCard =
+      this.activeTab === "generate" && slot.meta.kind === "artist";
+    if (isArtistGenerateCard) {
+      const advanced = document.createElement("details");
+      advanced.className = "admin-field";
+      const summary = document.createElement("summary");
+      summary.textContent = "Advanced manual override";
+      advanced.appendChild(summary);
+      advanced.append(pathField, pathActions);
+      card.appendChild(advanced);
+    } else {
+      card.append(pathField, pathActions);
+    }
 
     const uploadField = document.createElement("label");
     uploadField.className = "admin-field";
@@ -3943,95 +4082,10 @@ export class AdminPanel {
 
   private syncOverridesAfterCommit(committedMap: FestivalMap): void {
     this.map = structuredClone(committedMap);
-    const nextOverrides = structuredClone(this.draftOverrides);
-
-    if (nextOverrides.background) {
-      nextOverrides.background = committedMap.background;
-    }
-    if (nextOverrides.introScreen && committedMap.introScreen) {
-      nextOverrides.introScreen = committedMap.introScreen;
-    }
-    if (nextOverrides.introPresentation && committedMap.introPresentation) {
-      nextOverrides.introPresentation = {
-        ...committedMap.introPresentation
-      };
-    }
-    if (nextOverrides.sessionFx && committedMap.sessionFx) {
-      nextOverrides.sessionFx = structuredClone(committedMap.sessionFx);
-    }
-
-    if (nextOverrides.stageSprites) {
-      for (const stageId of Object.keys(nextOverrides.stageSprites)) {
-        const stageFromMap = committedMap.stages.find((stage) => stage.id === stageId);
-        const stageFromAssets = committedMap.assets.stageSprites[stageId];
-        const resolved = stageFromMap?.sprite ?? stageFromAssets;
-        if (resolved) {
-          nextOverrides.stageSprites[stageId] = resolved;
-        }
-      }
-    }
-
-    if (nextOverrides.distractionSprites) {
-      for (const distractionType of Object.keys(nextOverrides.distractionSprites)) {
-        const distractionFromMap = committedMap.distractions.find(
-          (entry) => entry.type === distractionType
-        );
-        const distractionFromAssets =
-          committedMap.assets.distractionSprites[distractionType];
-        const resolved = distractionFromMap?.sprite ?? distractionFromAssets;
-        if (resolved) {
-          nextOverrides.distractionSprites[distractionType] = resolved;
-        }
-      }
-    }
-
-    if (nextOverrides.audioCues) {
-      for (const cueId of Object.keys(nextOverrides.audioCues)) {
-        const resolved = committedMap.assets.audio[cueId];
-        if (resolved) {
-          nextOverrides.audioCues[cueId] = resolved;
-        }
-      }
-    }
-
-    if (nextOverrides.artistSprites) {
-      for (const [artistId, artistOverride] of Object.entries(
-        nextOverrides.artistSprites
-      )) {
-        const committedArtist = committedMap.assets.artists.find(
-          (artist) => artist.id === artistId
-        );
-        if (!committedArtist) {
-          continue;
-        }
-        if (artistOverride.walk1) {
-          artistOverride.walk1 = committedArtist.sprites.walk[0] ?? artistOverride.walk1;
-        }
-        if (artistOverride.walk2) {
-          artistOverride.walk2 = committedArtist.sprites.walk[1] ?? artistOverride.walk2;
-        }
-        if (artistOverride.walk3) {
-          artistOverride.walk3 = committedArtist.sprites.walk[2] ?? artistOverride.walk3;
-        }
-        if (artistOverride.idle && committedArtist.sprites.idle) {
-          artistOverride.idle = committedArtist.sprites.idle;
-        }
-        if (artistOverride.distracted && committedArtist.sprites.distracted) {
-          artistOverride.distracted = committedArtist.sprites.distracted;
-        }
-        if (artistOverride.performing) {
-          artistOverride.performing = committedArtist.sprites.performing;
-        }
-        if (
-          artistOverride.performanceAudioClip &&
-          committedArtist.performanceAudio?.clip
-        ) {
-          artistOverride.performanceAudioClip = committedArtist.performanceAudio.clip;
-        }
-      }
-    }
-
-    this.draftOverrides = nextOverrides;
+    this.draftOverrides = pruneCommittedAdminOverrides(
+      committedMap,
+      structuredClone(this.draftOverrides)
+    );
     this.slotCandidates.clear();
     this.pathDraftBySlot.clear();
     saveAdminAssetOverrides(this.activeFestivalId, this.draftOverrides);

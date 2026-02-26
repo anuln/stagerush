@@ -474,6 +474,212 @@ export function applyAdminAssetOverrides(
   return cloned;
 }
 
+function normalizeAssetPath(path: string | null | undefined): string {
+  return (path ?? "").trim().replace(/^\/+/, "");
+}
+
+function sameAssetPath(a: string | null | undefined, b: string | null | undefined): boolean {
+  return normalizeAssetPath(a) === normalizeAssetPath(b);
+}
+
+function isSamePoint(
+  a: NormalizedPoint | null | undefined,
+  b: NormalizedPoint | null | undefined,
+  tolerance = 1e-6
+): boolean {
+  if (!a || !b) {
+    return false;
+  }
+  return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance;
+}
+
+function pruneSessionFxOverride(
+  map: FestivalMap,
+  override: SessionFxConfig | undefined
+): SessionFxConfig | undefined {
+  const sanitized = sanitizeSessionFxConfig(override);
+  if (!sanitized) {
+    return undefined;
+  }
+  const next: SessionFxConfig = {};
+  for (const period of SESSION_PERIODS) {
+    const partial = sanitized[period];
+    if (!partial) {
+      continue;
+    }
+    const mapProfile = map.sessionFx?.[period];
+    const hasDiff = Object.entries(partial).some(([key, value]) => {
+      return (mapProfile as Record<string, unknown> | undefined)?.[key] !== value;
+    });
+    if (hasDiff) {
+      next[period] = partial;
+    }
+  }
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+export function pruneCommittedAdminOverrides(
+  map: FestivalMap,
+  overrides: AdminAssetOverrides
+): AdminAssetOverrides {
+  const next = cloneOverrides(overrides);
+
+  if (next.background && sameAssetPath(next.background, map.background)) {
+    delete next.background;
+  }
+
+  if (next.introScreen && sameAssetPath(next.introScreen, map.introScreen)) {
+    delete next.introScreen;
+  }
+
+  const introPresentation = sanitizeIntroPresentation(next.introPresentation);
+  if (introPresentation) {
+    const hasDiff = Object.entries(introPresentation).some(([key, value]) => {
+      return (map.introPresentation as Record<string, unknown> | undefined)?.[key] !== value;
+    });
+    if (!hasDiff) {
+      delete next.introPresentation;
+    } else {
+      next.introPresentation = introPresentation;
+    }
+  } else {
+    delete next.introPresentation;
+  }
+
+  const sessionFx = pruneSessionFxOverride(map, next.sessionFx);
+  if (sessionFx) {
+    next.sessionFx = sessionFx;
+  } else {
+    delete next.sessionFx;
+  }
+
+  if (next.stagePositions) {
+    for (const [stageId, point] of Object.entries(next.stagePositions)) {
+      const stage = map.stages.find((entry) => entry.id === stageId);
+      if (!stage || isSamePoint(point, stage.position)) {
+        delete next.stagePositions[stageId];
+      }
+    }
+    if (Object.keys(next.stagePositions).length === 0) {
+      delete next.stagePositions;
+    }
+  }
+
+  if (next.distractionPositions) {
+    for (const [distractionId, point] of Object.entries(next.distractionPositions)) {
+      const distraction = map.distractions.find((entry) => entry.id === distractionId);
+      if (!distraction || isSamePoint(point, distraction.position)) {
+        delete next.distractionPositions[distractionId];
+      }
+    }
+    if (Object.keys(next.distractionPositions).length === 0) {
+      delete next.distractionPositions;
+    }
+  }
+
+  if (next.stageSprites) {
+    for (const [stageId, path] of Object.entries(next.stageSprites)) {
+      const stage = map.stages.find((entry) => entry.id === stageId);
+      const mapPath = stage?.sprite ?? map.assets.stageSprites[stageId];
+      if (!path || !mapPath || sameAssetPath(path, mapPath)) {
+        delete next.stageSprites[stageId];
+      }
+    }
+    if (Object.keys(next.stageSprites).length === 0) {
+      delete next.stageSprites;
+    }
+  }
+
+  if (next.distractionSprites) {
+    for (const [type, path] of Object.entries(next.distractionSprites)) {
+      const mapPath = map.assets.distractionSprites[type];
+      if (!path || !mapPath || sameAssetPath(path, mapPath)) {
+        delete next.distractionSprites[type];
+      }
+    }
+    if (Object.keys(next.distractionSprites).length === 0) {
+      delete next.distractionSprites;
+    }
+  }
+
+  if (next.audioCues) {
+    for (const [cueId, path] of Object.entries(next.audioCues)) {
+      const mapPath = map.assets.audio[cueId];
+      if (!path || !mapPath || sameAssetPath(path, mapPath)) {
+        delete next.audioCues[cueId];
+      }
+    }
+    if (Object.keys(next.audioCues).length === 0) {
+      delete next.audioCues;
+    }
+  }
+
+  if (next.artistSprites) {
+    for (const [artistId, override] of Object.entries(next.artistSprites)) {
+      const artist = map.assets.artists.find((entry) => entry.id === artistId);
+      if (!artist) {
+        delete next.artistSprites[artistId];
+        continue;
+      }
+      if (override.walk1 && sameAssetPath(override.walk1, artist.sprites.walk[0])) {
+        delete override.walk1;
+      }
+      if (override.walk2 && sameAssetPath(override.walk2, artist.sprites.walk[1])) {
+        delete override.walk2;
+      }
+      if (override.walk3 && sameAssetPath(override.walk3, artist.sprites.walk[2])) {
+        delete override.walk3;
+      }
+      if (override.idle && sameAssetPath(override.idle, artist.sprites.idle)) {
+        delete override.idle;
+      }
+      if (
+        override.distracted &&
+        sameAssetPath(override.distracted, artist.sprites.distracted)
+      ) {
+        delete override.distracted;
+      }
+      if (
+        override.performing &&
+        sameAssetPath(override.performing, artist.sprites.performing)
+      ) {
+        delete override.performing;
+      }
+      if (
+        override.performanceAudioClip &&
+        sameAssetPath(override.performanceAudioClip, artist.performanceAudio?.clip)
+      ) {
+        delete override.performanceAudioClip;
+      }
+      if (
+        Number.isFinite(override.performanceAudioLengthSec) &&
+        override.performanceAudioLengthSec === artist.performanceAudio?.lengthSec
+      ) {
+        delete override.performanceAudioLengthSec;
+      }
+      if (Number.isInteger(override.seed) && override.seed === artist.seed) {
+        delete override.seed;
+      }
+      if (
+        typeof override.seedDeterminismWarning === "string" &&
+        override.seedDeterminismWarning === (artist.seedDeterminismWarning ?? "")
+      ) {
+        delete override.seedDeterminismWarning;
+      }
+      if (Object.keys(override).length === 0) {
+        delete next.artistSprites[artistId];
+      } else {
+        next.artistSprites[artistId] = override;
+      }
+    }
+    if (Object.keys(next.artistSprites).length === 0) {
+      delete next.artistSprites;
+    }
+  }
+
+  return next;
+}
+
 export function isAdminModeEnabled(search = window.location.search): boolean {
   const params = new URLSearchParams(search);
   return params.get("admin") === "1";
