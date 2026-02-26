@@ -504,10 +504,11 @@
         "genre": "House",
         "debutLevel": 8,
         "rotationWeight": 1.2,
-        "seed": 556731,
+        "seed": 3047004,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Nova Tide (House) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 4,
+          "promptText": "Short performance sting for Nova Tide (House) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-headliner-e-performanceaudio-274307da.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized House festival artist sprite for Nova Tide, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -519,13 +520,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_headliner_e_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_e_walk2.png",
-            "assets/maps/govball/artists/artist_headliner_e_walk3.png"
+            "assets/maps/govball2026/committed/artist-headliner-e-walk1-69e56422.png",
+            "assets/maps/govball2026/committed/artist-headliner-e-walk2-6a50a068.png",
+            "assets/maps/govball2026/committed/artist-headliner-e-walk3-926d11b4.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_e_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_headliner_e_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_headliner_e_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-headliner-e-distracted-dd9ed5c3.png",
+          "performing": "assets/maps/govball2026/committed/artist-headliner-e-performing-f8ef8ea9.png"
         }
       },
       {
@@ -601,8 +602,9 @@
         "rotationWeight": 1.5,
         "seed": 341045,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Riverside Wire (Neo Soul) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 7,
+          "promptText": "Short performance sting for Riverside Wire (Neo Soul) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-mid-c-performanceaudio-4deca21d.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Neo Soul festival artist sprite for Riverside Wire, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -614,13 +616,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_mid_c_walk1.png",
-            "assets/maps/govball/artists/artist_mid_c_walk2.png",
-            "assets/maps/govball/artists/artist_mid_c_walk3.png"
+            "assets/maps/govball2026/committed/artist-mid-c-walk1-5b670179.png",
+            "assets/maps/govball2026/committed/artist-mid-c-walk2-cc2448a4.png",
+            "assets/maps/govball2026/committed/artist-mid-c-walk3-b03f3732.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_c_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_mid_c_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_mid_c_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-mid-c-distracted-7432cea2.png",
+          "performing": "assets/maps/govball2026/committed/artist-mid-c-performing-3cd67d7b.png"
         }
       },
       {
