@@ -567,8 +567,9 @@
         "rotationWeight": 1.7,
         "seed": 229934,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Concrete Pulse (Rap Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 5,
+          "promptText": "Short performance sting for Concrete Pulse (Rap Rock) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-mid-b-performanceaudio-e8d6f494.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Rap Rock festival artist sprite for Concrete Pulse, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -580,13 +581,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_mid_b_walk1.png",
-            "assets/maps/govball/artists/artist_mid_b_walk2.png",
-            "assets/maps/govball/artists/artist_mid_b_walk3.png"
+            "assets/maps/govball2026/committed/artist-mid-b-walk1-44a8c530.png",
+            "assets/maps/govball2026/committed/artist-mid-b-walk2-c9dd0f31.png",
+            "assets/maps/govball2026/committed/artist-mid-b-walk3-7c2cb955.png"
           ],
           "idle": "assets/maps/govball/artists/artist_mid_b_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_mid_b_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_mid_b_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-mid-b-distracted-eb1fc5f6.png",
+          "performing": "assets/maps/govball2026/committed/artist-mid-b-performing-1a3eebaf.png"
         }
       },
       {
