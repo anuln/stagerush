@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GLOBAL_FALLBACK_ASSET_PATHS } from "../assets/GlobalAssetFallbacks";
 import type { ArtistSpriteConfig } from "../config/FestivalConfig";
 import { Artist } from "../entities/Artist";
-import { resolveArtistSpritePath } from "./ArtistRenderer";
+import { computeMissedGhostAlpha, resolveArtistSpritePath } from "./ArtistRenderer";
 
 const artistSprites: ArtistSpriteConfig[] = [
   {
@@ -113,5 +113,20 @@ describe("resolveArtistSpritePath", () => {
     expect(resolveArtistSpritePath(artist, artistSprites, 0)).toBe(
       "artists/headliner-a-walk1.png"
     );
+  });
+});
+
+describe("computeMissedGhostAlpha", () => {
+  it("keeps full missed ghost alpha immediately on miss", () => {
+    expect(computeMissedGhostAlpha(1_000, 1_000)).toBeCloseTo(0.7, 4);
+  });
+
+  it("fades ghost alpha over time toward a subtle minimum", () => {
+    expect(computeMissedGhostAlpha(7_000, 1_000)).toBeLessThan(0.7);
+    expect(computeMissedGhostAlpha(15_000, 1_000)).toBeCloseTo(0.14, 4);
+  });
+
+  it("returns full alpha when miss timestamp is unavailable", () => {
+    expect(computeMissedGhostAlpha(9_000, null)).toBeCloseTo(0.7, 4);
   });
 });

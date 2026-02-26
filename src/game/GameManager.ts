@@ -175,16 +175,8 @@ export class GameManager {
     this.runtime.update(deltaSeconds, viewport, nowMs);
     const status = this.runtime.getStatus();
     const now = Number.isFinite(nowMs) ? (nowMs as number) : Date.now();
+    const minimumMet = status.deliveredArtists >= status.sessionTargetSets;
     if (status.outcome === "FAILED") {
-      const minimumMet = status.deliveredArtists >= status.sessionTargetSets;
-      if (minimumMet) {
-        if (this.shouldDelayEveningCompletion(status, now)) {
-          return;
-        }
-        this.clearCompletionDelay();
-        this.completeLevel(status);
-        return;
-      }
       this.clearCompletionDelay();
       this.levelManager.markLevelFailed(status.levelScore);
       this.setScreen("LEVEL_FAILED");
@@ -192,6 +184,12 @@ export class GameManager {
     }
 
     if (status.outcome === "COMPLETED") {
+      if (!minimumMet) {
+        this.clearCompletionDelay();
+        this.levelManager.markLevelFailed(status.levelScore);
+        this.setScreen("LEVEL_FAILED");
+        return;
+      }
       if (this.shouldDelayEveningCompletion(status, now)) {
         return;
       }

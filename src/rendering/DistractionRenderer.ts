@@ -1,4 +1,4 @@
-import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { getAssetCandidatePaths } from "../assets/GlobalAssetFallbacks";
 import type { ResolvedDistraction } from "../maps/MapLoader";
 import { resolveAssetPath } from "../maps/MapLoader";
@@ -6,6 +6,21 @@ import { resolveAssetPath } from "../maps/MapLoader";
 const DISTRACTION_ZONE_TINT = 0xff9ab1;
 const DISTRACTION_ZONE_FILL_ALPHA = 0.025;
 const DISTRACTION_ZONE_STROKE_ALPHA = 0.085;
+
+export function getDistractionLabel(type: ResolvedDistraction["type"]): string {
+  switch (type) {
+    case "merch_stand":
+      return "Merch";
+    case "burger_shack":
+      return "Burger Shack";
+    case "paparazzi":
+      return "Paparazzi";
+    case "fan_crowd":
+      return "Fan Crowd";
+    default:
+      return "Distraction";
+  }
+}
 
 function colorForType(type: ResolvedDistraction["type"]): number {
   switch (type) {
@@ -86,6 +101,17 @@ export class DistractionRenderer {
         visual.marker.fill({ color, alpha: 0.9 });
         visual.marker.stroke({ color: 0x111111, width: 2, alpha: 0.8 });
       }
+
+      const label = getDistractionLabel(distraction.type);
+      if (visual.label.text !== label) {
+        visual.label.text = label;
+      }
+      const labelOffsetY =
+        (visual.sprite?.visible ? visual.sprite.height * 0.5 : 8) + 4;
+      visual.label.position.set(
+        distraction.screenPosition.x,
+        distraction.screenPosition.y + labelOffsetY
+      );
     }
 
     for (const [id, visual] of this.visuals) {
@@ -123,13 +149,29 @@ export class DistractionRenderer {
     const container = new Container();
     const zone = new Graphics();
     const marker = new Graphics();
-    container.addChild(zone, marker);
+    const label = new Text({
+      text: "",
+      style: {
+        fontFamily: "Avenir Next, Helvetica, Arial, sans-serif",
+        fontSize: 8,
+        fontWeight: "600",
+        fill: 0x090f1c,
+        stroke: {
+          color: 0xffffff,
+          width: 2
+        }
+      }
+    });
+    label.anchor.set(0.5, 0);
+    label.alpha = 0.7;
+    container.addChild(zone, marker, label);
     this.layer.addChild(container);
 
     const visual: DistractionVisual = {
       container,
       zone,
       marker,
+      label,
       sprite: null,
       texturePath: null
     };
@@ -142,6 +184,7 @@ interface DistractionVisual {
   container: Container;
   zone: Graphics;
   marker: Graphics;
+  label: Text;
   sprite: Sprite | null;
   texturePath: string | null;
 }

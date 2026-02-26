@@ -353,18 +353,31 @@ async function bootstrap(): Promise<void> {
       clearEveningFireworksCues();
       return;
     }
-    if (runtimeStatus.outcome !== "COMPLETED" || runtimeStatus.sessionIndexInDay !== 3) {
+    if (runtimeStatus.sessionIndexInDay !== 3) {
+      clearEveningFireworksCues();
+      return;
+    }
+    const isCompletionFireworks = runtimeStatus.outcome === "COMPLETED";
+    if (!isCompletionFireworks) {
       clearEveningFireworksCues();
       return;
     }
 
-    const cueKey = `${runtimeStatus.levelNumber}:${snapshot.level.attemptKey}`;
+    const cuePhase =
+      runtimeStatus.dayNumber === 3 && runtimeStatus.sessionIndexInDay === 3
+        ? "finale-complete"
+        : "complete";
+    const burstOffsetsMs =
+      cuePhase === "finale-complete"
+        ? [0, 1500, 3000, 4700, 6500, 8400, 10300, 12200]
+        : [0, 1250, 2550];
+
+    const cueKey = `${runtimeStatus.levelNumber}:${snapshot.level.attemptKey}:${cuePhase}`;
     if (lastEveningFireworksCueKey === cueKey) {
       return;
     }
     lastEveningFireworksCueKey = cueKey;
     clearEveningFireworksCues();
-    const burstOffsetsMs = [0, 1250, 2550];
     for (const delayMs of burstOffsetsMs) {
       const handle = window.setTimeout(() => {
         if (!audioManager) {
@@ -736,7 +749,8 @@ async function bootstrap(): Promise<void> {
             levelNumber: runtimeStatus.levelNumber,
             dayNumber: runtimeStatus.dayNumber,
             sessionIndexInDay: runtimeStatus.sessionIndexInDay,
-            outcome: runtimeStatus.outcome
+            outcome: runtimeStatus.outcome,
+            remainingTimeSeconds: runtimeStatus.remainingTimeSeconds
           }
         : null
     );

@@ -9,6 +9,9 @@ import { Artist } from "../entities/Artist";
 import { resolveAssetPath } from "../maps/MapLoader";
 
 const WALK_FRAME_DURATION_MS = 240;
+const MISSED_GHOST_START_ALPHA = 0.7;
+const MISSED_GHOST_MIN_ALPHA = 0.14;
+const MISSED_GHOST_FADE_MS = 12_000;
 
 const TIER_STYLE = {
   headliner: { radius: 14, fill: 0xe7bf2f, ring: 0xf7d154, spriteSize: 38 },
@@ -74,6 +77,21 @@ function pickVariantIndex(artistId: string, total: number): number {
     hash = (hash * 33 + artistId.charCodeAt(index)) >>> 0;
   }
   return hash % total;
+}
+
+export function computeMissedGhostAlpha(
+  nowMs: number,
+  missedAtMs: number | null
+): number {
+  if (missedAtMs === null) {
+    return MISSED_GHOST_START_ALPHA;
+  }
+  const elapsedMs = Math.max(0, nowMs - missedAtMs);
+  const progress = Math.min(1, elapsedMs / MISSED_GHOST_FADE_MS);
+  return (
+    MISSED_GHOST_START_ALPHA +
+    (MISSED_GHOST_MIN_ALPHA - MISSED_GHOST_START_ALPHA) * progress
+  );
 }
 
 export function resolveArtistSpritePath(
@@ -145,6 +163,17 @@ export class ArtistRenderer {
       const renderScale = GAME_CONFIG.artist.renderScale;
       const spriteSize = Math.round(style.spriteSize * renderScale);
       const visual = this.getOrCreateVisual(artist.id);
+      if (artist.state === "MISSED") {
+        if (visual.missedAtMs === null) {
+          visual.missedAtMs = nowMs;
+        }
+      } else {
+        visual.missedAtMs = null;
+      }
+      const missedGhostAlpha =
+        artist.state === "MISSED"
+          ? computeMissedGhostAlpha(nowMs, visual.missedAtMs)
+          : 1;
       visual.container.position.set(artist.position.x, artist.position.y);
 
       const bounceOffset = isPerformingState(artist.state)
@@ -173,14 +202,15 @@ export class ArtistRenderer {
         visual.outlineSprite.height = spriteSize * 1.08;
         visual.outlineSprite.y = -bounceOffset + 1;
         visual.outlineSprite.tint = 0x090f1c;
-        visual.outlineSprite.alpha = 0.36;
+        visual.outlineSprite.alpha =
+          artist.state === "MISSED" ? Math.max(0.08, missedGhostAlpha * 0.52) : 0.36;
 
         visual.sprite.width = spriteSize;
         visual.sprite.height = spriteSize;
         visual.sprite.y = -bounceOffset;
         if (artist.state === "MISSED") {
           visual.sprite.tint = 0x7a7a7a;
-          visual.sprite.alpha = 0.7;
+          visual.sprite.alpha = missedGhostAlpha;
         } else {
           visual.sprite.tint = 0xffffff;
           visual.sprite.alpha = 1;
@@ -201,7 +231,12 @@ export class ArtistRenderer {
         );
         visual.fallback.fill(artist.state === "MISSED" ? 0x4a4a4a : style.fill);
         visual.fallback.stroke({ color: 0x0a0f1c, width: 2.4, alpha: 0.88 });
+        visual.fallback.alpha = artist.state === "MISSED" ? missedGhostAlpha : 1;
       }
+      visual.shadow.alpha =
+        artist.state === "MISSED"
+          ? GAME_CONFIG.artist.shadowAlpha * missedGhostAlpha
+          : GAME_CONFIG.artist.shadowAlpha;
 
       if (shouldRenderTimerBar(artist.state)) {
         visual.barTrack.visible = true;
@@ -300,7 +335,8 @@ export class ArtistRenderer {
       texturePath: null,
       spriteSize: -1,
       barWidth: -1,
-      barY: -1
+      barY: -1,
+      missedAtMs: null
     };
     this.visuals.set(artistId, visual);
     return visual;
@@ -333,4 +369,5 @@ interface ArtistVisual {
   spriteSize: number;
   barWidth: number;
   barY: number;
+  missedAtMs: number | null;
 }

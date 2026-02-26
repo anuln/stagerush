@@ -204,7 +204,7 @@
     {
       "levelNumber": 3,
       "totalArtists": 16,
-      "targetSets": 9,
+      "targetSets": 10,
       "maxEncounterStrikes": 7,
       "maxSimultaneous": 3,
       "timerRange": [
@@ -225,7 +225,7 @@
     {
       "levelNumber": 4,
       "totalArtists": 18,
-      "targetSets": 10,
+      "targetSets": 12,
       "maxEncounterStrikes": 8,
       "maxSimultaneous": 3,
       "timerRange": [
@@ -249,7 +249,7 @@
     {
       "levelNumber": 5,
       "totalArtists": 20,
-      "targetSets": 11,
+      "targetSets": 14,
       "maxEncounterStrikes": 9,
       "maxSimultaneous": 3,
       "timerRange": [
@@ -273,7 +273,7 @@
     {
       "levelNumber": 6,
       "totalArtists": 22,
-      "targetSets": 12,
+      "targetSets": 16,
       "maxEncounterStrikes": 11,
       "maxSimultaneous": 4,
       "timerRange": [
@@ -298,7 +298,7 @@
     {
       "levelNumber": 7,
       "totalArtists": 24,
-      "targetSets": 13,
+      "targetSets": 18,
       "maxEncounterStrikes": 12,
       "maxSimultaneous": 4,
       "timerRange": [
@@ -324,7 +324,7 @@
     {
       "levelNumber": 8,
       "totalArtists": 26,
-      "targetSets": 14,
+      "targetSets": 20,
       "maxEncounterStrikes": 13,
       "maxSimultaneous": 4,
       "timerRange": [
@@ -351,7 +351,7 @@
     {
       "levelNumber": 9,
       "totalArtists": 28,
-      "targetSets": 15,
+      "targetSets": 22,
       "maxEncounterStrikes": 15,
       "maxSimultaneous": 5,
       "timerRange": [

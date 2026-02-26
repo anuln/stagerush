@@ -130,6 +130,8 @@ describe("GameManager", () => {
 
     manager.startFestival();
     runtimes[0].status.levelScore = 320;
+    runtimes[0].status.deliveredArtists = 8;
+    runtimes[0].status.sessionTargetSets = 8;
     runtimes[0].status.outcome = "COMPLETED";
     manager.update(0.016, { width: 1000, height: 2000 }, 100);
     expect(manager.snapshot.screen).toBe("LEVEL_COMPLETE");
@@ -140,6 +142,8 @@ describe("GameManager", () => {
     expect(manager.snapshot.level.currentLevel).toBe(2);
 
     runtimes[1].status.levelScore = 500;
+    runtimes[1].status.deliveredArtists = 8;
+    runtimes[1].status.sessionTargetSets = 8;
     runtimes[1].status.outcome = "COMPLETED";
     manager.update(0.016, { width: 1000, height: 2000 }, 200);
     expect(manager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
@@ -163,6 +167,8 @@ describe("GameManager", () => {
 
     manager.startFestival();
     runtimes[0].status.levelScore = 300;
+    runtimes[0].status.deliveredArtists = 8;
+    runtimes[0].status.sessionTargetSets = 8;
     runtimes[0].status.outcome = "COMPLETED";
 
     manager.update(0.016, { width: 1000, height: 2000 }, 100);
@@ -178,7 +184,7 @@ describe("GameManager", () => {
     expect(manager.snapshot.level.cumulativeScore).toBe(300);
   });
 
-  it("promotes failed outcome to completion when session minimum is already met", () => {
+  it("does not promote failed outcome to completion even when session minimum is met", () => {
     const runtimes: FakeRuntime[] = [];
     const manager = new GameManager({
       layout: makeLayout(1),
@@ -198,11 +204,30 @@ describe("GameManager", () => {
     runtimes[0].status.outcome = "FAILED";
 
     manager.update(0.016, { width: 1000, height: 2000 }, 100);
-    expect(manager.snapshot.screen).toBe("PLAYING");
+    expect(manager.snapshot.screen).toBe("LEVEL_FAILED");
+    expect(manager.snapshot.level.cumulativeScore).toBe(0);
+  });
 
-    manager.update(0.016, { width: 1000, height: 2000 }, 4300);
-    expect(manager.snapshot.screen).toBe("FESTIVAL_COMPLETE");
-    expect(manager.snapshot.level.cumulativeScore).toBe(980);
+  it("fails completed outcome when session minimum target is not met", () => {
+    const runtimes: FakeRuntime[] = [];
+    const manager = new GameManager({
+      layout: makeLayout(1),
+      createRuntime: (levelNumber) => {
+        const runtime = new FakeRuntime(levelNumber);
+        runtimes.push(runtime);
+        return runtime;
+      }
+    });
+
+    manager.startFestival();
+    runtimes[0].status.levelScore = 450;
+    runtimes[0].status.deliveredArtists = 5;
+    runtimes[0].status.sessionTargetSets = 8;
+    runtimes[0].status.outcome = "COMPLETED";
+
+    manager.update(0.016, { width: 1000, height: 2000 }, 100);
+    expect(manager.snapshot.screen).toBe("LEVEL_FAILED");
+    expect(manager.snapshot.level.cumulativeScore).toBe(0);
   });
 
   it("uses screen actions for menu start and menu return", () => {
@@ -235,6 +260,8 @@ describe("GameManager", () => {
 
     firstManager.startFestival();
     firstRuntimes[0].status.levelScore = 700;
+    firstRuntimes[0].status.deliveredArtists = 8;
+    firstRuntimes[0].status.sessionTargetSets = 8;
     firstRuntimes[0].status.outcome = "COMPLETED";
     firstManager.update(0.016, { width: 1000, height: 2000 }, 100);
     expect(firstManager.snapshot.screen).toBe("FESTIVAL_COMPLETE");

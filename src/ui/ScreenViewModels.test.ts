@@ -87,7 +87,7 @@ describe("buildScreenViewModel", () => {
     ).toMatchObject({ label: "Artists Routed", value: "3", tone: "critical" });
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "correct-stage")
-    ).toMatchObject({ label: "Correct Stage", value: "2", tone: "warning" });
+    ).toMatchObject({ label: "Correct Stage", value: "2", tone: "positive" });
     expect(
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-missed")
     ).toMatchObject({ label: "Artists Missed", value: "4", tone: "critical" });

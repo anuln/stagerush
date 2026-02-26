@@ -111,9 +111,9 @@ function buildSessionWrap(
   const correctStageTone =
     delivered === 0
       ? "neutral"
-      : correctStageRatio >= 0.8
+      : correctStageRatio > 0.5
         ? "positive"
-        : correctStageRatio >= 0.6
+        : correctStageRatio >= 0.3
           ? "warning"
           : "critical";
   const collisionRatio = collisions / maxCollisions;

@@ -32,6 +32,7 @@ interface RuntimeFxContext {
   dayNumber: number;
   sessionIndexInDay: number;
   outcome: "ACTIVE" | "FAILED" | "COMPLETED";
+  remainingTimeSeconds: number;
 }
 
 interface FireworksPlan {
@@ -39,6 +40,11 @@ interface FireworksPlan {
   endAtMs: number;
   remainingBursts: number;
   nextBurstAtMs: number;
+}
+
+interface FireworksPlanOptions {
+  densityScale?: number;
+  ensureCoverage?: boolean;
 }
 
 interface RgbColor {
@@ -82,6 +88,35 @@ function lerpColor(a: RgbColor, b: RgbColor, t: number): RgbColor {
     r: lerp(a.r, b.r, t),
     g: lerp(a.g, b.g, t),
     b: lerp(a.b, b.b, t)
+  };
+}
+
+export function shouldTriggerFinaleCountdownFireworks(
+  context: RuntimeFxContext | null
+): boolean {
+  if (!context) {
+    return false;
+  }
+  if (context.dayNumber !== 3 || context.sessionIndexInDay !== 3) {
+    return false;
+  }
+  if (context.outcome === "FAILED") {
+    return false;
+  }
+  return Number.isFinite(context.remainingTimeSeconds) &&
+    context.remainingTimeSeconds <= 15;
+}
+
+function buildFinaleCountdownProfile(
+  profile: FireworksFxProfile
+): FireworksFxProfile {
+  return {
+    ...profile,
+    durationMs: Math.max(profile.durationMs, 20_000),
+    burstCountMin: Math.max(profile.burstCountMin, Math.round(profile.burstCountMin * 1.4)),
+    burstCountMax: Math.max(profile.burstCountMax, Math.round(profile.burstCountMax * 1.55)),
+    launchIntervalMsMin: Math.max(150, Math.round(profile.launchIntervalMsMin * 0.95)),
+    launchIntervalMsMax: Math.max(300, Math.round(profile.launchIntervalMsMax * 1.05))
   };
 }
 
@@ -331,10 +366,34 @@ export class SessionAtmosphereRenderer {
     if (!runtime || !profile?.enabled) {
       return;
     }
+    if (
+      runtime.dayNumber === 3 &&
+      runtime.sessionIndexInDay === 3 &&
+      runtime.remainingTimeSeconds > 20
+    ) {
+      this.lastFireworksTriggerKey = null;
+    }
+    if (shouldTriggerFinaleCountdownFireworks(runtime)) {
+      const triggerKey = `${runtime.levelNumber}-${runtime.dayNumber}-${runtime.sessionIndexInDay}-countdown`;
+      if (triggerKey !== this.lastFireworksTriggerKey) {
+        this.lastFireworksTriggerKey = triggerKey;
+        this.startFireworksPlan(buildFinaleCountdownProfile(profile), {
+          densityScale: Math.max(0.6, this.effectsDensity),
+          ensureCoverage: true
+        });
+      }
+    }
     if (runtime.outcome !== "COMPLETED") {
       return;
     }
     if (runtime.sessionIndexInDay !== 3) {
+      return;
+    }
+    if (
+      runtime.dayNumber === 3 &&
+      this.lastFireworksTriggerKey ===
+        `${runtime.levelNumber}-${runtime.dayNumber}-${runtime.sessionIndexInDay}-countdown`
+    ) {
       return;
     }
     const triggerKey = `${runtime.levelNumber}-${runtime.dayNumber}-${runtime.sessionIndexInDay}-complete`;
@@ -342,22 +401,34 @@ export class SessionAtmosphereRenderer {
       return;
     }
     this.lastFireworksTriggerKey = triggerKey;
-    this.startFireworksPlan(profile);
+    this.startFireworksPlan(profile, { ensureCoverage: true });
   }
 
-  private startFireworksPlan(profile: FireworksFxProfile): void {
+  private startFireworksPlan(
+    profile: FireworksFxProfile,
+    options: FireworksPlanOptions = {}
+  ): void {
+    const densityScale = clamp(options.densityScale ?? this.effectsDensity, 0.2, 1);
     const burstCountMin = Math.max(
       0,
-      Math.round(profile.burstCountMin * this.effectsDensity)
+      Math.round(profile.burstCountMin * densityScale)
     );
     const burstCountMax = Math.max(
       burstCountMin,
-      Math.round(profile.burstCountMax * this.effectsDensity)
+      Math.round(profile.burstCountMax * densityScale)
     );
+    const sampledBursts = randomRangeInt(burstCountMin, burstCountMax);
+    const averageIntervalMs = Math.max(
+      1,
+      (profile.launchIntervalMsMin + profile.launchIntervalMsMax) / 2
+    );
+    const coverageBursts = options.ensureCoverage
+      ? Math.max(1, Math.ceil(profile.durationMs / averageIntervalMs))
+      : 0;
     this.fireworksPlan = {
       profile,
       endAtMs: this.elapsedMs + profile.durationMs,
-      remainingBursts: randomRangeInt(burstCountMin, burstCountMax),
+      remainingBursts: Math.max(sampledBursts, coverageBursts),
       nextBurstAtMs: this.elapsedMs + randomRange(90, 200)
     };
   }
