@@ -725,7 +725,8 @@
         "seed": 285401,
         "performanceAudio": {
           "lengthSec": 3,
-          "promptText": "Short performance sting for Parkline (Lo-fi Hip-Hop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "promptText": "Short performance sting for Parkline (Lo-fi Hip-Hop) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-new-b-performanceaudio-238b1a1b.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Lo-fi Hip-Hop festival artist sprite for Parkline, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -737,13 +738,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_new_b_walk1.png",
-            "assets/maps/govball/artists/artist_new_b_walk2.png",
-            "assets/maps/govball/artists/artist_new_b_walk3.png"
+            "assets/maps/govball2026/committed/artist-new-b-walk1-1a23b7aa.png",
+            "assets/maps/govball2026/committed/artist-new-b-walk2-bdae161e.png",
+            "assets/maps/govball2026/committed/artist-new-b-walk3-46c9290c.png"
           ],
           "idle": "assets/maps/govball/artists/artist_new_b_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_new_b_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_new_b_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-new-b-distracted-7a957d1f.png",
+          "performing": "assets/maps/govball2026/committed/artist-new-b-performing-8c249b6a.png"
         }
       },
       {
