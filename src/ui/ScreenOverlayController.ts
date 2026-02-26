@@ -36,6 +36,42 @@ export class ScreenOverlayController {
     document.body.appendChild(this.root);
   }
 
+  private buildModelKey(model: ScreenViewModel): string {
+    const summary = model.summaryRows
+      .map((row) => `${row.label}:${row.value}`)
+      .join("|");
+    const actions = model.actions
+      .map((action) => `${action.id}:${action.label}:${action.emphasis ?? ""}`)
+      .join("|");
+    const wrap = model.sessionWrap;
+    if (!wrap) {
+      return [
+        model.screen,
+        model.title,
+        model.subtitle,
+        summary,
+        actions
+      ].join("~");
+    }
+    const metrics = wrap.metrics
+      .map((metric) => `${metric.id}:${metric.value}:${metric.tone ?? ""}`)
+      .join("|");
+    return [
+      model.screen,
+      model.title,
+      model.subtitle,
+      summary,
+      actions,
+      wrap.outcome,
+      wrap.resultLabel,
+      wrap.tier,
+      String(wrap.sessionScore),
+      String(wrap.runTotalScore),
+      metrics,
+      wrap.progress.nextLabel
+    ].join("~");
+  }
+
   setMenuMedia(next: MenuMediaConfig): void {
     this.menuMedia = {
       ...next,
@@ -269,7 +305,7 @@ export class ScreenOverlayController {
       return;
     }
 
-    const key = JSON.stringify(model);
+    const key = this.buildModelKey(model);
     if (this.lastKey === key && !this.root.classList.contains("is-hidden")) {
       return;
     }

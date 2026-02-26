@@ -752,7 +752,10 @@ async function bootstrap(): Promise<void> {
     };
     performanceOverlay.update(overlayTelemetry);
 
-    const screenModel = snapshot ? buildScreenViewModel(snapshot) : null;
+    const screenModel =
+      snapshot && snapshot.screen !== "PLAYING"
+        ? buildScreenViewModel(snapshot)
+        : null;
     screenOverlay.render(screenModel, (actionId) => {
       void runScreenAction(actionId);
     });

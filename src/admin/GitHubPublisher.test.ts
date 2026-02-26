@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   encodeBase64Utf8,
-  putFileToGitHub
+  putFileToGitHub,
+  readTextFileFromGitHub
 } from "./GitHubPublisher";
 
 function makeJsonResponse(
@@ -118,5 +119,33 @@ describe("GitHubPublisher", () => {
     const putRequest = fetchMock.mock.calls[1] as [string, RequestInit];
     const payload = JSON.parse(putRequest[1]?.body as string) as Record<string, unknown>;
     expect(payload.content).toBe("QUJDRA==");
+  });
+
+  it("reads and decodes utf8 text file contents from GitHub", async () => {
+    const encoded = encodeBase64Utf8('{"id":"govball","name":"Stage Rush 🎵"}\n');
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      makeJsonResponse(200, {
+        sha: "abc123",
+        encoding: "base64",
+        content: `${encoded.slice(0, 12)}\n${encoded.slice(12)}`,
+        html_url: "https://github.com/anuln/stagerush/blob/main/public/assets/maps/govball/config.json"
+      })
+    );
+
+    const result = await readTextFileFromGitHub(
+      {
+        token: "token_123",
+        owner: "anuln",
+        repo: "stagerush",
+        branch: "main",
+        path: "public/assets/maps/govball/config.json"
+      },
+      fetchMock as unknown as typeof fetch
+    );
+
+    expect(result.exists).toBe(true);
+    expect(result.sha).toBe("abc123");
+    expect(result.content).toContain('"name":"Stage Rush 🎵"');
+    expect(result.fileUrl).toContain("/blob/main/public/assets/maps/govball/config.json");
   });
 });

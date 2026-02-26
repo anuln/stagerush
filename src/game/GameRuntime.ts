@@ -484,22 +484,24 @@ export class GameRuntime {
       const deliveredArtist = this.artists.find(
         (entry) => entry.id === delivery.artistId
       );
-      if (
-        deliveredArtist?.assignedStageId &&
-        deliveredArtist.assignedStageId !== delivery.stageId
-      ) {
+      const isCorrectStage =
+        !deliveredArtist?.assignedStageId ||
+        deliveredArtist.assignedStageId === delivery.stageId;
+      if (!isCorrectStage) {
         this.incorrectStageArtists += 1;
+        this.comboTracker.breakAllChains();
       }
       this.deliveredArtists += 1;
       this.stageSetCounts.set(
         delivery.stageId,
         (this.stageSetCounts.get(delivery.stageId) ?? 0) + 1
       );
-      const combo = this.comboTracker.registerDelivery(
-        delivery.stageId,
-        delivery.completedAtMs
-      );
-      const scoreEvent = this.scoreManager.registerDelivery(delivery, combo);
+      const combo = isCorrectStage
+        ? this.comboTracker.registerDelivery(delivery.stageId, delivery.completedAtMs)
+        : null;
+      const scoreEvent = this.scoreManager.registerDelivery(delivery, combo, {
+        isCorrectStage
+      });
       scoreEvents.push(scoreEvent);
       if (!this.shownFtuxEvents.has("first_successful_stage_arrival")) {
         this.shownFtuxEvents.add("first_successful_stage_arrival");

@@ -14,7 +14,10 @@ import {
   type AdminAssetOverrides
 } from "../admin/AdminAssetOverrides";
 import { toResolvedPath } from "../admin/AdminPreviewModel";
-import { putFileToGitHub } from "../admin/GitHubPublisher";
+import {
+  putFileToGitHub,
+  readTextFileFromGitHub
+} from "../admin/GitHubPublisher";
 import {
   buildAssetSlots,
   filterAssetSlots,
@@ -511,7 +514,7 @@ async function resolveImagePathToDataUrl(path: string): Promise<string | null> {
 }
 
 export class AdminPanel {
-  private readonly map: FestivalMap;
+  private map: FestivalMap;
   private readonly mapConfigPath: string;
   private readonly festivals: Array<{ id: string; name: string }>;
   private readonly activeFestivalId: string;
@@ -3683,11 +3686,43 @@ export class AdminPanel {
     );
   }
 
-  private resolveMapWithOverrides(): FestivalMap {
-    if (!hasAdminAssetOverrides(this.draftOverrides)) {
-      return structuredClone(this.map);
+  private normalizeCommittedJson(content: string): string {
+    const trimmedEnd = content.replace(/\s+$/g, "");
+    return `${trimmedEnd}\n`;
+  }
+
+  private async resolveLatestMapForCommit(): Promise<{
+    baseMap: FestivalMap;
+    remoteContent: string | null;
+  }> {
+    this.publishStatus = "Fetching latest map from GitHub...";
+    this.render();
+    const remote = await readTextFileFromGitHub({
+      token: this.githubToken,
+      owner: this.githubOwner,
+      repo: this.githubRepo,
+      branch: this.githubBranch,
+      path: this.githubTargetPath
+    });
+
+    if (!remote.exists || !remote.content) {
+      return {
+        baseMap: structuredClone(this.map),
+        remoteContent: null
+      };
     }
-    return applyAdminAssetOverrides(this.map, this.draftOverrides);
+
+    try {
+      const parsed = JSON.parse(remote.content) as FestivalMap;
+      return {
+        baseMap: parsed,
+        remoteContent: this.normalizeCommittedJson(remote.content)
+      };
+    } catch {
+      throw new Error(
+        "Remote festival map is not valid JSON. Refresh the app and verify target path before committing."
+      );
+    }
   }
 
   private collectInlineAssetPaths(map: FestivalMap): string[] {
@@ -3850,7 +3885,10 @@ export class AdminPanel {
     this.publishStatus = "Committing festival map to GitHub...";
     this.render();
     try {
-      const mapToCommit = this.resolveMapWithOverrides();
+      const { baseMap, remoteContent } = await this.resolveLatestMapForCommit();
+      const mapToCommit = hasAdminAssetOverrides(this.draftOverrides)
+        ? applyAdminAssetOverrides(baseMap, this.draftOverrides)
+        : baseMap;
       const inlineReferencesBeforeUpload = this.collectInlineAssetPaths(mapToCommit);
       const hasBlobInline = inlineReferencesBeforeUpload.some((entry) =>
         entry.includes("blob-url")
@@ -3865,6 +3903,12 @@ export class AdminPanel {
       const uploadedInlineAssets = await this.materializeInlineAssetsForCommit(mapToCommit);
 
       const content = `${JSON.stringify(mapToCommit, null, 2)}\n`;
+      if (remoteContent !== null && this.normalizeCommittedJson(content) === remoteContent) {
+        this.publishStatus = "No changes to commit.";
+        this.syncOverridesAfterCommit(mapToCommit);
+        this.persistGithubSettings();
+        return;
+      }
       const result = await putFileToGitHub({
         token: this.githubToken,
         owner: this.githubOwner,
@@ -3898,6 +3942,7 @@ export class AdminPanel {
   }
 
   private syncOverridesAfterCommit(committedMap: FestivalMap): void {
+    this.map = structuredClone(committedMap);
     const nextOverrides = structuredClone(this.draftOverrides);
 
     if (nextOverrides.background) {

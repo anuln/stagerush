@@ -55,4 +55,5 @@ describe("Artist", () => {
     expect(artist.state).toBe("MISSED");
     expect(artist.missReason).toBe("bounds");
   });
+
 });

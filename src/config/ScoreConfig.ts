@@ -26,6 +26,9 @@ export const MISS_PENALTIES = {
   manual: 0
 } as const;
 
+// Deliveries on the wrong stage are penalized but still score to preserve route triage gameplay.
+export const WRONG_STAGE_DELIVERY_MULTIPLIER = 0.7;
+
 export function getComboMultiplier(chainLength: number): number {
   if (chainLength <= 1) {
     return COMBO_MULTIPLIERS[0];

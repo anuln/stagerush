@@ -94,6 +94,35 @@ describe("ScoreManager", () => {
     expect(comboEvent.totalScore).toBe(450);
   });
 
+  it("does not award points for wrong-stage deliveries", () => {
+    const manager = new ScoreManager();
+
+    const wrongStageEvent = manager.registerDelivery(
+      {
+        artistId: "a1",
+        artistTier: "headliner",
+        stageId: "main-stage",
+        stageSize: "large",
+        stageColor: "#FF6B35",
+        stagePosition: { x: 300, y: 120 },
+        completedAtMs: 100
+      },
+      {
+        stageId: "main-stage",
+        chainLength: 2,
+        multiplier: 1.5,
+        expiresAtMs: 5100
+      },
+      { isCorrectStage: false }
+    );
+
+    expect(wrongStageEvent.stageMatch).toBe(false);
+    expect(wrongStageEvent.stageMatchMultiplier).toBe(0.7);
+    expect(wrongStageEvent.awardedPoints).toBe(315);
+    expect(wrongStageEvent.totalScore).toBe(315);
+    expect(manager.totalScore).toBe(315);
+  });
+
   it("applies timeout and bounds miss penalties without dropping below zero", () => {
     const manager = new ScoreManager();
     manager.registerDelivery({

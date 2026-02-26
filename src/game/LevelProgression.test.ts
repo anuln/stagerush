@@ -70,14 +70,14 @@ describe("resolveLevelRuntimeConfig", () => {
     expect(first).toEqual(second);
   });
 
-  it("changes randomized attempt outputs while keeping level bounds", () => {
+  it("keeps retries deterministic for the same level", () => {
     const map = makeMap();
     const first = resolveLevelRuntimeConfig(map, 3, 1);
     const second = resolveLevelRuntimeConfig(map, 3, 2);
 
     expect(first.levelNumber).toBe(3);
     expect(second.levelNumber).toBe(3);
-    expect(first.spawnIntervalMs).not.toEqual(second.spawnIntervalMs);
+    expect(first).toEqual(second);
   });
 
   it("applies escalation between earlier and later levels", () => {

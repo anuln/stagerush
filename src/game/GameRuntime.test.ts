@@ -395,6 +395,7 @@ describe("GameRuntime", () => {
       const status = runtime.getStatus();
       expect(status.deliveredArtists).toBe(1);
       expect(status.incorrectStageArtists).toBe(1);
+      expect(status.levelScore).toBe(70);
     } finally {
       randomSpy.mockRestore();
     }

@@ -1,4 +1,8 @@
-import { MISS_PENALTIES, SCORE_MATRIX } from "../config/ScoreConfig";
+import {
+  MISS_PENALTIES,
+  SCORE_MATRIX,
+  WRONG_STAGE_DELIVERY_MULTIPLIER
+} from "../config/ScoreConfig";
 import type { ArtistMissReason } from "../entities/ArtistState";
 import type {
   StageDeliveryCompletionEvent
@@ -7,11 +11,17 @@ import type { ComboDeliveryResult } from "./ComboTracker";
 
 export interface ScoreEvent extends StageDeliveryCompletionEvent {
   basePoints: number;
+  stageMatch: boolean;
+  stageMatchMultiplier: number;
   comboChainLength: number;
   comboMultiplier: number;
   comboExpiresAtMs: number;
   awardedPoints: number;
   totalScore: number;
+}
+
+export interface DeliveryScoreOptions {
+  isCorrectStage?: boolean;
 }
 
 export interface PenaltyEvent {
@@ -39,18 +49,25 @@ export class ScoreManager {
 
   registerDelivery(
     delivery: StageDeliveryCompletionEvent,
-    combo: ComboDeliveryResult | null = null
+    combo: ComboDeliveryResult | null = null,
+    options: DeliveryScoreOptions = {}
   ): ScoreEvent {
     const basePoints = SCORE_MATRIX[delivery.artistTier][delivery.stageSize];
+    const stageMatch = options.isCorrectStage ?? true;
+    const stageMatchMultiplier = stageMatch ? 1 : WRONG_STAGE_DELIVERY_MULTIPLIER;
     const comboMultiplier = combo?.multiplier ?? 1;
     const comboChainLength = combo?.chainLength ?? 1;
     const comboExpiresAtMs = combo?.expiresAtMs ?? delivery.completedAtMs;
-    const awardedPoints = Math.round(basePoints * comboMultiplier);
+    const awardedPoints = Math.round(
+      basePoints * comboMultiplier * stageMatchMultiplier
+    );
 
     this.score += awardedPoints;
     this.lastEvent = {
       ...delivery,
       basePoints,
+      stageMatch,
+      stageMatchMultiplier,
       comboChainLength,
       comboMultiplier,
       comboExpiresAtMs,

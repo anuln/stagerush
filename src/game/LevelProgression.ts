@@ -126,21 +126,20 @@ function applyDifficultyCurve(
 export function resolveLevelRuntimeConfig(
   map: FestivalMap,
   levelNumber: number,
-  attemptNumber = 1
+  _attemptNumber = 1
 ): RuntimeLevelConfig {
   const boundedLevel = clamp(
     Math.floor(levelNumber),
     1,
     Math.max(1, map.totalLevels)
   );
-  const boundedAttempt = Math.max(1, Math.floor(attemptNumber));
   const base = applyDifficultyCurve(
     toRuntimeLevelConfig(map, boundedLevel),
     boundedLevel,
     map.levels.length > 0
   );
   const rng = createSeededRng(
-    hashSeed(`${map.id}:${boundedLevel}:${boundedAttempt}`)
+    hashSeed(`${map.id}:${boundedLevel}`)
   );
 
   const timerRange: [number, number] = [
