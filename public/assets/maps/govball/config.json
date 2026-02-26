@@ -474,8 +474,9 @@
         "rotationWeight": 1.45,
         "seed": 447620,
         "performanceAudio": {
-          "lengthSec": 3,
-          "promptText": "Short performance sting for Midnight Atlas (Future Bass) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds."
+          "lengthSec": 6,
+          "promptText": "Short performance sting for Midnight Atlas (Future Bass) at a festival stage, energetic but clean, no vocals, 2 to 5 seconds.",
+          "clip": "assets/maps/govball2026/committed/artist-headliner-d-performanceaudio-0d0c6df7.mp3"
         },
         "promptByPose": {
           "pose1": "Top-down stylized Future Bass festival artist sprite for Midnight Atlas, pose 1: brisk forward walk, readable silhouette, transparent background, clean outline, no text.",
@@ -487,13 +488,13 @@
         },
         "sprites": {
           "walk": [
-            "assets/maps/govball/artists/artist_headliner_d_walk1.png",
-            "assets/maps/govball/artists/artist_headliner_d_walk2.png",
-            "assets/maps/govball/artists/artist_headliner_d_walk3.png"
+            "assets/maps/govball2026/committed/artist-headliner-d-walk1-d2cb2774.png",
+            "assets/maps/govball2026/committed/artist-headliner-d-walk2-921cbdac.png",
+            "assets/maps/govball2026/committed/artist-headliner-d-walk3-2e8ef9a7.png"
           ],
           "idle": "assets/maps/govball/artists/artist_headliner_d_idle.png",
-          "distracted": "assets/maps/govball/artists/artist_headliner_d_distracted.png",
-          "performing": "assets/maps/govball/artists/artist_headliner_d_perform.png"
+          "distracted": "assets/maps/govball2026/committed/artist-headliner-d-distracted-4c02e8d4.png",
+          "performing": "assets/maps/govball2026/committed/artist-headliner-d-performing-02c3eea0.png"
         }
       },
       {
