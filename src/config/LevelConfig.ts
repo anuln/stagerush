@@ -119,7 +119,10 @@ export function toRuntimeLevelConfig(
     totalFestivalDays: sessionMeta.totalFestivalDays,
     maxSimultaneous: existing.maxSimultaneous,
     levelDurationSeconds: DEFAULT_LEVEL_CONFIG.levelDurationSeconds,
-    maxEncounterStrikes: DEFAULT_LEVEL_CONFIG.maxEncounterStrikes,
+    maxEncounterStrikes: Math.max(
+      1,
+      Math.floor(existing.maxEncounterStrikes ?? DEFAULT_LEVEL_CONFIG.maxEncounterStrikes)
+    ),
     timerRangeSeconds: existing.timerRange,
     tierWeights: existing.tierWeights,
     spawnIntervalMs: existing.spawnInterval,

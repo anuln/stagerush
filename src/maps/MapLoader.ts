@@ -299,6 +299,14 @@ export function parseFestivalMapData(data: unknown): FestivalMap {
         throw new Error(`levels[${index}].targetSets cannot exceed totalArtists`);
       }
     }
+    if (level.maxEncounterStrikes !== undefined) {
+      assertIntegerInRange(
+        level.maxEncounterStrikes,
+        1,
+        50,
+        `levels[${index}].maxEncounterStrikes`
+      );
+    }
     assertIntegerInRange(
       level.maxSimultaneous,
       1,

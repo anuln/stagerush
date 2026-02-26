@@ -44,12 +44,6 @@ export class PathDrawingInput {
     const rawPoints: Vector2[] = [
       { x: candidate.position.x, y: candidate.position.y }
     ];
-    if (
-      rawPoints[0].x !== x ||
-      rawPoints[0].y !== y
-    ) {
-      rawPoints.push({ x, y });
-    }
 
     this.activeSession = {
       artistId: candidate.id,

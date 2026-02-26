@@ -68,6 +68,8 @@ export function buildHudLabels(
     0,
     Math.floor(Math.max(0, state.maxLives) - Math.max(0, state.remainingLives))
   );
+  const strikesTotal = Math.max(1, Math.floor(Math.max(0, state.maxLives)));
+  const clampedStrikesUsed = clamp(strikesUsed, 0, strikesTotal);
   const safeTargetSets = Math.max(1, Math.floor(state.targetSets));
   const elapsedSeconds = Math.max(
     0,
@@ -87,8 +89,8 @@ export function buildHudLabels(
         : `PACE ${roundedPaceDelta} BEHIND`;
 
   return {
-    festivalHype: `🏆 ${formatScore(state.score)} 💥${strikesUsed}`,
-    safetyStrikes: `💥${strikesUsed}`,
+    festivalHype: `🏆 ${formatScore(state.score)}  💥 ${clampedStrikesUsed}/${strikesTotal}`,
+    safetyStrikes: `💥 ${clampedStrikesUsed}/${strikesTotal}`,
     sessionTime: `TIME ${Math.max(0, Math.ceil(state.remainingTimeSeconds))}s`,
     daySession: `DAY ${Math.max(1, Math.floor(state.dayNumber))} · ${state.sessionName.toUpperCase()}`,
     setsProgress: `SETS ${Math.max(0, Math.floor(state.setsPlayed))}/${safeTargetSets}`,

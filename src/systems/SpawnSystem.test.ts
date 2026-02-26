@@ -256,8 +256,11 @@ describe("SpawnSystem", () => {
   });
 
   it("varies edge spawn positions along the selected map boundary", () => {
-    let index = 0;
-    const rng = () => (((index += 1) % 10) + 1) / 11;
+    let state = 17;
+    const rng = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
 
     const system = new SpawnSystem(
       {
@@ -347,8 +350,8 @@ describe("SpawnSystem", () => {
 
     const [artist] = system.update(0, []);
     const speed = Math.hypot(artist.velocity.x, artist.velocity.y);
-    const inwardDot = artist.velocity.x / speed;
-    expect(inwardDot).toBeGreaterThanOrEqual(0.49);
+    const inwardDot = artist.velocity.y / speed;
+    expect(inwardDot).toBeGreaterThanOrEqual(0.58);
   });
 
   it("assigns sprite profile ids from roster callback at spawn", () => {
@@ -390,5 +393,45 @@ describe("SpawnSystem", () => {
 
     const [artist] = system.update(0, []);
     expect(artist.spriteProfileId).toBe("headliner-special");
+  });
+
+  it("forces inward-biased heading even when spawn anchors are near-but-not-exactly on edges", () => {
+    const system = new SpawnSystem(
+      {
+        levelNumber: 1,
+        totalArtists: 1,
+        sessionTargetSets: 1,
+        sessionDayNumber: 1,
+        sessionIndexInDay: 1,
+        sessionName: "Morning",
+        sessionsPerDay: 3,
+        totalFestivalDays: 1,
+        maxSimultaneous: 1,
+        levelDurationSeconds: 60,
+        maxEncounterStrikes: 12,
+        timerRangeSeconds: [12, 12],
+        spawnIntervalMs: [100, 100],
+        tierWeights: { headliner: 0, midtier: 0, newcomer: 1 },
+        activeDistractionIds: [],
+        driftSpeedPxPerSecond: 80,
+        driftAngleVarianceDegrees: 0
+      },
+      [
+        {
+          id: "left-near-edge",
+          position: { x: 0.03, y: 0.5 },
+          driftAngle: 0,
+          screenPosition: { x: 6, y: 100 },
+          directionVector: { x: 1, y: 0 }
+        }
+      ],
+      () => 0.5,
+      { viewport: { width: 200, height: 200 } }
+    );
+
+    const [artist] = system.update(0, []);
+    const speed = Math.hypot(artist.velocity.x, artist.velocity.y);
+    expect(artist.position.x).toBeLessThan(0);
+    expect(artist.velocity.x / speed).toBeGreaterThan(0.57);
   });
 });

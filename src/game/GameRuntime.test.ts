@@ -124,6 +124,34 @@ function makeLayout(
   };
 }
 
+function engageAnyArtist(
+  runtime: GameRuntime,
+  nowMs: number
+): { x: number; y: number } {
+  for (let y = -40; y <= 140; y += 10) {
+    for (let x = -40; x <= 140; x += 10) {
+      if (runtime.onPointerDown(x, y, nowMs)) {
+        return { x, y };
+      }
+    }
+  }
+  throw new Error("Expected to engage an active artist, but none were reachable");
+}
+
+function engageVisibleArtist(
+  runtime: GameRuntime,
+  nowMs: number
+): { x: number; y: number } {
+  for (let y = 0; y <= 100; y += 10) {
+    for (let x = 0; x <= 100; x += 10) {
+      if (runtime.onPointerDown(x, y, nowMs)) {
+        return { x, y };
+      }
+    }
+  }
+  throw new Error("Expected to engage a visible artist, but none were reachable");
+}
+
 describe("GameRuntime", () => {
   it("resolves round performance tier from score and delivery targets", () => {
     expect(
@@ -277,20 +305,24 @@ describe("GameRuntime", () => {
     );
 
     runtime.update(0, { width: 100, height: 100 }, 1000);
+    runtime.update(0.8, { width: 100, height: 100 }, 1800);
 
-    const engaged = runtime.onPointerDown(50, 22, 1001);
-    expect(engaged).toBe(true);
+    const start = engageAnyArtist(runtime, 1801);
 
-    runtime.onPointerMove(75, 22);
-    runtime.onPointerMove(95, 22);
-    runtime.onPointerUp(95, 22, 1002);
+    runtime.onPointerMove(start.x + 55, start.y);
+    runtime.onPointerMove(start.x + 95, start.y);
+    runtime.onPointerUp(start.x + 95, start.y, 1802);
 
-    runtime.update(0.2, { width: 100, height: 100 }, 1200);
+    runtime.update(0.01, { width: 100, height: 100 }, 1810);
     expect(runtime.getTelemetrySnapshot().activePaths).toBeGreaterThan(0);
   });
 
   it("tracks incorrect-stage deliveries when artists perform on non-assigned stages", () => {
-    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    const randomSequence = [0.5, 0, 0.2, 0.2, 0.2, 0.2];
+    let randomIndex = 0;
+    const randomSpy = vi
+      .spyOn(Math, "random")
+      .mockImplementation(() => randomSequence[randomIndex++] ?? 0.2);
     try {
       const layout: ResolvedFestivalLayout = {
       map: {
@@ -361,10 +393,10 @@ describe("GameRuntime", () => {
       spawnPoints: [
         {
           id: "center",
-          position: { x: 0.5, y: 0.5 },
+          position: { x: 0, y: 0.5 },
           driftAngle: 0,
-          screenPosition: { x: 50, y: 50 },
-          directionVector: { x: 0, y: 1 }
+          screenPosition: { x: 0, y: 50 },
+          directionVector: { x: 1, y: 0 }
         }
       ],
       distractions: []
@@ -377,23 +409,35 @@ describe("GameRuntime", () => {
           ...BASE_LEVEL,
           totalArtists: 1,
           maxSimultaneous: 1,
+          tierWeights: {
+            headliner: 1,
+            midtier: 0,
+            newcomer: 0
+          },
+          timerRangeSeconds: [60, 60],
           spawnIntervalMs: [0, 0],
-          levelDurationSeconds: 20
+          levelDurationSeconds: 60
         }
       );
 
       runtime.update(0, { width: 100, height: 100 }, 1000);
-      const engaged = runtime.onPointerDown(22, 50, 1001);
-      expect(engaged).toBe(true);
+      for (let tick = 0; tick < 12; tick += 1) {
+        runtime.update(0.1, { width: 100, height: 100 }, 1100 + tick * 100);
+      }
+      const start = engageVisibleArtist(runtime, 2201);
+      runtime.onPointerMove(start.x + 20, start.y);
       runtime.onPointerMove(80, 50);
-      runtime.onPointerUp(80, 50, 1002);
+      runtime.onPointerUp(80, 50, 2202);
 
-      for (let tick = 0; tick < 30; tick += 1) {
-        runtime.update(0.2, { width: 100, height: 100 }, 1200 + tick * 200);
+      for (let tick = 0; tick < 200; tick += 1) {
+        runtime.update(0.2, { width: 100, height: 100 }, 2300 + tick * 200);
+        if (runtime.getStatus().deliveredArtists > 0) {
+          break;
+        }
       }
 
       const status = runtime.getStatus();
-      expect(status.deliveredArtists).toBe(1);
+      expect(status.deliveredArtists, JSON.stringify(status)).toBe(1);
       expect(status.incorrectStageArtists).toBe(1);
       expect(status.levelScore).toBe(70);
     } finally {

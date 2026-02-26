@@ -72,6 +72,7 @@ export interface LevelConfig {
   levelNumber: number;
   totalArtists: number;
   targetSets?: number;
+  maxEncounterStrikes?: number;
   maxSimultaneous: number;
   timerRange: [number, number];
   tierWeights: {

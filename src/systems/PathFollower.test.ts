@@ -61,7 +61,8 @@ describe("PathFollower", () => {
     ]));
     follower.update([artist], 0.5);
 
-    expect(artist.position.x).toBeGreaterThanOrEqual(beforeReplace);
+    expect(artist.position.x).toBeGreaterThan(beforeReplace);
+    follower.update([artist], 1.5);
     expect(artist.position.y).toBeGreaterThan(0);
   });
 
@@ -113,5 +114,20 @@ describe("PathFollower", () => {
     follower.unblockArtist(artist, "chat");
     follower.update([artist], 0.5);
     expect(artist.position.y).toBeGreaterThan(0);
+  });
+
+  it("snaps to nearest point on drawn path instead of backtracking to stale start points", () => {
+    const artist = makeArtist();
+    artist.position = { x: 62, y: 0 };
+    const follower = new PathFollower(40);
+
+    follower.assignPath(artist, makePath("p4", [
+      { x: 20, y: 0 },
+      { x: 30, y: 0 },
+      { x: 110, y: 0 }
+    ]));
+    follower.update([artist], 0.5);
+
+    expect(artist.position.x).toBeGreaterThanOrEqual(62);
   });
 });

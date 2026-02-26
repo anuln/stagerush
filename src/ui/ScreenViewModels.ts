@@ -96,11 +96,29 @@ function buildSessionWrap(
   const delivered = Math.max(0, runtime?.deliveredArtists ?? 0);
   const missed = Math.max(0, runtime?.missedArtists ?? 0);
   const incorrectStage = Math.max(0, runtime?.incorrectStageArtists ?? 0);
+  const correctStage = Math.max(0, delivered - incorrectStage);
+  const maxCollisions = Math.max(1, runtime?.maxEncounterStrikes ?? 1);
+  const collisions = Math.max(
+    0,
+    Math.floor(maxCollisions - Math.max(0, runtime?.remainingLives ?? maxCollisions))
+  );
   const targetSets = Math.max(1, runtime?.sessionTargetSets ?? 1);
   const nextLabel = resolveUpNextLabel(snapshot, outcome);
   const deliveryRatio = delivered / targetSets;
   const routedTone =
     deliveryRatio >= 1 ? "positive" : deliveryRatio >= 0.72 ? "warning" : "critical";
+  const correctStageRatio = delivered > 0 ? correctStage / delivered : 1;
+  const correctStageTone =
+    delivered === 0
+      ? "neutral"
+      : correctStageRatio >= 0.8
+        ? "positive"
+        : correctStageRatio >= 0.6
+          ? "warning"
+          : "critical";
+  const collisionRatio = collisions / maxCollisions;
+  const collisionTone =
+    collisionRatio <= 0.45 ? "positive" : collisionRatio <= 0.75 ? "warning" : "critical";
 
   const resultLabel = resolveResultLabel({
     outcome,
@@ -132,10 +150,16 @@ function buildSessionWrap(
             value: String(Math.max(0, Math.floor(level.festivalMissedArtists ?? 0)))
           },
           {
-            id: "festival-incorrect-stage",
-            label: "Incorrect Stage",
+            id: "festival-correct-stage",
+            label: "Correct Stage",
             value: String(
-              Math.max(0, Math.floor(level.festivalIncorrectStageArtists ?? 0))
+              Math.max(
+                0,
+                Math.floor(
+                  (level.festivalRoutedArtists ?? 0) -
+                    (level.festivalIncorrectStageArtists ?? 0)
+                )
+              )
             )
           },
           {
@@ -161,16 +185,22 @@ function buildSessionWrap(
         tone: routedTone
       },
       {
+        id: "correct-stage",
+        label: "Correct Stage",
+        value: String(correctStage),
+        tone: correctStageTone
+      },
+      {
         id: "artists-missed",
         label: "Artists Missed",
         value: String(missed),
-        tone: missed > 0 ? "warning" : "neutral"
+        tone: missed === 0 ? "neutral" : missed <= 2 ? "warning" : "critical"
       },
       {
-        id: "incorrect-stage",
-        label: "Incorrect Stage",
-        value: String(incorrectStage),
-        tone: incorrectStage > 0 ? "warning" : "neutral"
+        id: "collisions",
+        label: "Collisions",
+        value: String(collisions),
+        tone: collisionTone
       }
     ],
     festivalTotals,

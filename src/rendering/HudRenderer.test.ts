@@ -16,8 +16,8 @@ describe("HudRenderer", () => {
       comboMultiplier: null
     });
 
-    expect(labels.festivalHype).toBe("🏆 1234 💥10");
-    expect(labels.safetyStrikes).toBe("💥10");
+    expect(labels.festivalHype).toBe("🏆 1234  💥 10/12");
+    expect(labels.safetyStrikes).toBe("💥 10/12");
     expect(labels.sessionTime).toBe("TIME 48s");
     expect(labels.daySession).toBe("DAY 2 · AFTERNOON");
     expect(labels.setsProgress).toBe("SETS 6/10");
@@ -39,8 +39,8 @@ describe("HudRenderer", () => {
       comboMultiplier: null
     });
 
-    expect(labels.festivalHype).toBe("🏆 0 💥12");
-    expect(labels.safetyStrikes).toBe("💥12");
+    expect(labels.festivalHype).toBe("🏆 0  💥 12/12");
+    expect(labels.safetyStrikes).toBe("💥 12/12");
     expect(labels.sessionTime).toBe("TIME 0s");
   });
 

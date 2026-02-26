@@ -51,8 +51,11 @@ interface SpawnSystemOptions {
   pickArtistProfileId?: (tier: ArtistTier) => string | null;
 }
 
-const INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES = 30;
+type SpawnEdge = "left" | "right" | "top" | "bottom";
+
+const INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES = 18;
 const EDGE_THRESHOLD = 0.01;
+const MIN_INWARD_ALIGNMENT = 0.58;
 const SPAWN_POINT_REPEAT_AVOIDANCE_BIAS = 0.75;
 
 const TIER_SPEED_MULTIPLIER_RANGE: Record<
@@ -66,6 +69,23 @@ const TIER_SPEED_MULTIPLIER_RANGE: Record<
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function dot(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return a.x * b.x + a.y * b.y;
+}
+
+function edgeInward(edge: SpawnEdge): { x: number; y: number } {
+  switch (edge) {
+    case "left":
+      return { x: 1, y: 0 };
+    case "right":
+      return { x: -1, y: 0 };
+    case "top":
+      return { x: 0, y: 1 };
+    case "bottom":
+      return { x: 0, y: -1 };
+  }
 }
 
 export class SpawnSystem {
@@ -151,6 +171,7 @@ export class SpawnSystem {
 
   private spawnArtist(): Artist {
     const spawnPoint = this.pickSpawnPoint();
+    const spawnPosition = this.resolveSpawnPosition(spawnPoint);
     const targetStage =
       this.stages.length > 0
         ? this.stages[Math.floor(this.rng() * this.stages.length)]
@@ -162,7 +183,10 @@ export class SpawnSystem {
       this.rng
     );
 
-    const inboundDirection = this.resolveRandomInboundDirection(spawnPoint);
+    const inboundDirection = this.resolveRandomInboundDirection(
+      spawnPoint,
+      spawnPosition
+    );
     const driftVariance = Math.max(0, this.level.driftAngleVarianceDegrees ?? 0);
     const driftOffsetDegrees =
       driftVariance > 0 ? getRandomInRange(-driftVariance, driftVariance, this.rng) : 0;
@@ -176,8 +200,6 @@ export class SpawnSystem {
       normalizeVector(driftDirection, inboundDirection),
       movementSpeedPxPerSecond
     );
-    const spawnPosition = this.resolveSpawnPosition(spawnPoint, inboundDirection);
-
     return new Artist({
       id: `artist-${this.level.levelNumber}-${this.spawnedCount + 1}`,
       tier,
@@ -193,9 +215,24 @@ export class SpawnSystem {
   }
 
   private resolveRandomInboundDirection(
-    spawnPoint: ResolvedSpawnPoint
+    spawnPoint: ResolvedSpawnPoint,
+    spawnPosition: { x: number; y: number }
   ): { x: number; y: number } {
-    const inward = this.resolveMapInwardVector(spawnPoint);
+    const spawnEdge = this.resolveSpawnEdge(spawnPoint);
+    const defaultInward = edgeInward(spawnEdge);
+    const targetPoint =
+      this.viewport === null
+        ? null
+        : this.sampleInwardTarget(spawnEdge, this.viewport);
+    const inward = normalizeVector(
+      targetPoint
+        ? {
+            x: targetPoint.x - spawnPosition.x,
+            y: targetPoint.y - spawnPosition.y
+          }
+        : this.resolveMapInwardVector(spawnPoint),
+      defaultInward
+    );
     const coneHalfAngleRadians =
       (INWARD_SPAWN_CONE_HALF_ANGLE_DEGREES * Math.PI) / 180;
     const offsetRadians = getRandomInRange(
@@ -203,8 +240,64 @@ export class SpawnSystem {
       coneHalfAngleRadians,
       this.rng
     );
-    const randomDirection = rotateVector(inward, offsetRadians);
-    return normalizeVector(randomDirection, inward);
+    let randomDirection = normalizeVector(
+      rotateVector(inward, offsetRadians),
+      defaultInward
+    );
+    if (dot(randomDirection, defaultInward) < MIN_INWARD_ALIGNMENT) {
+      randomDirection = normalizeVector(
+        {
+          x: randomDirection.x + defaultInward.x * 1.5,
+          y: randomDirection.y + defaultInward.y * 1.5
+        },
+        defaultInward
+      );
+    }
+    return randomDirection;
+  }
+
+  private sampleInwardTarget(
+    edge: SpawnEdge,
+    viewport: { width: number; height: number }
+  ): { x: number; y: number } {
+    const width = Math.max(1, viewport.width);
+    const height = Math.max(1, viewport.height);
+    const xAny = getRandomInRange(width * 0.1, width * 0.9, this.rng);
+    const yAny = getRandomInRange(height * 0.1, height * 0.9, this.rng);
+    if (edge === "left") {
+      return {
+        x: getRandomInRange(width * 0.35, width * 0.95, this.rng),
+        y: yAny
+      };
+    }
+    if (edge === "right") {
+      return {
+        x: getRandomInRange(width * 0.05, width * 0.65, this.rng),
+        y: yAny
+      };
+    }
+    if (edge === "top") {
+      return {
+        x: xAny,
+        y: getRandomInRange(height * 0.35, height * 0.95, this.rng)
+      };
+    }
+    return {
+      x: xAny,
+      y: getRandomInRange(height * 0.05, height * 0.65, this.rng)
+    };
+  }
+
+  private resolveSpawnEdge(spawnPoint: ResolvedSpawnPoint): SpawnEdge {
+    const { x, y } = spawnPoint.position;
+    const distances: Array<{ edge: SpawnEdge; distance: number }> = [
+      { edge: "left", distance: x },
+      { edge: "right", distance: 1 - x },
+      { edge: "top", distance: y },
+      { edge: "bottom", distance: 1 - y }
+    ];
+    distances.sort((a, b) => a.distance - b.distance);
+    return distances[0]?.edge ?? "top";
   }
 
   private resolveMapInwardVector(
@@ -241,35 +334,32 @@ export class SpawnSystem {
     return normalizeVector(spawnPoint.directionVector);
   }
 
-  private resolveSpawnPosition(
-    spawnPoint: ResolvedSpawnPoint,
-    inboundDirection: { x: number; y: number }
-  ): { x: number; y: number } {
+  private resolveSpawnPosition(spawnPoint: ResolvedSpawnPoint): { x: number; y: number } {
     let x = spawnPoint.screenPosition.x;
     let y = spawnPoint.screenPosition.y;
     const viewport = this.viewport;
+    const spawnEdge = this.resolveSpawnEdge(spawnPoint);
 
     if (viewport) {
-      if (spawnPoint.position.x <= EDGE_THRESHOLD) {
+      if (spawnEdge === "left") {
         x = -this.spawnInsetPx;
         y = this.rng() * viewport.height;
-      } else if (spawnPoint.position.x >= 1 - EDGE_THRESHOLD) {
+      } else if (spawnEdge === "right") {
         x = viewport.width + this.spawnInsetPx;
         y = this.rng() * viewport.height;
-      }
-
-      if (spawnPoint.position.y <= EDGE_THRESHOLD) {
+      } else if (spawnEdge === "top") {
         y = -this.spawnInsetPx;
         x = this.rng() * viewport.width;
-      } else if (spawnPoint.position.y >= 1 - EDGE_THRESHOLD) {
+      } else if (spawnEdge === "bottom") {
         y = viewport.height + this.spawnInsetPx;
         x = this.rng() * viewport.width;
       }
     }
 
     if (x === spawnPoint.screenPosition.x && y === spawnPoint.screenPosition.y) {
-      x -= inboundDirection.x * this.spawnInsetPx;
-      y -= inboundDirection.y * this.spawnInsetPx;
+      const inwardDirection = this.resolveMapInwardVector(spawnPoint);
+      x -= inwardDirection.x * this.spawnInsetPx;
+      y -= inwardDirection.y * this.spawnInsetPx;
     }
 
     return { x, y };

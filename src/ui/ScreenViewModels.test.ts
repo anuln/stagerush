@@ -86,12 +86,15 @@ describe("buildScreenViewModel", () => {
       model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
     ).toMatchObject({ label: "Artists Routed", value: "3", tone: "critical" });
     expect(
-      model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-missed")
-    ).toMatchObject({ label: "Artists Missed", value: "4", tone: "warning" });
+      model?.sessionWrap?.metrics.find((metric) => metric.id === "correct-stage")
+    ).toMatchObject({ label: "Correct Stage", value: "2", tone: "warning" });
     expect(
-      model?.sessionWrap?.metrics.find((metric) => metric.id === "incorrect-stage")
-    ).toMatchObject({ label: "Incorrect Stage", value: "1", tone: "warning" });
-    expect(model?.sessionWrap?.metrics).toHaveLength(3);
+      model?.sessionWrap?.metrics.find((metric) => metric.id === "artists-missed")
+    ).toMatchObject({ label: "Artists Missed", value: "4", tone: "critical" });
+    expect(
+      model?.sessionWrap?.metrics.find((metric) => metric.id === "collisions")
+    ).toMatchObject({ label: "Collisions", value: "12", tone: "critical" });
+    expect(model?.sessionWrap?.metrics).toHaveLength(4);
     expect(model?.sessionWrap?.progress.nextLabel).toBe("Session minimums not met");
     expect(model?.sessionWrap?.helpOutline?.title).toBe("How to play");
     expect(model?.sessionWrap?.helpOutline?.lines.length).toBeGreaterThan(0);
@@ -193,6 +196,12 @@ describe("buildScreenViewModel", () => {
     expect(
       levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "artists-routed")
     ).toMatchObject({ value: "6", tone: "positive" });
+    expect(
+      levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "correct-stage")
+    ).toMatchObject({ value: "6", tone: "positive" });
+    expect(
+      levelComplete?.sessionWrap?.metrics.find((metric) => metric.id === "collisions")
+    ).toMatchObject({ value: "10", tone: "critical" });
     expect(levelComplete?.sessionWrap?.progress.nextLabel).toBe(
       "Up Next: Day 1 Evening Session"
     );
@@ -206,7 +215,7 @@ describe("buildScreenViewModel", () => {
     expect(festivalComplete?.sessionWrap?.festivalTotals).toEqual([
       { id: "festival-routed", label: "Artists Routed", value: "31" },
       { id: "festival-missed", label: "Artists Missed", value: "6" },
-      { id: "festival-incorrect-stage", label: "Incorrect Stage", value: "5" },
+      { id: "festival-correct-stage", label: "Correct Stage", value: "26" },
       {
         id: "festival-encounters",
         label: "Total Collisions/Distractions",

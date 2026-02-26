@@ -90,10 +90,10 @@ export class PathFollower {
 
   private applyAssignment(artist: Artist, plannedPath: PlannedPath): void {
     const artistSpeed = this.resolveArtistSpeed(artist);
-    const points = [
-      { x: artist.position.x, y: artist.position.y },
-      ...plannedPath.smoothedPoints.slice(1).map((point) => ({ ...point }))
-    ];
+    const points = buildNavigablePathFromCurrentPosition(
+      artist.position,
+      plannedPath.smoothedPoints
+    );
     const completionVelocity = resolveCompletionVelocity(
       points,
       artistSpeed,
@@ -237,4 +237,100 @@ function resolveCompletionVelocity(
   }
 
   return { x: 0, y: 0 };
+}
+
+function buildNavigablePathFromCurrentPosition(
+  currentPosition: Vector2,
+  pathPoints: Vector2[]
+): Vector2[] {
+  const copied = pathPoints.map((point) => ({ ...point }));
+  if (copied.length < 2) {
+    return [
+      { x: currentPosition.x, y: currentPosition.y },
+      { x: currentPosition.x, y: currentPosition.y }
+    ];
+  }
+
+  const nearest = findNearestProjection(currentPosition, copied);
+  const points: Vector2[] = [
+    { x: currentPosition.x, y: currentPosition.y }
+  ];
+  const projectionDistance = Math.hypot(
+    nearest.point.x - currentPosition.x,
+    nearest.point.y - currentPosition.y
+  );
+  if (projectionDistance > 0.5) {
+    points.push(nearest.point);
+  }
+
+  const segmentEnd = copied[nearest.segmentIndex + 1];
+  if (segmentEnd) {
+    const tail = copied
+      .slice(nearest.segmentIndex + 1)
+      .map((point) => ({ ...point }));
+    if (
+      points.length === 0 ||
+      tail.length === 0 ||
+      points[points.length - 1].x !== tail[0].x ||
+      points[points.length - 1].y !== tail[0].y
+    ) {
+      points.push(...tail);
+    } else if (tail.length > 1) {
+      points.push(...tail.slice(1));
+    }
+  }
+
+  if (points.length < 2) {
+    points.push({ ...points[0] });
+  }
+  return points;
+}
+
+function findNearestProjection(
+  point: Vector2,
+  polyline: Vector2[]
+): { segmentIndex: number; point: Vector2 } {
+  let bestSegmentIndex = 0;
+  let bestPoint = { ...polyline[0] };
+  let bestDistanceSq = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < polyline.length - 1; index += 1) {
+    const from = polyline[index];
+    const to = polyline[index + 1];
+    const projection = projectPointToSegment(point, from, to);
+    const dx = point.x - projection.x;
+    const dy = point.y - projection.y;
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq < bestDistanceSq) {
+      bestDistanceSq = distanceSq;
+      bestSegmentIndex = index;
+      bestPoint = projection;
+    }
+  }
+
+  return {
+    segmentIndex: bestSegmentIndex,
+    point: bestPoint
+  };
+}
+
+function projectPointToSegment(
+  point: Vector2,
+  from: Vector2,
+  to: Vector2
+): Vector2 {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const segmentLengthSq = dx * dx + dy * dy;
+  if (segmentLengthSq <= 0.0001) {
+    return { ...from };
+  }
+  const t = Math.max(
+    0,
+    Math.min(1, ((point.x - from.x) * dx + (point.y - from.y) * dy) / segmentLengthSq)
+  );
+  return {
+    x: from.x + dx * t,
+    y: from.y + dy * t
+  };
 }
