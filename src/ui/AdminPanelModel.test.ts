@@ -4,7 +4,9 @@ import type { AdminAssetOverrides } from "../admin/AdminAssetOverrides";
 import {
   buildAssetSlots,
   filterAssetSlots,
+  getDistractionPosition,
   getStagePosition,
+  setDistractionPositionOverride,
   setOverrideForSlot,
   setStagePositionOverride,
   type AudioCatalogEntry,
@@ -205,6 +207,16 @@ describe("AdminPanelModel", () => {
     expect(getStagePosition(map, overrides, "main-stage")).toEqual({ x: 0, y: 1 });
     expect(getStagePosition(map, overrides, "side-stage")).toEqual(
       map.stages[1].position
+    );
+  });
+
+  it("updates and clamps distraction placement overrides", () => {
+    const map = makeFixtureMap();
+    const overrides = setDistractionPositionOverride({}, "merch-a", { x: -0.5, y: 2.2 });
+    expect(overrides.distractionPositions?.["merch-a"]).toEqual({ x: 0, y: 1 });
+    expect(getDistractionPosition(map, overrides, "merch-a")).toEqual({ x: 0, y: 1 });
+    expect(getDistractionPosition(map, overrides, "fans-a")).toEqual(
+      map.distractions[1].position
     );
   });
 

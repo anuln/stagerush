@@ -1287,6 +1287,16 @@ body.kiosk-mode {
   cursor: pointer;
 }
 
+.admin-map-marker-stage {
+  background: rgba(18, 44, 78, 0.94);
+}
+
+.admin-map-marker-distraction {
+  background: rgba(74, 42, 18, 0.92);
+  border-color: rgba(255, 225, 172, 0.72);
+  color: #ffe9c5;
+}
+
 .admin-map-marker.is-active {
   background: rgba(53, 230, 198, 0.9);
   border-color: rgba(169, 255, 239, 0.96);

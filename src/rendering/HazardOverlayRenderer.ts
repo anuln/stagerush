@@ -56,7 +56,7 @@ export class HazardOverlayRenderer {
       }
       const ring = new Graphics();
       ring.circle(zone.center.x, zone.center.y, zone.radius);
-      ring.stroke({ color: 0xffde59, width: 2, alpha: 0.35 });
+      ring.stroke({ color: 0xffde59, width: 2, alpha: 0.2 });
       this.layer.addChild(ring);
     }
 

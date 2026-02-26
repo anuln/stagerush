@@ -37,8 +37,8 @@ export class DistractionRenderer {
         distraction.screenPosition.y,
         distraction.pixelRadius
       );
-      zone.fill({ color, alpha: 0.08 });
-      zone.stroke({ color, width: 2, alpha: 0.35 });
+      zone.fill({ color, alpha: 0.04 });
+      zone.stroke({ color, width: 2, alpha: 0.18 });
       this.layer.addChild(zone);
 
       const marker = new Graphics();
@@ -50,8 +50,8 @@ export class DistractionRenderer {
           distraction.screenPosition.x,
           distraction.screenPosition.y
         );
-        sprite.width = Math.max(24, distraction.pixelRadius * 0.9);
-        sprite.height = Math.max(24, distraction.pixelRadius * 0.9);
+        sprite.width = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
+        sprite.height = Math.max(24, distraction.pixelRadius * 0.9 * 1.6);
         this.layer.addChild(sprite);
       } else {
         marker.circle(

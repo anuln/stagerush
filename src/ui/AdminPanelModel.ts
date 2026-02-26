@@ -330,6 +330,43 @@ export function setStagePositionOverride(
   return next;
 }
 
+export function getDistractionPosition(
+  map: FestivalMap,
+  overrides: AdminAssetOverrides,
+  distractionId: string
+): NormalizedPoint {
+  const override = overrides.distractionPositions?.[distractionId];
+  if (override) {
+    return {
+      x: clamp01(override.x),
+      y: clamp01(override.y)
+    };
+  }
+  const distraction = map.distractions.find((entry) => entry.id === distractionId);
+  if (!distraction) {
+    return { x: 0.5, y: 0.5 };
+  }
+  return {
+    x: clamp01(distraction.position.x),
+    y: clamp01(distraction.position.y)
+  };
+}
+
+export function setDistractionPositionOverride(
+  overrides: AdminAssetOverrides,
+  distractionId: string,
+  point: NormalizedPoint
+): AdminAssetOverrides {
+  const next = structuredClone(overrides);
+  const distractionPositions = { ...(next.distractionPositions ?? {}) };
+  distractionPositions[distractionId] = {
+    x: clamp01(point.x),
+    y: clamp01(point.y)
+  };
+  next.distractionPositions = distractionPositions;
+  return next;
+}
+
 export function setOverrideForSlot(
   overrides: AdminAssetOverrides,
   meta: SlotMeta,

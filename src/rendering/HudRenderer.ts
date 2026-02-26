@@ -278,59 +278,48 @@ export class HudRenderer {
     }
 
     for (const stage of stageProgress) {
-      const isNearRightEdge = stage.position.x > viewportWidth - 96;
-      const labelX = clamp(
-        stage.position.x + (isNearRightEdge ? -72 : 22),
-        8,
-        viewportWidth - 78
-      );
-      const labelY = clamp(
-        stage.position.y - 14,
-        safeTop + 6,
-        viewportHeight - safeBottom - 22
-      );
-      const card = new Graphics();
-      card.roundRect(labelX, labelY, 70, 20, 6);
-      card.fill({ color: 0x0d1728, alpha: 0.4 });
-      card.stroke({
-        color: parseColor(stage.color, 0x75c7ff),
-        width: 1,
-        alpha: 0.44
-      });
-      strip.addChild(card);
-
-      const dot = new Graphics();
-      dot.circle(labelX + 8, labelY + 10, 2.5);
-      dot.fill({ color: parseColor(stage.color, 0x75c7ff), alpha: 0.86 });
-      strip.addChild(dot);
-
+      const labelText = `SETS ${Math.max(0, Math.floor(stage.deliveredSets))}`;
       const label = new Text({
-        text: `SETS ${Math.max(0, Math.floor(stage.deliveredSets))}`,
+        text: labelText,
         style: {
           fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
           fontSize: 10,
           fontWeight: "700",
-          fill: 0xd4e5f7,
+          fill: 0xe8f2ff,
           letterSpacing: 0.25
         }
       });
-      label.position.set(labelX + 14, labelY + 5);
+      const horizontalPadding = 8;
+      const cardWidth = Math.max(52, Math.ceil(label.width + horizontalPadding * 2));
+      const cardHeight = 18;
+      const labelX = clamp(
+        stage.position.x - cardWidth / 2,
+        6,
+        viewportWidth - cardWidth - 6
+      );
+      const labelY = clamp(
+        stage.position.y + 26,
+        safeTop + 6,
+        viewportHeight - safeBottom - cardHeight - 6
+      );
+      const card = new Graphics();
+      card.roundRect(labelX, labelY, cardWidth, cardHeight, 7);
+      card.fill({ color: 0x0d1728, alpha: 0.48 });
+      card.stroke({
+        color: parseColor(stage.color, 0x75c7ff),
+        width: 1,
+        alpha: 0.52
+      });
+      strip.addChild(card);
+
+      const dot = new Graphics();
+      dot.circle(labelX + 8, labelY + cardHeight / 2, 2.5);
+      dot.fill({ color: parseColor(stage.color, 0x75c7ff), alpha: 0.88 });
+      strip.addChild(dot);
+
+      label.position.set(labelX + 14, labelY + 4);
       label.alpha = 0.92;
       strip.addChild(label);
-
-      const stageTag = new Text({
-        text: formatStageName(stage.stageId),
-        style: {
-          fontFamily: "Manrope, Avenir Next, Segoe UI, sans-serif",
-          fontSize: 8,
-          fontWeight: "700",
-          fill: 0x91a9c7,
-          letterSpacing: 0.25
-        }
-      });
-      stageTag.position.set(labelX + 14, labelY - 9);
-      stageTag.alpha = 0.68;
-      strip.addChild(stageTag);
     }
 
     return strip;

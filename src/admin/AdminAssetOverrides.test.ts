@@ -86,6 +86,7 @@ describe("AdminAssetOverrides", () => {
     expect(hasAdminAssetOverrides({})).toBe(false);
     expect(hasAdminAssetOverrides({ stageSprites: {} })).toBe(false);
     expect(hasAdminAssetOverrides({ stagePositions: {} })).toBe(false);
+    expect(hasAdminAssetOverrides({ distractionPositions: {} })).toBe(false);
     expect(hasAdminAssetOverrides({ artistSprites: { "artist-a": {} } })).toBe(false);
   });
 
@@ -113,6 +114,9 @@ describe("AdminAssetOverrides", () => {
     expect(hasAdminAssetOverrides({ stagePositions: { main: { x: 0.3, y: 0.5 } } })).toBe(
       true
     );
+    expect(
+      hasAdminAssetOverrides({ distractionPositions: { d1: { x: 0.6, y: 0.4 } } })
+    ).toBe(true);
     expect(hasAdminAssetOverrides({ artistSprites: { "artist-a": { idle: "a.png" } } })).toBe(
       true
     );
@@ -141,6 +145,7 @@ describe("AdminAssetOverrides", () => {
         }
       },
       stagePositions: { main: { x: 0.34, y: 0.28 } },
+      distractionPositions: { d1: { x: 0.62, y: 0.58 } },
       stageSprites: { main: "assets/maps/generated/stage_main_v2.png" },
       distractionSprites: {
         merch_stand: "assets/maps/generated/distraction_merch_v2.png"
@@ -176,6 +181,7 @@ describe("AdminAssetOverrides", () => {
       stageGlow: 0.25
     });
     expect(updated.stages[0].position).toEqual({ x: 0.34, y: 0.28 });
+    expect(updated.distractions[0].position).toEqual({ x: 0.62, y: 0.58 });
     expect(updated.stages[0].sprite).toBe("assets/maps/generated/stage_main_v2.png");
     expect(updated.distractions[0].sprite).toBe(
       "assets/maps/generated/distraction_merch_v2.png"

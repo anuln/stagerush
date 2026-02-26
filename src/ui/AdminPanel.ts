@@ -18,8 +18,10 @@ import { putFileToGitHub } from "../admin/GitHubPublisher";
 import {
   buildAssetSlots,
   filterAssetSlots,
+  getDistractionPosition,
   getStagePosition,
   resolveInPlayArtistIds,
+  setDistractionPositionOverride,
   setOverrideForSlot,
   setStagePositionOverride,
   type AssetSlot,
@@ -36,6 +38,7 @@ type ArtistSlotField =
   | "distracted"
   | "performing"
   | "performanceAudioClip";
+type MapPlacementMode = "stage" | "distraction";
 
 interface AdminPanelOptions {
   map: FestivalMap;
@@ -528,7 +531,9 @@ export class AdminPanel {
   private inPlayLevel = 1;
   private assetSearch = "";
   private selectedSlotId: string | null = null;
+  private selectedMapPlacementMode: MapPlacementMode = "stage";
   private selectedStageForMap: string | null = null;
+  private selectedDistractionForMap: string | null = null;
   private selectedSessionFxProfile: SessionPeriod = "morning";
   private slotCandidates = new Map<string, string>();
   private promptDraftBySlot = new Map<string, string>();
@@ -571,6 +576,7 @@ export class AdminPanel {
     this.draftOverrides = structuredClone(options.initialOverrides);
 
     this.selectedStageForMap = this.map.stages[0]?.id ?? null;
+    this.selectedDistractionForMap = this.map.distractions[0]?.id ?? null;
     const rememberedGeminiKey = window.localStorage.getItem(GEMINI_KEY_STORAGE_KEY);
     if (rememberedGeminiKey && rememberedGeminiKey.trim().length > 0) {
       this.geminiApiKey = rememberedGeminiKey;
@@ -1707,7 +1713,7 @@ export class AdminPanel {
     const tabDefs: Array<{ id: AdminTab; label: string; hint: string }> = [
       { id: "assets", label: "Assets", hint: "Live game slots" },
       { id: "generate", label: "Generate", hint: "Create new art" },
-      { id: "map", label: "Map", hint: "Pin stage markers" },
+      { id: "map", label: "Map", hint: "Pin map markers" },
       { id: "library", label: "Library", hint: "Review variants" },
       { id: "publish", label: "Publish", hint: "Apply and reload" }
     ];
@@ -1871,7 +1877,7 @@ export class AdminPanel {
       help.className = "admin-empty";
       if (this.activeTab === "map") {
         help.textContent =
-          "Map mode lets you click the map to place each stage marker.";
+          "Map mode lets you place stage and distraction markers by clicking the map.";
       } else if (this.activeTab === "library") {
         help.textContent =
           "Library mode shows all catalog prompts and generated assets.";
@@ -2850,38 +2856,98 @@ export class AdminPanel {
     card.className = "admin-section-card";
 
     const heading = document.createElement("h3");
-    heading.textContent = "Map Stage Placement";
+    heading.textContent = "Map Marker Placement";
     card.appendChild(heading);
 
-    if (this.map.stages.length === 0) {
+    const hasStages = this.map.stages.length > 0;
+    const hasDistractions = this.map.distractions.length > 0;
+    if (!hasStages && !hasDistractions) {
       const empty = document.createElement("p");
       empty.className = "admin-empty";
-      empty.textContent = "No stages found in this festival map.";
+      empty.textContent = "No stage or distraction markers found in this festival map.";
       card.appendChild(empty);
       section.appendChild(card);
       return section;
     }
 
-    const selectedStageId = this.selectedStageForMap ?? this.map.stages[0].id;
+    if (this.selectedMapPlacementMode === "stage" && !hasStages && hasDistractions) {
+      this.selectedMapPlacementMode = "distraction";
+    }
+    if (this.selectedMapPlacementMode === "distraction" && !hasDistractions && hasStages) {
+      this.selectedMapPlacementMode = "stage";
+    }
+
+    const selectedStageId = this.selectedStageForMap ?? this.map.stages[0]?.id ?? null;
+    const selectedDistractionId =
+      this.selectedDistractionForMap ?? this.map.distractions[0]?.id ?? null;
     this.selectedStageForMap = selectedStageId;
-    const selectedPoint = getStagePosition(this.map, this.draftOverrides, selectedStageId);
+    this.selectedDistractionForMap = selectedDistractionId;
+
+    const mode = this.selectedMapPlacementMode;
+    const selectedPoint =
+      mode === "stage"
+        ? selectedStageId
+          ? getStagePosition(this.map, this.draftOverrides, selectedStageId)
+          : { x: 0.5, y: 0.5 }
+        : selectedDistractionId
+          ? getDistractionPosition(this.map, this.draftOverrides, selectedDistractionId)
+          : { x: 0.5, y: 0.5 };
 
     const controls = document.createElement("div");
     controls.className = "admin-grid-3";
+    const modeField = document.createElement("label");
+    modeField.className = "admin-field";
+    modeField.innerHTML = "<span>Marker Type</span>";
+    const modeSelect = document.createElement("select");
+    modeSelect.className = "admin-select";
+    if (hasStages) {
+      const option = document.createElement("option");
+      option.value = "stage";
+      option.textContent = "Stage";
+      modeSelect.appendChild(option);
+    }
+    if (hasDistractions) {
+      const option = document.createElement("option");
+      option.value = "distraction";
+      option.textContent = "Distraction";
+      modeSelect.appendChild(option);
+    }
+    modeSelect.value = mode;
+    modeSelect.addEventListener("change", () => {
+      this.selectedMapPlacementMode = modeSelect.value as MapPlacementMode;
+      this.render();
+    });
+    modeField.appendChild(modeSelect);
+    controls.appendChild(modeField);
+
     const stageField = document.createElement("label");
     stageField.className = "admin-field";
-    stageField.innerHTML = "<span>Stage</span>";
+    stageField.innerHTML = `<span>${mode === "stage" ? "Stage" : "Distraction"}</span>`;
     const stageSelect = document.createElement("select");
     stageSelect.className = "admin-select";
-    for (const stage of this.map.stages) {
-      const option = document.createElement("option");
-      option.value = stage.id;
-      option.textContent = stage.id;
-      stageSelect.appendChild(option);
+    if (mode === "stage") {
+      for (const stage of this.map.stages) {
+        const option = document.createElement("option");
+        option.value = stage.id;
+        option.textContent = stage.id;
+        stageSelect.appendChild(option);
+      }
+      stageSelect.value = selectedStageId ?? "";
+    } else {
+      for (const distraction of this.map.distractions) {
+        const option = document.createElement("option");
+        option.value = distraction.id;
+        option.textContent = distraction.id;
+        stageSelect.appendChild(option);
+      }
+      stageSelect.value = selectedDistractionId ?? "";
     }
-    stageSelect.value = selectedStageId;
     stageSelect.addEventListener("change", () => {
-      this.selectedStageForMap = stageSelect.value;
+      if (mode === "stage") {
+        this.selectedStageForMap = stageSelect.value;
+      } else {
+        this.selectedDistractionForMap = stageSelect.value;
+      }
       this.render();
     });
     stageField.appendChild(stageSelect);
@@ -2898,7 +2964,13 @@ export class AdminPanel {
     xInput.className = "admin-input";
     xInput.value = selectedPoint.x.toFixed(3);
     xInput.addEventListener("change", () => {
-      this.setStageFromInputs(selectedStageId, xInput.value, yInput.value);
+      if (mode === "stage" && selectedStageId) {
+        this.setStageFromInputs(selectedStageId, xInput.value, yInput.value);
+        return;
+      }
+      if (mode === "distraction" && selectedDistractionId) {
+        this.setDistractionFromInputs(selectedDistractionId, xInput.value, yInput.value);
+      }
     });
     xField.appendChild(xInput);
     controls.appendChild(xField);
@@ -2914,7 +2986,13 @@ export class AdminPanel {
     yInput.className = "admin-input";
     yInput.value = selectedPoint.y.toFixed(3);
     yInput.addEventListener("change", () => {
-      this.setStageFromInputs(selectedStageId, xInput.value, yInput.value);
+      if (mode === "stage" && selectedStageId) {
+        this.setStageFromInputs(selectedStageId, xInput.value, yInput.value);
+        return;
+      }
+      if (mode === "distraction" && selectedDistractionId) {
+        this.setDistractionFromInputs(selectedDistractionId, xInput.value, yInput.value);
+      }
     });
     yField.appendChild(yInput);
     controls.appendChild(yField);
@@ -2926,33 +3004,62 @@ export class AdminPanel {
       this.draftOverrides.background ?? this.map.background
     )})`;
 
-    for (const stage of this.map.stages) {
-      const point = getStagePosition(this.map, this.draftOverrides, stage.id);
-      const marker = document.createElement("button");
-      marker.type = "button";
-      marker.className = "admin-map-marker";
-      if (stage.id === selectedStageId) {
-        marker.classList.add("is-active");
+    if (mode === "stage") {
+      for (const stage of this.map.stages) {
+        const point = getStagePosition(this.map, this.draftOverrides, stage.id);
+        const marker = document.createElement("button");
+        marker.type = "button";
+        marker.className = "admin-map-marker admin-map-marker-stage";
+        if (stage.id === selectedStageId) {
+          marker.classList.add("is-active");
+        }
+        marker.style.left = `${point.x * 100}%`;
+        marker.style.top = `${point.y * 100}%`;
+        marker.textContent = stage.id;
+        marker.addEventListener("click", (event) => {
+          event.stopPropagation();
+          this.selectedStageForMap = stage.id;
+          this.render();
+        });
+        mapCanvas.appendChild(marker);
       }
-      marker.style.left = `${point.x * 100}%`;
-      marker.style.top = `${point.y * 100}%`;
-      marker.textContent = stage.id;
-      marker.addEventListener("click", (event) => {
-        event.stopPropagation();
-        this.selectedStageForMap = stage.id;
-        this.render();
-      });
-      mapCanvas.appendChild(marker);
+    } else {
+      for (const distraction of this.map.distractions) {
+        const point = getDistractionPosition(this.map, this.draftOverrides, distraction.id);
+        const marker = document.createElement("button");
+        marker.type = "button";
+        marker.className = "admin-map-marker admin-map-marker-distraction";
+        if (distraction.id === selectedDistractionId) {
+          marker.classList.add("is-active");
+        }
+        marker.style.left = `${point.x * 100}%`;
+        marker.style.top = `${point.y * 100}%`;
+        marker.textContent = distraction.id;
+        marker.addEventListener("click", (event) => {
+          event.stopPropagation();
+          this.selectedDistractionForMap = distraction.id;
+          this.render();
+        });
+        mapCanvas.appendChild(marker);
+      }
     }
 
     mapCanvas.addEventListener("click", (event) => {
       const rect = mapCanvas.getBoundingClientRect();
       const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
       const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-      this.draftOverrides = setStagePositionOverride(this.draftOverrides, selectedStageId, {
-        x,
-        y
-      });
+      if (mode === "stage" && selectedStageId) {
+        this.draftOverrides = setStagePositionOverride(this.draftOverrides, selectedStageId, {
+          x,
+          y
+        });
+      } else if (mode === "distraction" && selectedDistractionId) {
+        this.draftOverrides = setDistractionPositionOverride(
+          this.draftOverrides,
+          selectedDistractionId,
+          { x, y }
+        );
+      }
       this.notifyPreviewChange();
       this.render();
     });
@@ -2961,7 +3068,9 @@ export class AdminPanel {
     const hint = document.createElement("p");
     hint.className = "admin-copy";
     hint.textContent =
-      "Click map to place selected stage marker. Marker changes apply instantly to live preview.";
+      mode === "stage"
+        ? "Click map to place selected stage marker. Marker changes apply instantly to live preview."
+        : "Click map to place selected distraction marker. Marker changes apply instantly to live preview.";
     card.appendChild(hint);
     card.appendChild(this.buildSessionFxControls());
 
@@ -3306,6 +3415,21 @@ export class AdminPanel {
       return;
     }
     this.draftOverrides = setStagePositionOverride(this.draftOverrides, stageId, { x, y });
+    this.notifyPreviewChange();
+    this.render();
+  }
+
+  private setDistractionFromInputs(distractionId: string, xRaw: string, yRaw: string): void {
+    const x = Number.parseFloat(xRaw);
+    const y = Number.parseFloat(yRaw);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+    this.draftOverrides = setDistractionPositionOverride(
+      this.draftOverrides,
+      distractionId,
+      { x, y }
+    );
     this.notifyPreviewChange();
     this.render();
   }

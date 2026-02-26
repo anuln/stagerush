@@ -17,6 +17,7 @@ import { ArtistRenderer } from "../rendering/ArtistRenderer";
 import { ComboFeedbackRenderer } from "../rendering/ComboFeedbackRenderer";
 import {
   DeliveryFeedbackRenderer,
+  type GuidanceFeedbackEvent,
   type HazardFeedbackEvent,
   type MissEvent
 } from "../rendering/DeliveryFeedbackRenderer";
@@ -93,6 +94,13 @@ export interface GameRuntimeOptions {
   getEffectsDensity?: () => number;
 }
 
+type FtuxEventKey =
+  | "first_spawn_unrouted"
+  | "first_collision"
+  | "first_distraction"
+  | "first_successful_stage_arrival"
+  | "first_timeout_miss";
+
 export class GameRuntime {
   private layout: ResolvedFestivalLayout;
   private artists: Artist[] = [];
@@ -142,6 +150,8 @@ export class GameRuntime {
     runtimeOutcome: "ACTIVE"
   };
   private readonly stageSetCounts = new Map<string, number>();
+  private readonly shownFtuxEvents = new Set<FtuxEventKey>();
+  private firstSpawnArtistId: string | null = null;
 
   constructor(
     layout: ResolvedFestivalLayout,
@@ -300,11 +310,16 @@ export class GameRuntime {
     const missEvents: MissEvent[] = [];
     const scoreEvents: ScoreEvent[] = [];
     const hazardEvents: HazardFeedbackEvent[] = [];
+    const guidanceEvents: GuidanceFeedbackEvent[] = [];
 
     const activeArtists = this.artists.filter((artist) => artist.isActive());
     const spawned = this.spawnSystem.update(deltaSeconds, activeArtists);
     if (spawned.length > 0) {
       this.artists.push(...spawned);
+      if (!this.shownFtuxEvents.has("first_spawn_unrouted")) {
+        this.firstSpawnArtistId = spawned[0]?.id ?? null;
+        this.shownFtuxEvents.add("first_spawn_unrouted");
+      }
       for (let index = 0; index < spawned.length; index += 1) {
         this.playSfx("spawn");
       }
@@ -340,6 +355,14 @@ export class GameRuntime {
           type: "chat",
           position: center
         });
+        if (!this.shownFtuxEvents.has("first_collision")) {
+          this.shownFtuxEvents.add("first_collision");
+          guidanceEvents.push({
+            id: "first_collision",
+            text: "Chit chat ...",
+            position: center
+          });
+        }
       }
       this.playSfx("chat");
     }
@@ -365,6 +388,15 @@ export class GameRuntime {
           type: "distraction",
           position: { ...artist.position }
         });
+        if (!this.shownFtuxEvents.has("first_distraction")) {
+          this.shownFtuxEvents.add("first_distraction");
+          guidanceEvents.push({
+            id: "first_distraction",
+            text: `${this.resolveDistractionLabel(started.distractionId)}!`,
+            position: { ...artist.position },
+            tone: "warning"
+          });
+        }
       }
       this.playSfx("distraction");
     }
@@ -408,6 +440,18 @@ export class GameRuntime {
         this.comboTracker.breakAllChains();
         this.scoreManager.applyMissPenalty(event.reason);
         missEvents.push(this.buildMissEvent(artist, event.reason));
+        if (
+          event.reason === "timeout" &&
+          !this.shownFtuxEvents.has("first_timeout_miss")
+        ) {
+          this.shownFtuxEvents.add("first_timeout_miss");
+          guidanceEvents.push({
+            id: "first_timeout_miss",
+            text: "Missed set.",
+            position: { ...artist.position },
+            tone: "warning"
+          });
+        }
         this.playSfx("miss");
       }
     }
@@ -425,6 +469,15 @@ export class GameRuntime {
       );
       const scoreEvent = this.scoreManager.registerDelivery(delivery, combo);
       scoreEvents.push(scoreEvent);
+      if (!this.shownFtuxEvents.has("first_successful_stage_arrival")) {
+        this.shownFtuxEvents.add("first_successful_stage_arrival");
+        guidanceEvents.push({
+          id: "first_successful_stage_arrival",
+          text: "Set locked in!",
+          position: { ...delivery.stagePosition },
+          tone: "positive"
+        });
+      }
       this.playSfx(scoreEvent.comboMultiplier > 1 ? "deliver_combo" : "deliver");
     }
 
@@ -469,11 +522,16 @@ export class GameRuntime {
       effectsDensity < 0.55 ? missEvents.slice(-1) : missEvents;
     const renderedHazardEvents =
       effectsDensity < 0.55 ? hazardEvents.slice(-1) : hazardEvents;
+    const stickySpawnBubble = this.resolveStickySpawnBubble();
+    if (stickySpawnBubble) {
+      guidanceEvents.push(stickySpawnBubble);
+    }
     this.deliveryFeedbackRenderer.render({
       nowMs: this.nowMs,
       scoreEvents: renderedScoreEvents,
       missEvents: renderedMissEvents,
       hazardEvents: renderedHazardEvents,
+      guidanceEvents,
       stageSnapshots,
       viewport
     });
@@ -567,6 +625,7 @@ export class GameRuntime {
       scoreEvents: [],
       missEvents: [],
       hazardEvents: [],
+      guidanceEvents: [],
       stageSnapshots: [],
       viewport: this.layout.viewport
     });
@@ -647,6 +706,9 @@ export class GameRuntime {
       (path) => !(path.artistId === artist.id && path.state === "ACTIVE")
     );
     if (assignment === "assigned" || assignment === "queued") {
+      if (this.firstSpawnArtistId === artist.id) {
+        this.firstSpawnArtistId = null;
+      }
       this.pathStates.push({
         id: planned.pathId,
         artistId: planned.artistId,
@@ -720,6 +782,39 @@ export class GameRuntime {
       position: { ...artist.position },
       reason
     };
+  }
+
+  private resolveStickySpawnBubble(): GuidanceFeedbackEvent | null {
+    if (!this.firstSpawnArtistId) {
+      return null;
+    }
+    const artist = this.artists.find((entry) => entry.id === this.firstSpawnArtistId);
+    if (!artist || !artist.isActive()) {
+      this.firstSpawnArtistId = null;
+      return null;
+    }
+    return {
+      id: "first_spawn_unrouted",
+      text: "Route me to my stage!",
+      position: { ...artist.position },
+      sticky: true
+    };
+  }
+
+  private resolveDistractionLabel(distractionId: string): string {
+    const distraction = this.layout.distractions.find((entry) => entry.id === distractionId);
+    switch (distraction?.type) {
+      case "merch_stand":
+        return "Merch Stand";
+      case "burger_shack":
+        return "Burger Shack";
+      case "paparazzi":
+        return "Paparazzi";
+      case "fan_crowd":
+        return "Fan Crowd";
+      default:
+        return "Distraction";
+    }
   }
 
   private cleanupPathStatesForResolvedArtists(): void {

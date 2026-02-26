@@ -40,6 +40,7 @@ export interface AdminAssetOverrides {
   sessionFxPreview?: SessionFxPreviewMode;
   stageSprites?: Record<string, string>;
   stagePositions?: Record<string, NormalizedPoint>;
+  distractionPositions?: Record<string, NormalizedPoint>;
   distractionSprites?: Record<string, string>;
   audioCues?: Record<string, string>;
   artistSprites?: Record<string, ArtistAssetOverride>;
@@ -113,8 +114,23 @@ function sanitizeStagePositions(
   if (!stagePositions) {
     return undefined;
   }
+  return sanitizeNormalizedPointRecord(stagePositions);
+}
+
+function sanitizeDistractionPositions(
+  distractionPositions?: Record<string, NormalizedPoint>
+): Record<string, NormalizedPoint> | undefined {
+  if (!distractionPositions) {
+    return undefined;
+  }
+  return sanitizeNormalizedPointRecord(distractionPositions);
+}
+
+function sanitizeNormalizedPointRecord(
+  source: Record<string, NormalizedPoint>
+): Record<string, NormalizedPoint> | undefined {
   const next: Record<string, NormalizedPoint> = {};
-  for (const [stageId, position] of Object.entries(stagePositions)) {
+  for (const [id, position] of Object.entries(source)) {
     if (
       !position ||
       !Number.isFinite(position.x) ||
@@ -122,7 +138,7 @@ function sanitizeStagePositions(
     ) {
       continue;
     }
-    next[stageId] = {
+    next[id] = {
       x: clamp01(position.x),
       y: clamp01(position.y)
     };
@@ -228,7 +244,8 @@ export function saveAdminAssetOverrides(
     introPresentation: sanitizeIntroPresentation(overrides.introPresentation),
     sessionFx: sanitizeSessionFxConfig(overrides.sessionFx),
     sessionFxPreview: resolveSessionPreviewMode(overrides.sessionFxPreview),
-    stagePositions: sanitizeStagePositions(overrides.stagePositions)
+    stagePositions: sanitizeStagePositions(overrides.stagePositions),
+    distractionPositions: sanitizeDistractionPositions(overrides.distractionPositions)
   };
 
   if (!hasAdminAssetOverrides(normalized)) {
@@ -278,6 +295,12 @@ export function hasAdminAssetOverrides(overrides: AdminAssetOverrides): boolean 
     return true;
   }
   if (overrides.stagePositions && Object.keys(overrides.stagePositions).length > 0) {
+    return true;
+  }
+  if (
+    overrides.distractionPositions &&
+    Object.keys(overrides.distractionPositions).length > 0
+  ) {
     return true;
   }
   if (
@@ -342,6 +365,19 @@ export function applyAdminAssetOverrides(
         continue;
       }
       stage.position = {
+        x: clamp01(overridePosition.x),
+        y: clamp01(overridePosition.y)
+      };
+    }
+  }
+
+  if (overrides.distractionPositions) {
+    for (const distraction of cloned.distractions) {
+      const overridePosition = overrides.distractionPositions[distraction.id];
+      if (!overridePosition) {
+        continue;
+      }
+      distraction.position = {
         x: clamp01(overridePosition.x),
         y: clamp01(overridePosition.y)
       };
